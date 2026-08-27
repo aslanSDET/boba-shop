@@ -52,9 +52,11 @@ export function SiteFooter() {
                     <br />
                     {loc.cityLine}
                   </p>
+                  {/* min-h-11: the one link customers tap while moving. At text
+                      size alone it was 19.5px — under even the 24px AA floor. */}
                   <a
                     href={`tel:${loc.phone.replace(/-/g, "")}`}
-                    className="mt-2 inline-flex items-center gap-2 font-mono text-[13px] tabular-nums transition-colors hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    className="mt-1 inline-flex min-h-11 items-center gap-2 font-mono text-[13px] tabular-nums transition-colors hover:text-brand-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
                   >
                     <Phone className="size-3.5" />
                     {loc.phone}
@@ -78,9 +80,9 @@ export function SiteFooter() {
                       href={social.href}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="group inline-flex items-center gap-3 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      className="group inline-flex items-center gap-3 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
                     >
-                      <span className="grid size-10 place-items-center rounded-full border border-border bg-card text-foreground transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
+                      <span className="grid size-11 place-items-center rounded-full border border-border bg-card text-foreground transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
                         <Icon className="size-[18px]" />
                       </span>
                       <span className="text-[15px]">

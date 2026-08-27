@@ -134,7 +134,7 @@ Off-the-shelf over custom everywhere possible: Clerk for auth, Stripe for paymen
 | `src/components/wordmark.tsx` | Penguin-as-the-"o" logo lockup, used in the hero and the footer |
 | `src/hooks/use-media-query.ts` | Breakpoint hook behind the responsive item customiser |
 | `src/app/page.tsx` | Brand masthead/rail, sticky category rail, menu list, sticky cart bar |
-| `src/app/globals.css`, `src/app/layout.tsx` | Design tokens, three-role type system, default dark mode |
+| `src/app/globals.css`, `src/app/layout.tsx` | Design tokens, three-role type system, light theme only (see §5.1) |
 
 Verified: `tsc --noEmit` clean, `eslint` clean, `next build` clean, manual click-through in the browser across all six categories. Cart maths checked on a mixed three-product order: Hawaiian ice $5.50 + brown sugar milk tea (large, boba) $7.75 + Thai Dye $9.50 = $22.75 subtotal, $1.99 tax, $24.74 total. Max-selection enforcement confirmed (3-of-3 syrups disables the rest; add button stays disabled and names the group still needed).
 
@@ -151,6 +151,9 @@ Skinned to the real shop: Snowdaes, Billerica MA, est. 2013, "Make every day a S
 - **Wordmark lockup** (`src/components/wordmark.tsx`) — the penguin stands in for the **"o" in Snowdaes**, rising above the x-height so it reads as climbing out of the word. The "o" underneath is a real Fraunces glyph, not a drawn ring: a CSS circle cannot match a serif's modulated stroke, and a wrong "o" is more obvious than no trick at all. The mark is sized in `em` (`w-[1.05em]`) so the whole lockup scales from the 4rem phone hero to the 6.5rem desktop hero to the 2rem footer from one component. It needs `max-w-none` — Tailwind preflight's `img { max-width: 100% }` otherwise caps it to the width of the "o" — and the hero needs top padding, because the mark is absolutely positioned and escapes the line box into the section's `overflow-hidden`.
 - **Type scale — deliberately large.** Wordmark 4rem → 6.5rem, tagline 1.5rem → 2rem, body 15–16px, item names 19–20px, option pills 15px, every interactive control ≥40px for tap targets. The first pass used a 13px-heavy scale and read cramped; do not shrink back to it.
 - **Quality floor** — visible keyboard focus rings, `prefers-reduced-motion` respected, `env(safe-area-inset-bottom)` on the fixed cart bar, `aria-pressed` on every option pill, disabled options carry a real `disabled` attribute.
+- **Theme — light only, and that is settled.** One `:root` block, `color-scheme: light`, warm white `#faf8f5`. There is no `.dark` block and no toggle. The `dark:` utilities inside `src/components/ui/` are unreachable shadcn defaults; they stay because `ui/` is **vendored**, not owned (see below).
+- **`src/components/ui/` is vendored, not owned.** It is shadcn output, pulled and re-pulled through the shadcn MCP server, so any hand-edit there is lost on the next pull. Behaviour that must survive belongs at the call site or in `globals.css` keyed off the `data-slot` attributes shadcn emits — which is why overlay `overscroll-behavior` lives in `globals.css` rather than in `ui/drawer.tsx`. Don't "clean up" this directory.
+- **Focus rings use `--brand-ink`, not `--primary`.** The bright orange measures 2.23:1 on the warm ground, under the 3:1 WCAG 1.4.11 floor for non-text contrast; `--brand-ink` clears it at 4.74:1. `--ring` is set to brand-ink for the same reason. Orange remains the *fill* colour — never the ring.
 
 **Brand assets** in `public/` were pulled from snowdaes.com on 2026-08-26 and are placeholders standing in for licensed originals: `brand/snowdaes-mark.png` (penguin, 512px) and five product photos in `menu/`. Replace with shop-supplied assets before anything ships publicly.
 
@@ -220,6 +223,10 @@ This directly replaces the earlier hand-crafted single-table `PK`/`SK` design �
 - [ ] Tap-to-advance status: `PAID → PREPARING → READY → COMPLETED`
 
 ### Phase 5 — Testing & Hardening
+
+✅ **UI hardening pass (done 2026-08-27)** — 13 findings from a Web Interface Guidelines audit against the live 393px render. Fixed: overlay scroll chaining (`overscroll-contain` on both sheets and their inner scrollers); focus rings moved off `--primary` (2.23:1) onto `--brand-ink` (5.02:1 measured, WCAG 1.4.11); footer `tel:` links raised from 19.5px to 44px; `touch-action: manipulation` on all controls; a close button on the mobile drawer to match Dialog/Sheet; cart and drawer steppers and social targets to 44px; `scroll-mt`/`scroll-mb` on menu cards so sticky chrome can't obscure focus (WCAG 2.4.11); `transition-all` → explicit properties; skip link to `#menu` (WCAG 2.4.1); `aria-describedby` on the disabled Checkout button; `Intl.NumberFormat` in `formatPrice`. Docs corrected — §5 and `frontend-dev.md` both claimed dark mode that does not exist.
+
+Still open:
 - [ ] Playwright E2E: add-to-cart → modifier combinations → cart math → mocked Stripe redirect
 - [ ] Edge cases: $0 orders, out-of-stock items, price rounding, concurrent quantity updates
 - [ ] Mobile viewport suite (iPhone/Pixel breakpoints) — this is the primary traffic shape

@@ -53,6 +53,15 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Ahead of the menu sit two CTAs, two status pills, three promo cards and
+          six category buttons — too much to tab through to reach an order. */}
+      <a
+        href="#menu"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-primary focus:px-5 focus:py-3 focus:text-[15px] focus:font-semibold focus:text-primary-foreground focus:outline-2 focus:outline-offset-2 focus:outline-brand-ink"
+      >
+        Skip to menu
+      </a>
+
       {/* Slim utility bar keeps pickup context pinned without stealing hero space */}
       <div className="border-b border-border">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
@@ -110,7 +119,7 @@ export default function Home() {
               onClick={() =>
                 railRef.current?.scrollIntoView({ block: "start" })
               }
-              className="rounded-full bg-primary px-6 py-3.5 text-[15px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="rounded-full bg-primary px-6 py-3.5 text-[15px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
             >
               See the menu
             </button>
@@ -121,7 +130,7 @@ export default function Home() {
                   .getElementById("locations")
                   ?.scrollIntoView({ block: "center" })
               }
-              className="rounded-full border border-border bg-card px-6 py-3.5 text-[15px] font-semibold transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="rounded-full border border-border bg-card px-6 py-3.5 text-[15px] font-semibold transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
             >
               Find a shop
             </button>
@@ -158,7 +167,7 @@ export default function Home() {
                   onClick={() => selectCategory(category.id)}
                   className={cn(
                     "shrink-0 rounded-full px-5 py-2.5 text-[15px] font-medium whitespace-nowrap transition-colors",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
                     active
                       ? "bg-primary text-primary-foreground"
                       : "border border-border bg-card text-muted-foreground hover:border-primary hover:text-foreground",
@@ -171,19 +180,24 @@ export default function Home() {
           </div>
         </nav>
 
-        <main className="mx-auto w-full max-w-6xl px-5 pt-8 pb-16 sm:px-8 sm:pt-10 sm:pb-20">
+        <main
+          id="menu"
+          className="mx-auto w-full max-w-6xl px-5 pt-8 pb-16 sm:px-8 sm:pt-10 sm:pb-20"
+        >
           {itemsForCategory.length === 0 ? (
             <p className="py-20 text-center text-base text-muted-foreground">
               Nothing on the menu here yet. Try another category.
             </p>
           ) : (
+            /* Card scroll margins keep a focused card clear of the sticky rail
+               above and the fixed cart bar below (WCAG 2.4.11) */
             <ul className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
               {itemsForCategory.map((item) => (
-                <li key={item.id}>
+                <li key={item.id} className="scroll-mt-24 scroll-mb-28">
                   <button
                     type="button"
                     onClick={() => openDrawerFor(item)}
-                    className="group flex h-full w-full flex-col items-center rounded-3xl border border-border bg-card p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_10px_28px_rgba(26,21,18,0.09)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:p-5"
+                    className="group flex h-full w-full flex-col items-center rounded-3xl border border-border bg-card p-4 text-center transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_10px_28px_rgba(26,21,18,0.09)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink sm:p-5"
                   >
                     {/* Badge and + ride the circle so every card keeps the same text rhythm */}
                     <span className="relative mx-auto w-full max-w-[180px]">

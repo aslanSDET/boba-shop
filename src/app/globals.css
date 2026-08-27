@@ -73,7 +73,9 @@
   --destructive: #c2410c;
   --border: #e9e1d7;
   --input: #ddd3c7;
-  --ring: #f5901e;
+  /* Focus rings, not fills: the bright orange only reaches 2.23:1 on the ground,
+     under the 3:1 WCAG 1.4.11 floor for non-text. brand-ink clears it at 4.74:1. */
+  --ring: #b4530a;
   --chart-1: #f5901e;
   --chart-2: #6f9e4a;
   --chart-3: #8b6fc0;
@@ -104,6 +106,23 @@
   }
   body {
     text-rendering: optimizeLegibility;
+  }
+  /* The viewport stays zoomable on purpose, which leaves double-tap-to-zoom
+     armed and defers single taps. Opt the controls out of the gesture rather
+     than taking zoom away from the page. */
+  button,
+  a,
+  label,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+  /* Overlays must not chain their scroll into the page behind them. Keyed off
+     shadcn's data-slot rather than edited into src/components/ui/, so pulling a
+     fresh copy of a primitive cannot silently drop it. */
+  [data-slot="drawer-content"],
+  [data-slot="sheet-content"],
+  [data-slot="dialog-content"] {
+    overscroll-behavior: contain;
   }
 }
 

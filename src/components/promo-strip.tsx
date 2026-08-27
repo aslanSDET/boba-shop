@@ -62,7 +62,7 @@ export function PromoStrip({ onSelect }: { onSelect: (target: string) => void })
             <button
               type="button"
               onClick={() => onSelect(promo.target)}
-              className="group relative flex h-full w-full flex-col overflow-hidden rounded-3xl border border-border p-6 pr-28 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_10px_28px_rgba(26,21,18,0.09)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:p-7 sm:pr-32"
+              className="group relative flex h-full w-full flex-col overflow-hidden rounded-3xl border border-border p-6 pr-28 text-left transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_10px_28px_rgba(26,21,18,0.09)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink sm:p-7 sm:pr-32"
               style={{
                 background: `radial-gradient(120% 120% at 100% 100%, ${promo.tint}3d, ${promo.tint}14 55%, var(--card))`,
               }}

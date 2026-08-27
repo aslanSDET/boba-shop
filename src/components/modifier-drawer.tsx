@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, X } from "lucide-react";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -63,7 +64,7 @@ function OptionPill({
       disabled={disabled}
       className={cn(
         "rounded-full border px-4 py-2.5 text-[15px] transition-colors",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
         active
           ? "border-primary bg-primary font-medium text-primary-foreground"
           : "border-border bg-card text-foreground hover:border-primary",
@@ -136,7 +137,7 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
   );
 
   const options = (
-    <div className="flex flex-col gap-4 overflow-y-auto px-5 pb-5">
+    <div className="flex flex-col gap-4 overflow-y-auto overscroll-contain px-5 pb-5">
       {item.modifierGroups.map((group) => {
         const chosen = selection[group.id] ?? [];
         const atMax =
@@ -194,7 +195,7 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
           onClick={() => setQuantity((q) => Math.max(1, q - 1))}
           disabled={quantity === 1}
           aria-label="Decrease quantity"
-          className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground disabled:opacity-35"
+          className="grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground disabled:opacity-35"
         >
           <Minus className="size-4" />
         </button>
@@ -205,7 +206,7 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
           type="button"
           onClick={() => setQuantity((q) => Math.min(20, q + 1))}
           aria-label="Increase quantity"
-          className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+          className="grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
         >
           <Plus className="size-4" />
         </button>
@@ -219,7 +220,7 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
           reset();
           onOpenChange(false);
         }}
-        className="flex flex-1 items-center justify-between gap-3 rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="flex flex-1 items-center justify-between gap-3 rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
       >
         <span>
           {unmet.length > 0 ? `Choose ${unmet[0].label.toLowerCase()}` : "Add to order"}
@@ -248,6 +249,12 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto max-w-xl">
+        {/* Dialog and Sheet both ship a close X; the drawer had only the drag
+            handle, leaving a gesture as the only discoverable way out. */}
+        <DrawerClose className="absolute top-3 right-4 z-10 grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">
+          <X className="size-[18px]" />
+          <span className="sr-only">Close</span>
+        </DrawerClose>
         <DrawerHeader className="px-5 pt-2 pb-4 text-left!">{heading}</DrawerHeader>
         {options}
         <DrawerFooter className="gap-3 border-t border-border bg-card px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">

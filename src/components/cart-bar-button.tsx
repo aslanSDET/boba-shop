@@ -26,7 +26,7 @@ export function CartBarButton({
       className={cn(
         "flex w-full items-center gap-3 rounded-full bg-primary px-6 py-4 text-primary-foreground",
         "transition-transform duration-150 active:scale-[0.985]",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
         className,
       )}
     >

@@ -56,7 +56,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
           </div>
         ) : (
           <>
-            <ul className="flex-1 overflow-y-auto px-5">
+            <ul className="flex-1 overflow-y-auto overscroll-contain px-5">
               {items.map((cartItem) => {
                 return (
                   <li
@@ -89,7 +89,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                             type="button"
                             onClick={() => updateQuantity(cartItem.cartItemId, -1)}
                             aria-label="Decrease quantity"
-                            className="grid size-8 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                            className="grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
                           >
                             <Minus className="size-3.5" />
                           </button>
@@ -100,7 +100,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                             type="button"
                             onClick={() => updateQuantity(cartItem.cartItemId, 1)}
                             aria-label="Increase quantity"
-                            className="grid size-8 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                            className="grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
                           >
                             <Plus className="size-3.5" />
                           </button>
@@ -131,14 +131,20 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                 </div>
               </dl>
 
+              {/* describedby so the disabled state is announced with its reason,
+                  not as a dead control */}
               <button
                 type="button"
                 disabled
+                aria-describedby="checkout-status"
                 className="mt-5 w-full rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground disabled:opacity-40"
               >
                 Checkout
               </button>
-              <p className="mt-2.5 text-center font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+              <p
+                id="checkout-status"
+                className="mt-2.5 text-center font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase"
+              >
                 Card and Apple Pay coming soon
               </p>
             </div>
