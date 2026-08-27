@@ -120,7 +120,7 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
 
   const heading = (
     <div className="flex items-start gap-4">
-      <ItemVisual item={item} className="size-[104px] rounded-full" />
+      <ItemVisual item={item} className="size-[104px] rounded-full" px={208} sizes="104px" />
       <div className="min-w-0 flex-1">
         <Title className="font-display text-[26px] leading-tight font-semibold">
           {item.name}

@@ -14,12 +14,19 @@ export function ItemVisual({
   item,
   className,
   px = 128,
+  sizes = "128px",
 }: {
   item: MenuItem;
   /** Sizing lives in classes so the tile can be responsive. */
   className?: string;
   /** Intrinsic pixel hint for next/image; not the rendered size. */
   px?: number;
+  /**
+   * Rendered CSS width, so the optimizer serves the right resolution. This has
+   * to track `className` — the tile is 180px in the menu grid but 68px in the
+   * cart, and a single fixed value blurs one end or wastes bytes at the other.
+   */
+  sizes?: string;
 }) {
   const tint = itemArtFor(item.id, item.productType).tint;
 
@@ -36,7 +43,7 @@ export function ItemVisual({
           alt=""
           width={px}
           height={px}
-          sizes="128px"
+          sizes={sizes}
           className={cn(
             "size-full",
             item.imageFit === "cover" ? "object-cover" : "object-contain p-1",

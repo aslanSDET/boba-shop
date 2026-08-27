@@ -86,6 +86,14 @@ export function PromoStrip({ onSelect }: { onSelect: (target: string) => void })
                 alt=""
                 width={220}
                 height={220}
+                /* Without `sizes` these fall back to fixed 1x/2x and fetch 640px
+                   for a 128px slot — 6x the pixels needed. The two fit modes
+                   render at different sizes, so they declare different values. */
+                sizes={
+                  promo.fit === "cover"
+                    ? "(min-width: 640px) 160px, 144px"
+                    : "(min-width: 640px) 128px, 112px"
+                }
                 className={
                   promo.fit === "cover"
                     ? "pointer-events-none absolute -right-6 -bottom-6 size-36 rounded-full object-cover sm:size-40"

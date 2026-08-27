@@ -21,7 +21,8 @@ export function SiteFooter() {
           {/* Brand */}
           <div>
             <p className="text-[2rem] leading-none">
-              <Wordmark />
+              {/* 2rem heading, so the mark renders at ~21px. Below the fold. */}
+              <Wordmark sizes="24px" loading="eager" />
             </p>
             <p className="mt-4 font-display text-lg text-brand-ink italic">
               {SHOP.tagline}

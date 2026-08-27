@@ -63,7 +63,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                     key={cartItem.cartItemId}
                     className="flex gap-3.5 border-b border-border py-4"
                   >
-                    <ItemVisual item={cartItem.menuItem} className="size-[68px] rounded-full" px={96} />
+                    <ItemVisual item={cartItem.menuItem} className="size-[68px] rounded-full" px={96} sizes="68px" />
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">

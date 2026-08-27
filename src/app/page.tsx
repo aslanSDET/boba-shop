@@ -102,33 +102,34 @@ export default function Home() {
           src="/eggpuffs.avif"
           width={456}
           height={550}
-          sizes="250px"
+          sizes="(min-width: 1280px) 250px, 180px"
           className="pointer-events-none absolute -top-4 left-2 hidden size-[180px] rounded-full object-cover lg:block xl:top-0 xl:left-10 xl:size-[250px]"
         />
         <HeroArt
           src="/menu/mangonada.png"
           width={300}
           height={360}
-          sizes="190px"
+          sizes="(min-width: 1280px) 190px, 165px"
           className="pointer-events-none absolute -top-10 -right-12 hidden h-auto w-[165px] rotate-[-11deg] lg:block xl:-top-6 xl:-right-6 xl:w-[190px]"
         />
         <HeroArt
           src="/menu/brown-sugar-milk-tea.png"
           width={300}
           height={360}
-          sizes="260px"
+          sizes="(min-width: 1280px) 260px, 220px"
           className="pointer-events-none absolute -bottom-6 -left-10 hidden h-auto w-[220px] rotate-[-8deg] lg:block xl:-left-4 xl:w-[260px]"
         />
         <HeroArt
           src="/menu/asian-ice.png"
           width={300}
           height={360}
-          sizes="260px"
+          sizes="(min-width: 1280px) 260px, 220px"
           className="pointer-events-none absolute -right-10 -bottom-8 hidden h-auto w-[220px] rotate-[7deg] lg:block xl:-right-4 xl:w-[260px]"
         />
         <header className="relative mx-auto flex w-full max-w-2xl flex-col items-center px-5 pt-14 pb-12 text-center sm:px-8 sm:pt-20">
           <h1 className="whitespace-nowrap text-[4rem] leading-[0.9] sm:text-[12rem]">
-            <Wordmark />
+            {/* 4rem on a phone, 12rem from sm; the mark is 0.65em of that */}
+            <Wordmark priority sizes="(min-width: 640px) 128px, 48px" />
           </h1>
           <p className="mt-4 font-display text-2xl leading-snug text-brand-ink italic sm:mt-5 sm:text-[2rem]">
             {SHOP.tagline}
@@ -228,6 +229,8 @@ export default function Home() {
                       <ItemVisual
                         item={item}
                         className="aspect-square w-full rounded-full"
+                        px={360}
+                        sizes="180px"
                       />
                       {item.isPopular && (
                         <span className="absolute top-0 left-0 rounded-full bg-primary px-2.5 py-1 font-mono text-[9px] tracking-[0.16em] text-primary-foreground uppercase">
