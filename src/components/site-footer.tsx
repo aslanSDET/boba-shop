@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { Phone } from "lucide-react";
 import { LOCATIONS, SHOP, SOCIALS } from "@/config/shop";
+import { Wordmark } from "@/components/wordmark";
 import {
   FacebookIcon,
   InstagramIcon,
@@ -20,16 +20,9 @@ export function SiteFooter() {
         <div className="grid gap-12 md:grid-cols-[1.3fr_1fr_1fr] md:gap-10">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-3">
-              <Image
-                src="/brand/snowdaes-mark.png"
-                alt=""
-                width={40}
-                height={40}
-                className="size-10"
-              />
-              <span className="font-display text-2xl font-semibold">{SHOP.name}</span>
-            </div>
+            <p className="text-[2rem] leading-none">
+              <Wordmark />
+            </p>
             <p className="mt-4 font-display text-lg text-brand-ink italic">
               {SHOP.tagline}
             </p>

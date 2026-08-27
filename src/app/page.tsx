@@ -8,6 +8,7 @@ import { SHOP } from "@/config/shop";
 import { Testimonials } from "@/components/testimonials";
 import { SiteFooter } from "@/components/site-footer";
 import { PromoStrip } from "@/components/promo-strip";
+import { Wordmark } from "@/components/wordmark";
 import { formatPrice } from "@/lib/format";
 import { ItemVisual } from "@/components/item-visual";
 import { ModifierDrawer } from "@/components/modifier-drawer";
@@ -92,18 +93,9 @@ export default function Home() {
           aria-hidden
           className="pointer-events-none absolute -right-10 -bottom-8 hidden w-[220px] rotate-[7deg] lg:block xl:-right-4 xl:w-[260px]"
         />
-
-        <header className="relative mx-auto w-full max-w-2xl px-5 pt-10 pb-12 text-center sm:px-8 sm:pt-14">
-          <Image
-            src="/brand/snowdaes-mark.png"
-            alt=""
-            width={64}
-            height={64}
-            className="mx-auto size-14 sm:size-16"
-            priority
-          />
-          <h1 className="mt-5 font-display text-[3.5rem] leading-[0.88] font-semibold tracking-tight sm:text-[5.25rem]">
-            {SHOP.name}
+        <header className="relative mx-auto flex w-full max-w-2xl flex-col items-center px-5 pt-14 pb-12 text-center sm:px-8 sm:pt-20">
+          <h1 className="whitespace-nowrap text-[4rem] leading-[0.9] sm:text-[12rem]">
+            <Wordmark />
           </h1>
           <p className="mt-4 font-display text-2xl leading-snug text-brand-ink italic sm:mt-5 sm:text-[2rem]">
             {SHOP.tagline}
