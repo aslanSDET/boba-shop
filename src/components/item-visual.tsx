@@ -46,7 +46,14 @@ export function ItemVisual({
           sizes={sizes}
           className={cn(
             "size-full",
-            item.imageFit === "cover" ? "object-cover" : "object-contain p-1",
+            // The Clover photos are studio shots on black. A cup is ~60% as wide
+            // as it is tall, so it leaves black down both sides; scaling up
+            // pushes that past the tile edge. Removing it outright would need
+            // ~1.6-2.0x and would cut the top off the snow, so this crops most
+            // of it and leaves the product intact. Cut-outs are unaffected.
+            item.imageFit === "cover"
+              ? "scale-[1.35] object-cover"
+              : "object-contain p-1",
           )}
         />
       ) : (
