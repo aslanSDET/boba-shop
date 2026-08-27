@@ -24,6 +24,15 @@
 .DS_Store
 *.pem
 
+# AWS credentials — never commit these (e.g. accidental `aws ... > .aws` redirects)
+.aws
+.aws/
+aws_credentials*
+*access-key*.json
+
+# Claude Code local settings (per-developer, not shared)
+.claude/settings.local.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*
