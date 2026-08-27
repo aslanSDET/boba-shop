@@ -94,13 +94,18 @@ export default function Home() {
             menu.ts), so it gets the circular crop the promo strip and the menu
             tiles already use rather than floating as a hard rectangle. No
             rotation — a circle has nothing to rotate. */}
+        {/* Larger than the other three on purpose: it is a cropped circle rather
+            than a free-floating cut-out, so it needs more area to read as a
+            product. Sourced from the AVIF (456x550) instead of the 400x480 PNG
+            because at 250px on a 2x screen the PNG has no resolution to spare. */}
         <Image
-          src="/menu/egg-puffs.png"
+          src="/eggpuffs.avif"
           alt=""
-          width={300}
-          height={360}
+          width={456}
+          height={550}
           aria-hidden
-          className="pointer-events-none absolute -top-6 left-8 hidden size-[150px] rounded-full object-cover lg:block xl:top-2 xl:left-16 xl:size-[172px]"
+          sizes="250px"
+          className="pointer-events-none absolute -top-4 left-2 hidden size-[180px] rounded-full object-cover lg:block xl:top-0 xl:left-10 xl:size-[250px]"
         />
         <Image
           src="/menu/mangonada.png"
