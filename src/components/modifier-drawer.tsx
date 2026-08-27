@@ -1,21 +1,33 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Minus, Plus } from "lucide-react";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { calculateCartItemPrice } from "@/config/menu";
-import { formatIceLevel, formatPrice } from "@/lib/format";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { ItemVisual } from "@/components/item-visual";
+import {
+  calculateCartItemPrice,
+  defaultSelection,
+  unmetGroups,
+} from "@/config/menu";
+import { formatPrice } from "@/lib/format";
 import { useCart } from "@/store/useCart";
-import type { DrinkSize, MenuItem, SelectedModifiers, SugarLevel } from "@/types/boba";
+import type { MenuItem, ModifierGroup, SelectedModifiers } from "@/types/boba";
 import { cn } from "@/lib/utils";
 
 interface ModifierDrawerProps {
@@ -24,12 +36,22 @@ interface ModifierDrawerProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** "Required", "Pick up to 3", "2 of 6 chosen" — whatever the group needs said. */
+function groupHint(group: ModifierGroup, chosen: number): string {
+  if (group.kind === "single") return group.min > 0 ? "Required" : "Optional";
+  if (group.max !== undefined) return `${chosen} of ${group.max}`;
+  if (group.min > 0) return chosen > 0 ? `${chosen} added` : "Required";
+  return chosen > 0 ? `${chosen} added` : "Optional";
+}
+
 function OptionPill({
   active,
+  disabled,
   onClick,
   children,
 }: {
   active: boolean;
+  disabled?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -37,11 +59,15 @@ function OptionPill({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
+      disabled={disabled}
       className={cn(
-        "rounded-full border px-3 py-1.5 text-sm transition-colors",
+        "rounded-full border px-4 py-2.5 text-[15px] transition-colors",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
         active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-secondary text-secondary-foreground hover:border-primary/50",
+          ? "border-primary bg-primary font-medium text-primary-foreground"
+          : "border-border bg-card text-foreground hover:border-primary",
+        disabled && !active && "cursor-not-allowed opacity-40 hover:border-border",
       )}
     >
       {children}
@@ -52,115 +78,180 @@ function OptionPill({
 export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps) {
   const addItem = useCart((s) => s.addItem);
 
-  const [size, setSize] = useState<DrinkSize>("MEDIUM");
-  const [sugarLevel, setSugarLevel] = useState<SugarLevel>("100%");
-  const [iceLevel, setIceLevel] = useState(item?.availableIceLevels[0] ?? "REGULAR_ICE");
-  const [toppingIds, setToppingIds] = useState<Set<string>>(new Set());
+  const [selection, setSelection] = useState<SelectedModifiers>(() =>
+    item ? defaultSelection(item) : {},
+  );
+  const [quantity, setQuantity] = useState(1);
+  // Bottom sheet sits in the thumb zone on a phone; on a desktop the customiser
+  // becomes a centred modal so it does not mimic the cart, which owns the right edge.
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const modifiers: SelectedModifiers = useMemo(
-    () => ({
-      size,
-      sugarLevel,
-      iceLevel,
-      toppings: item?.availableToppings.filter((t) => toppingIds.has(t.id)) ?? [],
-    }),
-    [size, sugarLevel, iceLevel, toppingIds, item],
+  const unitPrice = item ? calculateCartItemPrice(item, selection) : 0;
+  const unmet = useMemo(
+    () => (item ? unmetGroups(item, selection) : []),
+    [item, selection],
   );
 
-  const unitPrice = item ? calculateCartItemPrice(item, modifiers) : 0;
-
-  function resetAndClose() {
-    setSize("MEDIUM");
-    setSugarLevel("100%");
-    setToppingIds(new Set());
-    onOpenChange(false);
+  function reset() {
+    setSelection(item ? defaultSelection(item) : {});
+    setQuantity(1);
   }
 
-  function toggleTopping(id: string) {
-    setToppingIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  function toggle(group: ModifierGroup, optionId: string) {
+    setSelection((prev) => {
+      const current = prev[group.id] ?? [];
+      if (group.kind === "single") {
+        // Re-tapping a required choice keeps it; the group always holds one.
+        return { ...prev, [group.id]: [optionId] };
+      }
+      if (current.includes(optionId)) {
+        return { ...prev, [group.id]: current.filter((id) => id !== optionId) };
+      }
+      if (group.max !== undefined && current.length >= group.max) return prev;
+      return { ...prev, [group.id]: [...current, optionId] };
     });
   }
 
   if (!item) return null;
 
+  const Title = isDesktop ? DialogTitle : DrawerTitle;
+  const Description = isDesktop ? DialogDescription : DrawerDescription;
+
+  const heading = (
+    <div className="flex items-start gap-4">
+      <ItemVisual item={item} className="size-[104px] rounded-full" />
+      <div className="min-w-0 flex-1">
+        <Title className="font-display text-[26px] leading-tight font-semibold">
+          {item.name}
+        </Title>
+        <Description className="mt-2 text-[15px] leading-relaxed">
+          {item.description}
+        </Description>
+        <p className="mt-2.5 font-mono text-[15px] tabular-nums">
+          {formatPrice(item.basePrice)}
+          <span className="ml-1.5 text-muted-foreground">base</span>
+        </p>
+      </div>
+    </div>
+  );
+
+  const options = (
+    <div className="flex flex-col gap-4 overflow-y-auto px-5 pb-5">
+      {item.modifierGroups.map((group) => {
+        const chosen = selection[group.id] ?? [];
+        const atMax =
+          group.kind === "multi" &&
+          group.max !== undefined &&
+          chosen.length >= group.max;
+        const needsChoice = unmet.includes(group);
+
+        return (
+          <section key={group.id} className="border-t border-border pt-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="font-mono text-[11px] tracking-[0.18em] uppercase">
+                {group.label}
+              </h3>
+              <span
+                className={cn(
+                  "font-mono text-[11px] tracking-wide uppercase",
+                  needsChoice ? "text-brand-ink" : "text-muted-foreground",
+                )}
+              >
+                {groupHint(group, chosen.length)}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {group.options.map((option) => {
+                const active = chosen.includes(option.id);
+                return (
+                  <OptionPill
+                    key={option.id}
+                    active={active}
+                    disabled={atMax && !active}
+                    onClick={() => toggle(group, option.id)}
+                  >
+                    {option.shortName ?? option.name}
+                    {option.priceDelta > 0 && (
+                      <span className="ml-2 font-mono text-[12px] tabular-nums opacity-70">
+                        +{formatPrice(option.priceDelta)}
+                      </span>
+                    )}
+                  </OptionPill>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+
+  const actions = (
+    <div className="flex w-full items-center gap-3">
+      <div className="flex items-center gap-1 rounded-full border border-border p-1">
+        <button
+          type="button"
+          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+          disabled={quantity === 1}
+          aria-label="Decrease quantity"
+          className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground disabled:opacity-35"
+        >
+          <Minus className="size-4" />
+        </button>
+        <span className="w-7 text-center font-mono text-[15px] tabular-nums">
+          {quantity}
+        </span>
+        <button
+          type="button"
+          onClick={() => setQuantity((q) => Math.min(20, q + 1))}
+          aria-label="Increase quantity"
+          className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
+
+      <button
+        type="button"
+        disabled={unmet.length > 0}
+        onClick={() => {
+          addItem(item, selection, quantity);
+          reset();
+          onOpenChange(false);
+        }}
+        className="flex flex-1 items-center justify-between gap-3 rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        <span>
+          {unmet.length > 0 ? `Choose ${unmet[0].label.toLowerCase()}` : "Add to order"}
+        </span>
+        <span className="font-mono tabular-nums">
+          {formatPrice(unitPrice * quantity)}
+        </span>
+      </button>
+    </div>
+  );
+
+  if (isDesktop) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+          <DialogHeader className="px-5 pt-6 pb-4 text-left">{heading}</DialogHeader>
+          {options}
+          <DialogFooter className="mx-0 mt-auto mb-0 w-full rounded-none border-t border-border bg-card px-5 py-4 sm:flex-row sm:justify-stretch">
+            {actions}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
-        <DrawerHeader>
-          <DrawerTitle>{item.name}</DrawerTitle>
-          <DrawerDescription>{item.description}</DrawerDescription>
-        </DrawerHeader>
-
-        <div className="flex flex-col gap-5 overflow-y-auto px-4 pb-4">
-          <div className="flex flex-col gap-2">
-            <Label>Size</Label>
-            <div className="flex gap-2">
-              {(Object.keys(item.availableSizes) as DrinkSize[]).map((s) => (
-                <OptionPill key={s} active={size === s} onClick={() => setSize(s)}>
-                  {s === "MEDIUM" ? "Medium" : "Large"}
-                  {item.availableSizes[s] ? ` (+${formatPrice(item.availableSizes[s]!)})` : ""}
-                </OptionPill>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>Sugar Level</Label>
-            <div className="flex flex-wrap gap-2">
-              {item.availableSugarLevels.map((s) => (
-                <OptionPill key={s} active={sugarLevel === s} onClick={() => setSugarLevel(s)}>
-                  {s}
-                </OptionPill>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>Ice Level</Label>
-            <div className="flex flex-wrap gap-2">
-              {item.availableIceLevels.map((l) => (
-                <OptionPill key={l} active={iceLevel === l} onClick={() => setIceLevel(l)}>
-                  {formatIceLevel(l)}
-                </OptionPill>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label>Toppings</Label>
-            <div className="flex flex-wrap gap-2">
-              {item.availableToppings.map((t) => (
-                <OptionPill
-                  key={t.id}
-                  active={toppingIds.has(t.id)}
-                  onClick={() => toggleTopping(t.id)}
-                >
-                  {t.name} (+{formatPrice(t.price)})
-                </OptionPill>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <DrawerFooter>
-          <Button
-            size="lg"
-            onClick={() => {
-              addItem(item, modifiers);
-              resetAndClose();
-            }}
-          >
-            Add to Order &bull; {formatPrice(unitPrice)}
-          </Button>
-          <DrawerClose asChild>
-            <Button variant="ghost" onClick={resetAndClose}>
-              Cancel
-            </Button>
-          </DrawerClose>
+      <DrawerContent className="mx-auto max-w-xl">
+        <DrawerHeader className="px-5 pt-2 pb-4 text-left!">{heading}</DrawerHeader>
+        {options}
+        <DrawerFooter className="gap-3 border-t border-border bg-card px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          {actions}
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
