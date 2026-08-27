@@ -63,7 +63,7 @@ function OptionPill({
       aria-pressed={active}
       disabled={disabled}
       className={cn(
-        "rounded-full border px-4 py-2.5 text-[15px] transition-colors",
+        "rounded-full border px-4 py-3 text-base transition-colors",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
         active
           ? "border-primary bg-primary font-medium text-primary-foreground"
@@ -125,7 +125,7 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
         <Title className="font-display text-[26px] leading-tight font-semibold">
           {item.name}
         </Title>
-        <Description className="mt-2 text-[15px] leading-relaxed">
+        <Description className="mt-2 text-base leading-relaxed">
           {item.description}
         </Description>
         <p className="mt-2.5 font-mono text-[15px] tabular-nums">

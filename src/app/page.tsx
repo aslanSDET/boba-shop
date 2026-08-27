@@ -133,7 +133,7 @@ export default function Home() {
           <p className="mt-4 font-display text-2xl leading-snug text-brand-ink italic sm:mt-5 sm:text-[2rem]">
             {SHOP.tagline}
           </p>
-          <p className="mx-auto mt-4 max-w-[42ch] text-[15px] leading-relaxed text-muted-foreground sm:text-base">
+          <p className="mx-auto mt-4 max-w-[46ch] text-base leading-relaxed text-muted-foreground sm:text-[17px]">
             {SHOP.blurb}
           </p>
 
@@ -143,7 +143,7 @@ export default function Home() {
               onClick={() =>
                 railRef.current?.scrollIntoView({ block: "start" })
               }
-              className="rounded-full bg-primary px-6 py-3.5 text-[15px] font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
+              className="rounded-full bg-primary px-7 py-4 text-base font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
             >
               See the menu
             </button>
@@ -154,7 +154,7 @@ export default function Home() {
                   .getElementById("locations")
                   ?.scrollIntoView({ block: "center" })
               }
-              className="rounded-full border border-border bg-card px-6 py-3.5 text-[15px] font-semibold transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
+              className="rounded-full border border-border bg-card px-7 py-4 text-base font-semibold transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
             >
               Find a shop
             </button>
@@ -190,7 +190,7 @@ export default function Home() {
                   aria-pressed={active}
                   onClick={() => selectCategory(category.id)}
                   className={cn(
-                    "shrink-0 rounded-full px-5 py-2.5 text-[15px] font-medium whitespace-nowrap transition-colors",
+                    "shrink-0 rounded-full px-5 py-3 text-base font-medium whitespace-nowrap transition-colors",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
                     active
                       ? "bg-primary text-primary-foreground"
@@ -242,13 +242,13 @@ export default function Home() {
                       </span>
                     </span>
 
-                    <span className="mt-4 block font-display text-[19px] leading-snug font-semibold text-balance sm:text-xl">
+                    <span className="mt-4 block font-display text-xl leading-snug font-semibold text-balance sm:text-[22px]">
                       {item.name}
                     </span>
-                    <span className="mt-1.5 line-clamp-2 text-[13.5px] leading-relaxed text-muted-foreground sm:text-sm">
+                    <span className="mt-1.5 line-clamp-2 text-[15px] leading-relaxed text-muted-foreground">
                       {item.description}
                     </span>
-                    <span className="mt-auto pt-3 font-mono text-[15px] font-medium tabular-nums">
+                    <span className="mt-auto pt-3 font-mono text-base font-medium tabular-nums">
                       {formatPrice(item.basePrice)}
                     </span>
                   </button>

@@ -43,7 +43,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
 
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               Pick a drink from the menu and it will show up here.
             </p>
             <button
@@ -79,7 +79,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                           <X className="size-4" />
                         </button>
                       </div>
-                      <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+                      <p className="mt-1 text-[15px] leading-relaxed text-muted-foreground">
                         {describeModifiers(cartItem.menuItem, cartItem.modifiers)}
                       </p>
 
