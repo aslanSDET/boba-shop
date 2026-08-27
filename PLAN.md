@@ -4,9 +4,9 @@
 
 ## 0. TL;DR (for quick context loading)
 
-Building a mobile-first ordering **website** (not a native app) for a boba/dessert shop. Look and feel copies **The Alley** (dark, editorial, premium); ordering flow copies **Kung Fu Tea** (fast category nav, bottom-sheet modifiers, sticky cart). Stack is 100% TypeScript: Next.js frontend, AWS serverless backend (Lambda/DynamoDB/API Gateway via CDK), Stripe for payment, Clerk for auth — all off-the-shelf, minimal custom infra code. Business context: this doubles as a pitch asset for a Snowdaes franchise negotiation (see §3), but the repo itself is generic and works for any boba/dessert shop.
+Building a mobile-first ordering **website** (not a native app) for **Snowdaes** (Billerica/Lowell MA). Look and feel takes brightness from **Starbucks** and typography from **The Alley**; ordering flow copies **Kung Fu Tea** (fast category nav, bottom-sheet modifiers, sticky cart). Stack is 100% TypeScript: Next.js frontend, AWS serverless backend (Lambda/DynamoDB/API Gateway via CDK), Stripe for payment, Clerk for auth — all off-the-shelf, minimal custom infra code. Business context: this doubles as a pitch asset for a Snowdaes franchise negotiation (see §3), but the repo itself is generic and works for any boba/dessert shop.
 
-**Built so far (local only, no cloud yet):** full menu-browse → customize → cart flow, dark theme, verified working. See §5 for exact file list.
+**Built so far (local only, no cloud yet):** full menu-browse → customize → cart flow over the shop’s six real categories and four product types, on a bright Snowdaes-skinned UI with real product photography. See §5 for the file list, §5.1 for the design system, §8 for the modifier model.
 
 **Not built yet:** everything cloud (auth, payments, database, kitchen view). See §6 for the phased plan.
 
@@ -16,10 +16,15 @@ Two real sites define the target experience — one for look, one for flow. Don'
 
 | Site | Role | What to copy |
 |---|---|---|
-| **[The Alley](https://www.the-alley.us/)** | Visual & aesthetic benchmark | Editorial, high-contrast dark/moody palette; minimalist layout; elegant typography; premium product presentation |
+| **[Starbucks](https://www.starbucks.com/)** | Visual & aesthetic benchmark *(current)* | Bright warm-white ground, generous white space, big product photography, one confident accent colour, friendly and mass-market |
+| **[The Alley](https://www.the-alley.us/)** | ~~Visual benchmark~~ — superseded 2026-08-26 | Kept for the *typographic* half only: editorial serif display, elegant type hierarchy, premium product presentation. The dark/moody palette was tried, built, and rejected — see the decision log below |
 | **[Kung Fu Tea ordering flow](https://kft.orderexperience.net/)** | UX & ordering-flow benchmark | Fast location/pickup header; sticky category navigation; bottom-sheet modifier customization (Size, Sugar, Ice, Toppings); instant sticky checkout cart |
 
-In short: **Alley's skin, Kung Fu Tea's skeleton.**
+In short: **Starbucks brightness, Alley typography, Kung Fu Tea skeleton.**
+
+> **Decision log — visual direction (2026-08-26).** The dark editorial skin was built in full first, then rejected. Reasoning: Snowdaes is a *joyful* dessert brand (Fruity Pebbles, rainbow mochi, Tajin, a cartoon penguin mascot) and a moody near-black palette fought the product; bright also lets the real cut-out product photography carry the colour, and makes the penguin mark usable as-is. What survived from the Alley pass is the three-role type system and the editorial serif. Do not re-darken the palette without revisiting this.
+>
+> Separately: the **legacy Wix site is not a design reference** — it was mined for *content only* (categories, product copy, photography, the penguin mark, locations). Nothing about its look carries over.
 
 ## 2. Product Brief
 
@@ -112,19 +117,45 @@ Off-the-shelf over custom everywhere possible: Clerk for auth, Stripe for paymen
 
 | File | Purpose |
 |---|---|
-| `src/types/boba.ts` | `MenuItem`, `CartItem`, `Order`, modifier types |
-| `src/config/menu.ts` | Mock menu (4 categories, 7 drinks) + `calculateCartItemPrice` |
+| `src/types/boba.ts` | `ProductType`, `ModifierGroup`/`ModifierOption`, `MenuItem`, `CartItem`, `Order` |
+| `src/config/menu.ts` | Real Snowdaes menu (6 categories, 24 items) + modifier groups, pricing, validation, summaries |
 | `src/store/useCart.ts` | Zustand cart store (add/remove/updateQuantity, subtotal/tax/total) |
-| `src/components/modifier-drawer.tsx` | Size/sugar/ice/toppings bottom sheet, live price |
-| `src/components/cart-sheet.tsx` | Line items, qty controls, totals |
-| `src/app/page.tsx` | Top bar, category tabs, drink grid, sticky cart bar |
-| `src/app/globals.css`, `src/app/layout.tsx` | Dark boba-brand theme, default dark mode |
+| `src/components/modifier-drawer.tsx` | Size/sugar/ice/toppings bottom sheet, qty stepper, live price |
+| `src/components/cart-sheet.tsx` | Line items, qty controls, receipt-style totals |
+| `src/components/cart-bar-button.tsx` | The persistent order control (fixed bottom on phones, brand rail on desktop) |
+| `src/components/item-art.tsx` | Hand-built SVG stand-ins: cup, snow/ice mound, egg-puff bubble sheet |
+| `src/components/item-visual.tsx` | Picks photo vs. illustration; one tinted tile for both |
+| `src/config/item-art.ts` | Per-item colorways for the illustrations (presentational, deliberately not in `MenuItem`) |
+| `src/config/shop.ts` | Shop facts: real addresses/phones, socials, about copy, **placeholder testimonials** |
+| `src/components/promo-strip.tsx` | Seasonal/featured cards; each jumps to a category or the locations block |
+| `src/components/testimonials.tsx` | Review cards — all quotes are fabricated placeholders |
+| `src/components/site-footer.tsx` | Locations, phones, socials, about, legal |
+| `src/components/social-icons.tsx` | Instagram/Facebook/TikTok marks (lucide v1 dropped brand icons) |
+| `src/components/wordmark.tsx` | Penguin-as-the-"o" logo lockup, used in the hero and the footer |
+| `src/hooks/use-media-query.ts` | Breakpoint hook behind the responsive item customiser |
+| `src/app/page.tsx` | Brand masthead/rail, sticky category rail, menu list, sticky cart bar |
+| `src/app/globals.css`, `src/app/layout.tsx` | Design tokens, three-role type system, light theme only (see §5.1) |
 
-Verified: `tsc --noEmit` clean, `eslint` clean, dev server boots, manual click-through confirmed working (tabs switch, drawer opens/prices update live, add-to-cart, cart sheet totals correct).
+Verified: `tsc --noEmit` clean, `eslint` clean, `next build` clean, manual click-through in the browser across all six categories. Cart maths checked on a mixed three-product order: Hawaiian ice $5.50 + brown sugar milk tea (large, boba) $7.75 + Thai Dye $9.50 = $22.75 subtotal, $1.99 tax, $24.74 total. Max-selection enforcement confirmed (3-of-3 syrups disables the rest; add button stays disabled and names the group still needed).
 
-**Not built yet:** everything cloud — no AWS, no Stripe, no Clerk. No real drink photos (emoji placeholder tile in place of `imageUrl` renders).
+### 5.1 Design system (settled — do not re-derive)
 
-Repo: `https://github.com/aslanSDET/boba-shop` (public). `main` is the pushed baseline; work-in-progress plan updates happen on feature branches (e.g. `initialsetup`) until merged.
+Skinned to the real shop: Snowdaes, Billerica MA, est. 2013, "Make every day a Snowdae".
+
+- **Color** — warm white ground `#faf8f5`, white cards, warm near-black text `#1a1512`. Accent is **Snowdaes orange `#f5901e`**, sampled from the penguin mark, always with dark text on it (clears AA at ~8:1). A second token `--brand-ink: #b4530a` exists because the bright orange is illegible as small text on white — use `text-brand-ink` for accent *text*, `bg-primary` for accent *fills*. Never put white text on the bright orange.
+- **Type — three roles, strictly enforced.** Fraunces (display) for the wordmark and item names; DM Sans for UI and body; Geist Mono for **every number** — prices, quantities, percentages, eyebrow labels — always with `tabular-nums`. This is what keeps a bright layout from reading like every other food-ordering site.
+- **Imagery** — real cut-out photography from the legacy site for the six flagship items, hand-drawn SVG for everything else, both on the same tinted tile so a mixed list reads as one set. `MenuItem.imageFit` distinguishes cut-outs (`contain`) from full-frame shots (`cover`).
+- **Layout — Starbucks menu formatting.** A centred product **grid** (2 columns on phones → 3 at `md` → 4 at `lg`, `max-w-6xl`) of white cards. Each card is a **circular** product tile with the POPULAR badge and the `+` control riding the circle rather than sitting in the text flow — that keeps every card on the same text rhythm regardless of badge or name length. Everything centre-aligned, hero included. A slim pickup/cart utility bar sits above a tall centred masthead that scrolls away; only the category rail is sticky. No desktop side rail (that was a dark-theme fix for dead space; on a white ground the space reads as breathing room).
+- **Page composition** — the reference sites are *full*, so the page is built as five bands, not one: (1) slim pickup/cart utility bar, (2) full-bleed tinted hero with the wordmark centred and real cut-out product shots flanking it on `lg`+, plus two CTAs, (3) a three-card **seasonal/featured promo strip** whose cards deep-link into a category or the locations block, (4) the sticky category rail + product grid, (5) testimonials, then the footer. Categories were padded to 24 items so grid rows actually complete — half-empty rows were most of the perceived dead space.
+- **Item customiser is responsive, and deliberately so.** Phones get a **bottom sheet** (vaul `Drawer`): it is the native iOS/Android pattern, it lands in the thumb zone, and PLAN §1 names Kung Fu Tea's bottom-sheet modifier flow as the benchmark. Desktop (`min-width: 768px`) gets a **centred modal** (`Dialog`) — *not* a right-side sheet, because the cart already owns the right edge and two different things sliding in from the same place with the same motion read as the same thing. One `useMediaQuery` hook picks the shell; the header, options and action row are shared JSX so the two variants cannot drift.
+- **Wordmark lockup** (`src/components/wordmark.tsx`) — the penguin stands in for the **"o" in Snowdaes**, rising above the x-height so it reads as climbing out of the word. The "o" underneath is a real Fraunces glyph, not a drawn ring: a CSS circle cannot match a serif's modulated stroke, and a wrong "o" is more obvious than no trick at all. The mark is sized in `em` (`w-[1.05em]`) so the whole lockup scales from the 4rem phone hero to the 6.5rem desktop hero to the 2rem footer from one component. It needs `max-w-none` — Tailwind preflight's `img { max-width: 100% }` otherwise caps it to the width of the "o" — and the hero needs top padding, because the mark is absolutely positioned and escapes the line box into the section's `overflow-hidden`.
+- **Type scale — deliberately large.** Wordmark 4rem → 6.5rem, tagline 1.5rem → 2rem, body 15–16px, item names 19–20px, option pills 15px, every interactive control ≥40px for tap targets. The first pass used a 13px-heavy scale and read cramped; do not shrink back to it.
+- **Quality floor** — visible keyboard focus rings, `prefers-reduced-motion` respected, `env(safe-area-inset-bottom)` on the fixed cart bar, `aria-pressed` on every option pill, disabled options carry a real `disabled` attribute.
+- **Theme — light only, and that is settled.** One `:root` block, `color-scheme: light`, warm white `#faf8f5`. There is no `.dark` block and no toggle. The `dark:` utilities inside `src/components/ui/` are unreachable shadcn defaults; they stay because `ui/` is **vendored**, not owned (see below).
+- **`src/components/ui/` is vendored, not owned.** It is shadcn output, pulled and re-pulled through the shadcn MCP server, so any hand-edit there is lost on the next pull. Behaviour that must survive belongs at the call site or in `globals.css` keyed off the `data-slot` attributes shadcn emits — which is why overlay `overscroll-behavior` lives in `globals.css` rather than in `ui/drawer.tsx`. Don't "clean up" this directory.
+- **Focus rings use `--brand-ink`, not `--primary`.** The bright orange measures 2.23:1 on the warm ground, under the 3:1 WCAG 1.4.11 floor for non-text contrast; `--brand-ink` clears it at 4.74:1. `--ring` is set to brand-ink for the same reason. Orange remains the *fill* colour — never the ring.
+
+**Brand assets** in `public/` were pulled from snowdaes.com on 2026-08-26 and are placeholders standing in for licensed originals: `brand/snowdaes-mark.png` (penguin, 512px) and five product photos in `menu/`. Replace with shop-supplied assets before anything ships publicly.
 
 ## 6. Roadmap
 
@@ -151,14 +182,13 @@ Repo: `https://github.com/aslanSDET/boba-shop` (public). `main` is the pushed ba
 const schema = a.schema({
   MenuItem: a.model({
     categoryId: a.string(),
+    productType: a.enum(['DRINK','SHAVED_SNOW','EGG_PUFF','SHAVED_ICE']),
     name: a.string(),
     description: a.string(),
     basePrice: a.float(),
     imageUrl: a.string(),
-    availableSizes: a.json(),        // Partial<Record<DrinkSize, number>>
-    availableIceLevels: a.json(),    // IceLevel[]
-    availableSugarLevels: a.json(),  // SugarLevel[]
-    availableToppings: a.json(),     // Topping[]
+    imageFit: a.string(),            // "contain" | "cover"
+    modifierGroups: a.json(),        // ModifierGroup[] — see §8
     isPopular: a.boolean(),
     isAvailable: a.boolean(),
   })
@@ -169,7 +199,7 @@ const schema = a.schema({
     customerUserId: a.string(),      // Clerk userId
     customerPhone: a.string(),
     customerName: a.string(),
-    items: a.json(),                 // CartItem[]
+    items: a.json(),                 // CartItem[] — modifiers are Record<groupId, optionId[]>
     subtotal: a.float(),
     tax: a.float(),
     tip: a.float(),
@@ -193,6 +223,10 @@ This directly replaces the earlier hand-crafted single-table `PK`/`SK` design �
 - [ ] Tap-to-advance status: `PAID → PREPARING → READY → COMPLETED`
 
 ### Phase 5 — Testing & Hardening
+
+✅ **UI hardening pass (done 2026-08-27)** — 13 findings from a Web Interface Guidelines audit against the live 393px render. Fixed: overlay scroll chaining (`overscroll-contain` on both sheets and their inner scrollers); focus rings moved off `--primary` (2.23:1) onto `--brand-ink` (5.02:1 measured, WCAG 1.4.11); footer `tel:` links raised from 19.5px to 44px; `touch-action: manipulation` on all controls; a close button on the mobile drawer to match Dialog/Sheet; cart and drawer steppers and social targets to 44px; `scroll-mt`/`scroll-mb` on menu cards so sticky chrome can't obscure focus (WCAG 2.4.11); `transition-all` → explicit properties; skip link to `#menu` (WCAG 2.4.1); `aria-describedby` on the disabled Checkout button; `Intl.NumberFormat` in `formatPrice`. Docs corrected — §5 and `frontend-dev.md` both claimed dark mode that does not exist.
+
+Still open:
 - [ ] Playwright E2E: add-to-cart → modifier combinations → cart math → mocked Stripe redirect
 - [ ] Edge cases: $0 orders, out-of-stock items, price rounding, concurrent quantity updates
 - [ ] Mobile viewport suite (iPhone/Pixel breakpoints) — this is the primary traffic shape
@@ -217,14 +251,53 @@ Once the phases above have enough shape to parallelize, split by concern rather 
 
 This file is the shared reference all of them should read first and update on completion, so state doesn't drift between agent contexts.
 
-## 8. Data Model Gap Check (Snowdaes-specific)
+## 8. Data Model — Multi-Product Support (RESOLVED 2026-08-26)
 
-Current `src/types/boba.ts` / `src/config/menu.ts` model **only boba/milk tea** (size, sugar %, ice level, toppings). If this ends up serving Snowdaes specifically, two more product types need modeling before Phase 6:
+Snowdaes sells four structurally different things, and they do **not** share a modifier shape:
 
-- **Shaved snow / Bingsu-style:** base flavor (mango, taro, green tea, Thai tea), toppings/jellies/fruit, drizzle — likely a different modifier shape than boba (no ice level, no sugar %; instead a flavor-base select + topping multi-select + drizzle select)
-- **Puffles / egg waffles:** cone flavor, ice cream flavor, fruit/topping add-ons
+| Product type | Categories | Modifier shape |
+|---|---|---|
+| `DRINK` | Milk Teas, Specialty Drinks | size, sugar %, ice level, toppings |
+| `SHAVED_SNOW` | Shaved Snow | size, up to 4 toppings, one drizzle — no ice, no sugar % |
+| `EGG_PUFF` | Egg Puffs | add-ons only |
+| `SHAVED_ICE` | Asian Ice, Hawaiian Ice | Asian = pick 6 toppings; Hawaiian = pick up to 3 syrups |
 
-Recommendation: don't force these into the existing `SelectedModifiers` shape — model them as a discriminated union (`ProductType: "DRINK" | "SHAVED_SNOW" | "WAFFLE"`) with type-specific modifier schemas, so the cart/pricing logic stays type-safe rather than accumulating optional fields that only apply to some items.
+**Implemented as data, not as a union.** The earlier recommendation here was a discriminated union with one modifier schema per product type. That was rejected on contact with the real menu: six categories with four shapes would mean four branches in the drawer, the cart, the pricing function and the summary formatter, and a fifth product would mean touching all of them again.
+
+Instead, `MenuItem.modifierGroups: ModifierGroup[]` carries `kind` (single/multi), `min`, `max`, `defaults` and priced options, and `SelectedModifiers` is `Record<groupId, optionId[]>`. `productType` survives as a discriminant, but only for *presentation* — which illustration to draw. One drawer renders every product; adding a product is a row of menu data.
+
+This is what real ordering systems (Toast, Square) do, and it maps straight onto the `a.json()` field in the §6 schema with no shape change. It also buys real behaviour the old fixed struct could not express: "pick up to 3 syrups" genuinely disables the other five at 3, and the add button stays disabled and names the group still needed.
+
+Helpers live in `src/config/menu.ts`: `defaultSelection`, `calculateCartItemPrice`, `unmetGroups` (validation), `describeModifiers` (cart summary line).
+
+**Still open:** every price in `src/config/menu.ts` is a placeholder — the legacy site publishes no pricing. Item *names and descriptions* for the six flagship items are the shop’s real copy; the rest are written stand-ins. Both get replaced in Phase 6.
+
+## 8.6 Multi-Location — two menus, not one (RESOLVED 2026-08-27)
+
+Lowell and Billerica each run their own Clover catalog, and they are **not the same menu**. Measured by extracting both catalogs:
+
+| | Billerica | Lowell |
+|---|---|---|
+| Categories | 12 | 14 (extra: Drizzles, MISC ITEMS) |
+| Items | 119 | 124 |
+| Modifier groups / options | 85 / 1,064 | 82 / 946 |
+| Hours | 12:00–7:30 PM | 12:00–9/10 PM |
+
+- **93 of the 104 shared items are priced differently.** Lowell averages **20.7% cheaper** and is never dearer. Brown Sugar Milk Tea $7.25 → $5.75; toppings diverge up to 75% (Jackfruit $2.00 → $0.50).
+- 14 items are Billerica-only, 20 are Lowell-only.
+- Only **43 of 104** shared items have matching modifier group names.
+
+**Therefore location is a prerequisite, not a checkout field.** There is no correct menu to render before it is known, which rules out browse-then-pick-at-checkout.
+
+**Decided:**
+
+- **Two independent catalogs**, one per location — not one menu with per-location price overrides. Overrides would apply to ~90% of everything, which is two menus with extra indirection.
+- **Location in the URL** (`/billerica`, `/lowell`) so it is shareable, linkable and separately indexable. `/` resolves to the chooser or the remembered store.
+- **Follow the Kung Fu Tea skeleton** (PLAN §1): the ordering flow is gated on location — their root redirects to `/locations` and no menu is reachable before a store is picked. Take the gate, remembering the choice, and open/closed status on the chooser. **Drop the map and the city/ZIP search** — those solve a 316-store search problem; this is a two-card decision, and it is where the storefront photos in `public/menu/items/` belong.
+- **Geolocation is offered, not fired.** No permission prompt on first paint; a "Use my location" affordance inside the chooser. The two shops are ~6 miles apart, so "nearest" is often the wrong guess anyway — people order near work, or on a route.
+- **The cart belongs to a location, and each location keeps its own.** Switching stores is not a re-price; it is a different order. This deliberately removes all cart-migration logic.
+
+**Why cart-per-location rather than migrating a cart:** a switch is not a re-price. Of 4,387 option selections on shared items, only 75% exist at the other store under the same group name (91% if matched by option name across groups — 16% rescued, with only 10 of 3,977 loose matches ambiguous). Some losses are real rather than naming artifacts: Lowell's Thai Dye genuinely has no Rainbow Mochi. A worked basket — Brown Sugar Milk Tea + boba, Thai Dye + mochi, Ube Bae — moves $18.75 → $16.00 while silently dropping one line and one topping. Three kinds of surprise in one tap, made worse because the total *falls*, so nobody inspects it. Keeping a cart per location makes the whole problem disappear. If copying a basket across ever proves worth it, add it as an explicit action — the loose-matching numbers above are what it would be built on.
 
 ## 8.5 AWS Access
 
@@ -240,4 +313,9 @@ Recommendation: don't force these into the existing `SelectedModifiers` shape �
 - [ ] Clerk vs. rolling a lighter phone-OTP flow ourselves — Clerk is faster to ship, adds a vendor dependency
 - [ ] Tax handling: flat rate (current mock uses 8.75%) vs. Stripe Tax — revisit once a real store address/jurisdiction is known
 - [ ] Domain name / branding — placeholder "Boba Shop" name throughout `src/` until this is settled
-- [ ] **Confirm target shop:** if Snowdaes is confirmed, trigger the §8 data-model expansion (shaved snow + waffles) before writing real menu data in Phase 6; if it stays a generic boba shop, skip §8 entirely
+- [x] ~~Confirm target shop~~ — **Snowdaes.** UI, brand, copy, categories and assets are all Snowdaes now; the §8 model expansion is done. Gathered from snowdaes.com 2026-08-26: six categories (Milk Teas, Shaved Snow, Egg Puffs, Specialty Drinks, Asian Ice, Hawaiian Ice), two locations (Lowell original, Billerica new), est. 2013, tagline "Make every day a Snowdae". Their current site has **no menu and no online ordering at all** — a homepage, an about page, socials, and a Google Form. That absence is the concrete gap this project closes and the sharpest line in the §2.5 pitch.
+- [x] ~~**Real menu pricing** — the shop publishes none~~ — **source found 2026-08-27.** Both shops run Clover online ordering (`snowdaes-north-billerica.cloveronline.com`, `snowdaes-lowell.cloveronline.com`) and publish the full priced catalog, embedded in the page as an RSC payload. Extraction is prototyped. The prices in `src/config/menu.ts` are **still invented** — importing them is the Phase 6 menu rebuild, and it is much larger than a price list: 119/124 items against 24 coded, 85/82 modifier groups against 11. See the rebuild plan for the modelling decision it hinges on.
+- [ ] **Asset licensing** — product photos and the penguin mark in `public/` were pulled from the shop’s own site as placeholders. Get shop-supplied originals (or written sign-off) before public launch.
+- [ ] **Testimonials are fabricated** — the three reviews in `src/config/shop.ts` are invented placeholders written for layout, attributed to people who do not exist. Replace with genuine, permissioned reviews or delete the section before this is shown to the franchisor or the public. They are flagged in the file with a block comment.
+- [x] ~~**Opening hours** — the shop publishes none~~ — **published on Clover, found 2026-08-27.** Billerica 12:00–7:30 PM; Lowell 12:00–9:00 PM Mon–Thu and Sun, 12:00–10:00 PM Fri–Sat. Still omitted from the UI until someone confirms they are current — but they no longer have to be invented, and the §8.6 chooser needs them to show open/closed. Note the two differ, so hours are per-location.
+- [ ] **Photography licensing** — `public/menu/items/` and `assets/menu-source/` hold 44 product photos captured from the shop's own Clover CDN (commit `111679c`), plus storefront banners. Downloaded rather than hot-linked deliberately. Still needs shop confirmation that they own them and are happy for them to be used here.

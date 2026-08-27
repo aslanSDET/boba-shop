@@ -1,0 +1,360 @@
+{
+ "capturedAt": "2026-08-27",
+ "origin": "Snowdaes Billerica Clover catalog",
+ "note": "Downloaded from Clover CDN and committed. Not hot-linked. 576x576 served from public/menu/items/; 1500x1125 originals kept here and not deployed.",
+ "count": 44,
+ "items": [
+  {
+   "slug": "green-grenadine",
+   "name": "Green Grenadine",
+   "category": "Asian Ice",
+   "cloverId": "ER7DYQ2BJ8B6A",
+   "image": "/menu/items/green-grenadine.jpg",
+   "source": "assets/menu-source/green-grenadine.jpg"
+  },
+  {
+   "slug": "lychee-grenadine",
+   "name": "Lychee Grenadine",
+   "category": "Asian Ice",
+   "cloverId": "7M4G491WJ14KY",
+   "image": "/menu/items/lychee-grenadine.jpg",
+   "source": "assets/menu-source/lychee-grenadine.jpg"
+  },
+  {
+   "slug": "pandan-grenadine",
+   "name": "Pandan Grenadine",
+   "category": "Asian Ice",
+   "cloverId": "BAGEVRKBCDGTG",
+   "image": "/menu/items/pandan-grenadine.jpg",
+   "source": "assets/menu-source/pandan-grenadine.jpg"
+  },
+  {
+   "slug": "red-grenadine",
+   "name": "Red Grenadine",
+   "category": "Asian Ice",
+   "cloverId": "0BAX2CDHPQCRJ",
+   "image": "/menu/items/red-grenadine.jpg",
+   "source": "assets/menu-source/red-grenadine.jpg"
+  },
+  {
+   "slug": "chocolate-egg-puffs-bagged",
+   "name": "Chocolate Egg Puffs (Bagged)",
+   "category": "Egg Puffs (Bagged)",
+   "cloverId": "XWX95ZM5VP896",
+   "image": "/menu/items/chocolate-egg-puffs-bagged.jpg",
+   "source": "assets/menu-source/chocolate-egg-puffs-bagged.jpg"
+  },
+  {
+   "slug": "original-egg-puffs-bagged",
+   "name": "Original Egg Puffs (Bagged)",
+   "category": "Egg Puffs (Bagged)",
+   "cloverId": "7699JZ4WRJ6CP",
+   "image": "/menu/items/original-egg-puffs-bagged.jpg",
+   "source": "assets/menu-source/original-egg-puffs-bagged.jpg"
+  },
+  {
+   "slug": "pandan-egg-puffs-bagged",
+   "name": "Pandan Egg Puffs (Bagged)",
+   "category": "Egg Puffs (Bagged)",
+   "cloverId": "32PKY5DW7H7SG",
+   "image": "/menu/items/pandan-egg-puffs-bagged.jpg",
+   "source": "assets/menu-source/pandan-egg-puffs-bagged.jpg"
+  },
+  {
+   "slug": "pineapple-mango-fruit-slush",
+   "name": "Pineapple Mango Fruit Slush",
+   "category": "Fruit Slush",
+   "cloverId": "Q2P37KAHMF5AR",
+   "image": "/menu/items/pineapple-mango-fruit-slush.jpg",
+   "source": "assets/menu-source/pineapple-mango-fruit-slush.jpg"
+  },
+  {
+   "slug": "strawberry-fruit-slush",
+   "name": "Strawberry Fruit Slush",
+   "category": "Fruit Slush",
+   "cloverId": "4N9FS4E88ATJM",
+   "image": "/menu/items/strawberry-fruit-slush.jpg",
+   "source": "assets/menu-source/strawberry-fruit-slush.jpg"
+  },
+  {
+   "slug": "hawaiian-kiddie",
+   "name": "Hawaiian - Kiddie",
+   "category": "Hawaiian Ice",
+   "cloverId": "54YSSS0MB826Y",
+   "image": "/menu/items/hawaiian-kiddie.jpg",
+   "source": "assets/menu-source/hawaiian-kiddie.jpg"
+  },
+  {
+   "slug": "hawaiian-large",
+   "name": "Hawaiian - Large",
+   "category": "Hawaiian Ice",
+   "cloverId": "AP34Z6W288JPG",
+   "image": "/menu/items/hawaiian-large.jpg",
+   "source": "assets/menu-source/hawaiian-large.jpg"
+  },
+  {
+   "slug": "hawaiian-small",
+   "name": "Hawaiian - Small",
+   "category": "Hawaiian Ice",
+   "cloverId": "PDGP8M6EMSF36",
+   "image": "/menu/items/hawaiian-small.jpg",
+   "source": "assets/menu-source/hawaiian-small.jpg"
+  },
+  {
+   "slug": "iced-cookie-butter-brown-sugar",
+   "name": "Iced Cookie Butter Brown Sugar",
+   "category": "Milk Tea",
+   "cloverId": "JN4P378EZR45R",
+   "image": "/menu/items/iced-cookie-butter-brown-sugar.jpg",
+   "source": "assets/menu-source/iced-cookie-butter-brown-sugar.jpg"
+  },
+  {
+   "slug": "chocolate-puffle",
+   "name": "Chocolate Puffle",
+   "category": "Puffles",
+   "cloverId": "03NTB77SH7AA2",
+   "image": "/menu/items/chocolate-puffle.jpg",
+   "source": "assets/menu-source/chocolate-puffle.jpg"
+  },
+  {
+   "slug": "original-puffle",
+   "name": "Original Puffle",
+   "category": "Puffles",
+   "cloverId": "ADMZMMWY5Q7A6",
+   "image": "/menu/items/original-puffle.jpg",
+   "source": "assets/menu-source/original-puffle.jpg"
+  },
+  {
+   "slug": "pandan-coconut",
+   "name": "Pandan Coconut",
+   "category": "Puffles",
+   "cloverId": "CPGHAQ3STTZ78",
+   "image": "/menu/items/pandan-coconut.jpg",
+   "source": "assets/menu-source/pandan-coconut.jpg"
+  },
+  {
+   "slug": "pandan-puffle",
+   "name": "Pandan Puffle",
+   "category": "Puffles",
+   "cloverId": "BEF9H21G1AJ16",
+   "image": "/menu/items/pandan-puffle.jpg",
+   "source": "assets/menu-source/pandan-puffle.jpg"
+  },
+  {
+   "slug": "shorty-special",
+   "name": "Shorty Special",
+   "category": "Puffles",
+   "cloverId": "VFPDHR7N9E6TJ",
+   "image": "/menu/items/shorty-special.jpg",
+   "source": "assets/menu-source/shorty-special.jpg"
+  },
+  {
+   "slug": "what-the-fudge",
+   "name": "What The Fudge",
+   "category": "Puffles",
+   "cloverId": "F5ZSS3A5PCNWM",
+   "image": "/menu/items/what-the-fudge.jpg",
+   "source": "assets/menu-source/what-the-fudge.jpg"
+  },
+  {
+   "slug": "almond-joy",
+   "name": "Almond Joy",
+   "category": "Shaved Snow",
+   "cloverId": "BR0ZJ2DYNPB84",
+   "image": "/menu/items/almond-joy.jpg",
+   "source": "assets/menu-source/almond-joy.jpg"
+  },
+  {
+   "slug": "birthday-cake",
+   "name": "Birthday Cake",
+   "category": "Shaved Snow",
+   "cloverId": "XPVZ575CYPBQG",
+   "image": "/menu/items/birthday-cake.jpg",
+   "source": "assets/menu-source/birthday-cake.jpg"
+  },
+  {
+   "slug": "cottonfetti",
+   "name": "Cottonfetti",
+   "category": "Shaved Snow",
+   "cloverId": "1GHW6643ZCN74",
+   "image": "/menu/items/cottonfetti.jpg",
+   "source": "assets/menu-source/cottonfetti.jpg"
+  },
+  {
+   "slug": "green-tea-special",
+   "name": "Green Tea Special",
+   "category": "Shaved Snow",
+   "cloverId": "T55X7JHZ4SDX2",
+   "image": "/menu/items/green-tea-special.jpg",
+   "source": "assets/menu-source/green-tea-special.jpg"
+  },
+  {
+   "slug": "rainbow-mango",
+   "name": "Rainbow Mango",
+   "category": "Shaved Snow",
+   "cloverId": "S69231VACP9RG",
+   "image": "/menu/items/rainbow-mango.jpg",
+   "source": "assets/menu-source/rainbow-mango.jpg"
+  },
+  {
+   "slug": "s-mores",
+   "name": "S'Mores",
+   "category": "Shaved Snow",
+   "cloverId": "2YW01GMKNA4Y2",
+   "image": "/menu/items/s-mores.jpg",
+   "source": "assets/menu-source/s-mores.jpg"
+  },
+  {
+   "slug": "snow-kiddie",
+   "name": "Snow - Kiddie",
+   "category": "Shaved Snow",
+   "cloverId": "QPPPW8018S43Y",
+   "image": "/menu/items/snow-kiddie.jpg",
+   "source": "assets/menu-source/snow-kiddie.jpg"
+  },
+  {
+   "slug": "snow-large",
+   "name": "Snow - Large",
+   "category": "Shaved Snow",
+   "cloverId": "J7A2FB3RJRVQW",
+   "image": "/menu/items/snow-large.jpg",
+   "source": "assets/menu-source/snow-large.jpg"
+  },
+  {
+   "slug": "snow-small",
+   "name": "Snow - Small",
+   "category": "Shaved Snow",
+   "cloverId": "8JK0X45ZMBJAE",
+   "image": "/menu/items/snow-small.jpg",
+   "source": "assets/menu-source/snow-small.jpg"
+  },
+  {
+   "slug": "thai-dye",
+   "name": "Thai Dye",
+   "category": "Shaved Snow",
+   "cloverId": "M9FN195FYY5RE",
+   "image": "/menu/items/thai-dye.jpg",
+   "source": "assets/menu-source/thai-dye.jpg"
+  },
+  {
+   "slug": "ube-bae",
+   "name": "Ube Bae",
+   "category": "Shaved Snow",
+   "cloverId": "X2CS714SJA5CJ",
+   "image": "/menu/items/ube-bae.jpg",
+   "source": "assets/menu-source/ube-bae.jpg"
+  },
+  {
+   "slug": "bomb-mass-lychee",
+   "name": "Bomb Mass Lychee",
+   "category": "Specialty Drinks",
+   "cloverId": "32V5NTXZ7H1H4",
+   "image": "/menu/items/bomb-mass-lychee.jpg",
+   "source": "assets/menu-source/bomb-mass-lychee.jpg"
+  },
+  {
+   "slug": "butterfly-lemonade",
+   "name": "Butterfly Lemonade",
+   "category": "Specialty Drinks",
+   "cloverId": "03QY64X6GP1K4",
+   "image": "/menu/items/butterfly-lemonade.jpg",
+   "source": "assets/menu-source/butterfly-lemonade.jpg"
+  },
+  {
+   "slug": "dirtea-special-series",
+   "name": "Dirtea Special Series",
+   "category": "Specialty Drinks",
+   "cloverId": "QCMFJ6ZSV4YTA",
+   "image": "/menu/items/dirtea-special-series.jpg",
+   "source": "assets/menu-source/dirtea-special-series.jpg"
+  },
+  {
+   "slug": "fruitnadas",
+   "name": "Fruitnadas",
+   "category": "Specialty Drinks",
+   "cloverId": "WH4K9CZCYCTDG",
+   "image": "/menu/items/fruitnadas.jpg",
+   "source": "assets/menu-source/fruitnadas.jpg"
+  },
+  {
+   "slug": "horchata",
+   "name": "Horchata",
+   "category": "Specialty Drinks",
+   "cloverId": "AWW30GAHHZZWT",
+   "image": "/menu/items/horchata.jpg",
+   "source": "assets/menu-source/horchata.jpg"
+  },
+  {
+   "slug": "lemon-thai-made",
+   "name": "Lemon Thai-made",
+   "category": "Specialty Drinks",
+   "cloverId": "YXS4Q6Q382WC8",
+   "image": "/menu/items/lemon-thai-made.jpg",
+   "source": "assets/menu-source/lemon-thai-made.jpg"
+  },
+  {
+   "slug": "milk-money",
+   "name": "Milk Money",
+   "category": "Specialty Drinks",
+   "cloverId": "QXJSF2XZ8GMKE",
+   "image": "/menu/items/milk-money.jpg",
+   "source": "assets/menu-source/milk-money.jpg"
+  },
+  {
+   "slug": "pandan-mango-sticky-rice",
+   "name": "Pandan Mango Sticky Rice",
+   "category": "Specialty Drinks",
+   "cloverId": "28XHGQDK3TNHM",
+   "image": "/menu/items/pandan-mango-sticky-rice.jpg",
+   "source": "assets/menu-source/pandan-mango-sticky-rice.jpg"
+  },
+  {
+   "slug": "pear-of-aces",
+   "name": "Pear Of Aces",
+   "category": "Specialty Drinks",
+   "cloverId": "5QW4ZE92N7J1G",
+   "image": "/menu/items/pear-of-aces.jpg",
+   "source": "assets/menu-source/pear-of-aces.jpg"
+  },
+  {
+   "slug": "sunset",
+   "name": "Sunset",
+   "category": "Specialty Drinks",
+   "cloverId": "9NR5JSWEJ8EA0",
+   "image": "/menu/items/sunset.jpg",
+   "source": "assets/menu-source/sunset.jpg"
+  },
+  {
+   "slug": "the-l-tea",
+   "name": "The L Tea",
+   "category": "Specialty Drinks",
+   "cloverId": "N82G6KC6M5Z2M",
+   "image": "/menu/items/the-l-tea.jpg",
+   "source": "assets/menu-source/the-l-tea.jpg"
+  },
+  {
+   "slug": "viet-coffee-series",
+   "name": "Viet Coffee Series",
+   "category": "Specialty Drinks",
+   "cloverId": "EG8C6Y30RDJEP",
+   "image": "/menu/items/viet-coffee-series.jpg",
+   "source": "assets/menu-source/viet-coffee-series.jpg"
+  },
+  {
+   "slug": "we-belong-together",
+   "name": "We Belong Together",
+   "category": "Specialty Drinks",
+   "cloverId": "8F09M88QYBY1M",
+   "image": "/menu/items/we-belong-together.jpg",
+   "source": "assets/menu-source/we-belong-together.jpg"
+  },
+  {
+   "slug": "white-rabbit-candy",
+   "name": "White Rabbit Candy",
+   "category": "Specialty Drinks",
+   "cloverId": "NC2FQA3JYRK2A",
+   "image": "/menu/items/white-rabbit-candy.jpg",
+   "source": "assets/menu-source/white-rabbit-candy.jpg"
+  }
+ ]
+}

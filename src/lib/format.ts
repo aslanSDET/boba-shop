@@ -1,17 +1,12 @@
-import type { IceLevel } from "@/types/boba";
-
-const ICE_LABELS: Record<IceLevel, string> = {
-  NO_ICE: "No Ice",
-  LESS_ICE: "Less Ice",
-  REGULAR_ICE: "Regular Ice",
-  EXTRA_ICE: "Extra Ice",
-  HOT: "Hot",
-};
-
-export function formatIceLevel(level: IceLevel): string {
-  return ICE_LABELS[level];
-}
+/**
+ * Constructed once, not per call: this runs for every price on every render of
+ * the menu grid, the drawer and the cart.
+ */
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 
 export function formatPrice(amount: number): string {
-  return `$${amount.toFixed(2)}`;
+  return usd.format(amount);
 }
