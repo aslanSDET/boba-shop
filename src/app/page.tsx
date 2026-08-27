@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import { Plus, ShoppingBag } from "lucide-react";
 import { MENU_CATEGORIES, MENU_ITEMS } from "@/config/menu";
 import { SHOP } from "@/config/shop";
@@ -9,6 +8,7 @@ import { Testimonials } from "@/components/testimonials";
 import { SiteFooter } from "@/components/site-footer";
 import { PromoStrip } from "@/components/promo-strip";
 import { Wordmark } from "@/components/wordmark";
+import { HeroArt } from "@/components/hero-art";
 import { formatPrice } from "@/lib/format";
 import { ItemVisual } from "@/components/item-visual";
 import { ModifierDrawer } from "@/components/modifier-drawer";
@@ -98,38 +98,33 @@ export default function Home() {
             than a free-floating cut-out, so it needs more area to read as a
             product. Sourced from the AVIF (456x550) instead of the 400x480 PNG
             because at 250px on a 2x screen the PNG has no resolution to spare. */}
-        <Image
+        <HeroArt
           src="/eggpuffs.avif"
-          alt=""
           width={456}
           height={550}
-          aria-hidden
           sizes="250px"
           className="pointer-events-none absolute -top-4 left-2 hidden size-[180px] rounded-full object-cover lg:block xl:top-0 xl:left-10 xl:size-[250px]"
         />
-        <Image
+        <HeroArt
           src="/menu/mangonada.png"
-          alt=""
           width={300}
           height={360}
-          aria-hidden
-          className="pointer-events-none absolute -top-10 -right-12 hidden w-[165px] rotate-[-11deg] lg:block xl:-top-6 xl:-right-6 xl:w-[190px]"
+          sizes="190px"
+          className="pointer-events-none absolute -top-10 -right-12 hidden h-auto w-[165px] rotate-[-11deg] lg:block xl:-top-6 xl:-right-6 xl:w-[190px]"
         />
-        <Image
+        <HeroArt
           src="/menu/brown-sugar-milk-tea.png"
-          alt=""
           width={300}
           height={360}
-          aria-hidden
-          className="pointer-events-none absolute -bottom-6 -left-10 hidden w-[220px] rotate-[-8deg] lg:block xl:-left-4 xl:w-[260px]"
+          sizes="260px"
+          className="pointer-events-none absolute -bottom-6 -left-10 hidden h-auto w-[220px] rotate-[-8deg] lg:block xl:-left-4 xl:w-[260px]"
         />
-        <Image
+        <HeroArt
           src="/menu/asian-ice.png"
-          alt=""
           width={300}
           height={360}
-          aria-hidden
-          className="pointer-events-none absolute -right-10 -bottom-8 hidden w-[220px] rotate-[7deg] lg:block xl:-right-4 xl:w-[260px]"
+          sizes="260px"
+          className="pointer-events-none absolute -right-10 -bottom-8 hidden h-auto w-[220px] rotate-[7deg] lg:block xl:-right-4 xl:w-[260px]"
         />
         <header className="relative mx-auto flex w-full max-w-2xl flex-col items-center px-5 pt-14 pb-12 text-center sm:px-8 sm:pt-20">
           <h1 className="whitespace-nowrap text-[4rem] leading-[0.9] sm:text-[12rem]">
