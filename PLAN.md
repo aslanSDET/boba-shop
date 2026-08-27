@@ -272,6 +272,33 @@ Helpers live in `src/config/menu.ts`: `defaultSelection`, `calculateCartItemPric
 
 **Still open:** every price in `src/config/menu.ts` is a placeholder — the legacy site publishes no pricing. Item *names and descriptions* for the six flagship items are the shop’s real copy; the rest are written stand-ins. Both get replaced in Phase 6.
 
+## 8.6 Multi-Location — two menus, not one (RESOLVED 2026-08-27)
+
+Lowell and Billerica each run their own Clover catalog, and they are **not the same menu**. Measured by extracting both catalogs:
+
+| | Billerica | Lowell |
+|---|---|---|
+| Categories | 12 | 14 (extra: Drizzles, MISC ITEMS) |
+| Items | 119 | 124 |
+| Modifier groups / options | 85 / 1,064 | 82 / 946 |
+| Hours | 12:00–7:30 PM | 12:00–9/10 PM |
+
+- **93 of the 104 shared items are priced differently.** Lowell averages **20.7% cheaper** and is never dearer. Brown Sugar Milk Tea $7.25 → $5.75; toppings diverge up to 75% (Jackfruit $2.00 → $0.50).
+- 14 items are Billerica-only, 20 are Lowell-only.
+- Only **43 of 104** shared items have matching modifier group names.
+
+**Therefore location is a prerequisite, not a checkout field.** There is no correct menu to render before it is known, which rules out browse-then-pick-at-checkout.
+
+**Decided:**
+
+- **Two independent catalogs**, one per location — not one menu with per-location price overrides. Overrides would apply to ~90% of everything, which is two menus with extra indirection.
+- **Location in the URL** (`/billerica`, `/lowell`) so it is shareable, linkable and separately indexable. `/` resolves to the chooser or the remembered store.
+- **Follow the Kung Fu Tea skeleton** (PLAN §1): the ordering flow is gated on location — their root redirects to `/locations` and no menu is reachable before a store is picked. Take the gate, remembering the choice, and open/closed status on the chooser. **Drop the map and the city/ZIP search** — those solve a 316-store search problem; this is a two-card decision, and it is where the storefront photos in `public/menu/items/` belong.
+- **Geolocation is offered, not fired.** No permission prompt on first paint; a "Use my location" affordance inside the chooser. The two shops are ~6 miles apart, so "nearest" is often the wrong guess anyway — people order near work, or on a route.
+- **The cart belongs to a location, and each location keeps its own.** Switching stores is not a re-price; it is a different order. This deliberately removes all cart-migration logic.
+
+**Why cart-per-location rather than migrating a cart:** a switch is not a re-price. Of 4,387 option selections on shared items, only 75% exist at the other store under the same group name (91% if matched by option name across groups — 16% rescued, with only 10 of 3,977 loose matches ambiguous). Some losses are real rather than naming artifacts: Lowell's Thai Dye genuinely has no Rainbow Mochi. A worked basket — Brown Sugar Milk Tea + boba, Thai Dye + mochi, Ube Bae — moves $18.75 → $16.00 while silently dropping one line and one topping. Three kinds of surprise in one tap, made worse because the total *falls*, so nobody inspects it. Keeping a cart per location makes the whole problem disappear. If copying a basket across ever proves worth it, add it as an explicit action — the loose-matching numbers above are what it would be built on.
+
 ## 8.5 AWS Access
 
 - **IAM user:** `boba-shop-deploy` (account `003655672994`), policy `AdministratorAccess-Amplify` (AWS-managed, scoped to Amplify-related services — not full account admin). Deliberately separate from the pre-existing `docker-user`/`Admin` (full `AdministratorAccess`) credential on this machine, which belongs to an unrelated project and should not be used here.
@@ -287,7 +314,8 @@ Helpers live in `src/config/menu.ts`: `defaultSelection`, `calculateCartItemPric
 - [ ] Tax handling: flat rate (current mock uses 8.75%) vs. Stripe Tax — revisit once a real store address/jurisdiction is known
 - [ ] Domain name / branding — placeholder "Boba Shop" name throughout `src/` until this is settled
 - [x] ~~Confirm target shop~~ — **Snowdaes.** UI, brand, copy, categories and assets are all Snowdaes now; the §8 model expansion is done. Gathered from snowdaes.com 2026-08-26: six categories (Milk Teas, Shaved Snow, Egg Puffs, Specialty Drinks, Asian Ice, Hawaiian Ice), two locations (Lowell original, Billerica new), est. 2013, tagline "Make every day a Snowdae". Their current site has **no menu and no online ordering at all** — a homepage, an about page, socials, and a Google Form. That absence is the concrete gap this project closes and the sharpest line in the §2.5 pitch.
-- [ ] **Real menu pricing** — every price in `src/config/menu.ts` is invented; the shop publishes none. Needs the actual price list before anything goes live.
+- [x] ~~**Real menu pricing** — the shop publishes none~~ — **source found 2026-08-27.** Both shops run Clover online ordering (`snowdaes-north-billerica.cloveronline.com`, `snowdaes-lowell.cloveronline.com`) and publish the full priced catalog, embedded in the page as an RSC payload. Extraction is prototyped. The prices in `src/config/menu.ts` are **still invented** — importing them is the Phase 6 menu rebuild, and it is much larger than a price list: 119/124 items against 24 coded, 85/82 modifier groups against 11. See the rebuild plan for the modelling decision it hinges on.
 - [ ] **Asset licensing** — product photos and the penguin mark in `public/` were pulled from the shop’s own site as placeholders. Get shop-supplied originals (or written sign-off) before public launch.
 - [ ] **Testimonials are fabricated** — the three reviews in `src/config/shop.ts` are invented placeholders written for layout, attributed to people who do not exist. Replace with genuine, permissioned reviews or delete the section before this is shown to the franchisor or the public. They are flagged in the file with a block comment.
-- [ ] **Opening hours** — deliberately omitted everywhere; the shop publishes none and inventing hours next to a real phone number is worse than showing nothing. Get real hours before launch.
+- [x] ~~**Opening hours** — the shop publishes none~~ — **published on Clover, found 2026-08-27.** Billerica 12:00–7:30 PM; Lowell 12:00–9:00 PM Mon–Thu and Sun, 12:00–10:00 PM Fri–Sat. Still omitted from the UI until someone confirms they are current — but they no longer have to be invented, and the §8.6 chooser needs them to show open/closed. Note the two differ, so hours are per-location.
+- [ ] **Photography licensing** — `public/menu/items/` and `assets/menu-source/` hold 44 product photos captured from the shop's own Clover CDN (commit `111679c`), plus storefront banners. Downloaded rather than hot-linked deliberately. Still needs shop confirmation that they own them and are happy for them to be used here.
