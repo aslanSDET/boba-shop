@@ -85,7 +85,31 @@ export default function Home() {
       </div>
 
       <section className="relative overflow-hidden border-b border-border bg-accent">
-        {/* Decorative product shots fill the hero the way both reference sites do */}
+        {/* Decorative product shots fill the hero the way both reference sites do.
+            Four corners rather than two: the bottom pair alone left the top half
+            reading as empty next to the references. Larger, lower-set pair at the
+            bottom, smaller pair up top, so the eye still lands on the wordmark.
+
+            Egg puffs is the one full-frame photo here (no alpha, `cover` in
+            menu.ts), so it gets the circular crop the promo strip and the menu
+            tiles already use rather than floating as a hard rectangle. No
+            rotation — a circle has nothing to rotate. */}
+        <Image
+          src="/menu/egg-puffs.png"
+          alt=""
+          width={300}
+          height={360}
+          aria-hidden
+          className="pointer-events-none absolute -top-6 left-8 hidden size-[150px] rounded-full object-cover lg:block xl:top-2 xl:left-16 xl:size-[172px]"
+        />
+        <Image
+          src="/menu/mangonada.png"
+          alt=""
+          width={300}
+          height={360}
+          aria-hidden
+          className="pointer-events-none absolute -top-10 -right-12 hidden w-[165px] rotate-[-11deg] lg:block xl:-top-6 xl:-right-6 xl:w-[190px]"
+        />
         <Image
           src="/menu/brown-sugar-milk-tea.png"
           alt=""
