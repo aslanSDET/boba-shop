@@ -25,9 +25,15 @@ Steps 04 and 06 are the ones that matter. The rest is setup.
 
 These steps need a human — account creation, 2FA and dashboard clicks can't be scripted.
 
-**1. Sandbox developer account** — sign up at <https://sandbox.dev.clover.com/> (free, no Clover hardware or merchant relationship needed). Create a **test merchant**, and add a few inventory items with modifier groups if the test merchant starts empty; step 03 needs at least one priced item, ideally one with modifiers.
+**1. Global developer account** — sign up at <https://www.clover.com/global-developer-home/public/create-account> (free; no Clover hardware or merchant relationship needed). This is a *developer* account, not a merchant account, and creating it **automatically creates your first test merchant** in both sandbox and production. There is no separate sandbox signup — the legacy \`sandbox.dev.clover.com\` account path is superseded. MFA via an authenticator app is part of signup.
 
-**2. Merchant API token** — in the test merchant's dashboard: **Settings → View all settings → Business Operations → API tokens**. Two-factor auth has to be switched on first. Create a token with at least:
+**2. Launch the test merchant dashboard — do not type its URL.** Global Developer Dashboard → **Test Merchants** → the **Launch Dashboard** icon in the Actions column. That launch is what authenticates the merchant-dashboard session.
+
+> ⚠ Navigating straight to \`sandbox.dev.clover.com/setupapp/m/{merchantId}/...\` **bounces through a logout and drops you at the developer login page.** The merchant dashboard URL is only valid inside a session the Launch Dashboard action established. Costs you the session every time. (Your merchant ID is visible in that URL once you are in, which is the one useful thing about it.)
+
+Add a few inventory items with modifier groups if the test merchant starts empty — step 03 needs at least one priced item, ideally one with modifiers, because inventory-linked items with linked modifier groups are what make an order print-eligible.
+
+**3. Merchant API token** — in the launched test merchant dashboard: **Settings → View all settings → Business Operations → API tokens**. Two-factor auth has to be switched on first. Create a token with at least:
 
 - Inventory — **read**
 - Orders — **read + write**
@@ -38,11 +44,11 @@ These steps need a human — account creation, 2FA and dashboard clicks can't be
 
 Step 01 probes each of these and names whichever is missing, so don't agonise — issue it, run 01, adjust.
 
-**3. Ecommerce API token** — **Settings → View all settings → Ecommerce → Ecommerce API Tokens**, integration type **Hosted Checkout**. This yields a private key plus the merchant ID.
+**4. Ecommerce API token** — **Settings → View all settings → Ecommerce → Ecommerce API Tokens**, integration type **Hosted Checkout**. This yields a private key plus the merchant ID.
 
 > ⚠ **Only one Ecommerce API token exists per merchant account.** Harmless in the sandbox. On the shop's real account, ask before generating — regenerating could break an integration they already rely on. This is question A-8 in `CLOVER-AND-LAUNCH.md`.
 
-**4. Put them in `.env.local`** in the repo root (already gitignored — `.env*` is covered, and `git ls-files` confirms nothing env-shaped is tracked):
+**5. Put them in `.env.local`** in the repo root (already gitignored — `.env*` is covered, and `git ls-files` confirms nothing env-shaped is tracked):
 
 ```sh
 CLOVER_ENV=sandbox
