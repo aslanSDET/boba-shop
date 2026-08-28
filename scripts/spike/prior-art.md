@@ -10,6 +10,9 @@ trust it:
 
 Nothing here has been copied into our code. This is a map of where the mines are.
 
+All six are cloned at `../clover-reference/` — deliberately a sibling of this repo, never
+inside it, because `boba-shop` is public and most of that code is unlicensed.
+
 ## The repos worth reading
 
 | Repo | What it is | Why it matters to us |
@@ -18,6 +21,7 @@ Nothing here has been copied into our code. This is a map of where the mines are
 | [`mbates/clover`](https://github.com/mbates/clover) | MIT TypeScript wrapper for both Clover hosts, Aug 2026 | Confirms the two-host split and the Hosted Checkout webhook signature scheme |
 | [`atinm/clover-online-orders`](https://github.com/atinm/clover-online-orders) | Source of the "Smart Online Order" WordPress plugin | The closest commercial analog to what we are building. See the architecture note below |
 | [`mattlisiv/clover-api-python`](https://github.com/mattlisiv/clover-api-python) | Most-starred standalone Clover client (11 stars) | Mostly a thin v3 wrapper; low signal |
+| [`clover/*`](https://github.com/orgs/clover/repositories) | Clover's own GitHub org | `hosted-checkout-codelab` and `export-api-examples` are on our path but **both archived**. Everything else is `remote-pay-*` SDKs for physical terminals |
 
 Two caveats on the search itself. First, "clover" is a badly polluted keyword on
 GitHub — the bootloader, Cloverly (carbon offsets), Naver Clova, and several game mods
@@ -213,6 +217,72 @@ outright and every other integration surveyed hand-rolls `fetch`. Our dependency
 charges/refunds/customers and **not** orders, inventory or line items — which is most of
 what we need. Not worth adopting; worth reading.
 
+## The retrospective worth reading twice
+
+**CLAIMED**, from `docs/quality/debt-map.md` in the Yipyy repo — a section titled
+"Fifteen defects, and all but one were found by running the code":
+
+> Clover's documented behaviour and its actual behaviour differ in ways that are
+> individually small and collectively expensive, and the failures are quiet — a null, a
+> wrong status code, a missing row.
+
+**Six of the fifteen were already committed and described as working.** Their rule after
+that: exercise the path against the live sandbox before claiming it works, and if you
+change a money path and cannot test it, say so in the commit rather than letting a green
+typecheck stand in for evidence.
+
+This is the same shape as our tax-divisor episode — inferred from the docs, wrong by a
+factor of ten, caught only because we ran an order and read the total.
+
+The fifteen, as a checklist of things that bite:
+
+| Symptom | Cause |
+|---|---|
+| Card fields never mount | `mount()` takes a **CSS selector, not a node**. Passing the element fails the whole mount with a generic message |
+| Selector syntax error on mount | React `useId()` yields `:r1:`; a bare `#:r1:` is invalid. Strip the punctuation |
+| A declined card returns 500 | Clover sends **no `error.type` on a decline**, only HTTP **402** |
+| Silent nulls under load | Three separate **429s** from Clover, swallowed |
+| A refund took the whole charge | A refund that **omits its amount** asks for the full original |
+| A facility went offline | **Clover rotates refresh tokens**, so two concurrent refreshes invalidate each other |
+| An awake terminal reported unreachable | A guessed 25s `deviceState` timeout; a healthy device answers in **8s** |
+| Payment id silently truncated | `externalPaymentId` caps at **32 chars**; a UUID is 36 |
+
+Three more from elsewhere in the same document:
+
+- **A `clv_` token is single-use.** Splitting a payment across two cards means calling
+  `createToken()` inside the loop, not once outside it.
+- **`POST /v1/orders/{id}/returns` refunds the WHOLE order while echoing your amount back
+  in the response.** That is about as quiet as a money bug gets.
+- **A tip makes `/v1/refunds` refuse a partial refund**, and Clover does not expose how a
+  refund splits across subtotal/tax/tip — the refund element carries none of its own, and
+  the nested `payment` holds the *original's*. They derive the split proportionally and
+  say plainly that it is a derivation, not Clover's answer.
+
+### The one that lands directly on our two-location design
+
+Their webhook retry loop spun for eighteen days — roughly **1,700 attempts** — on
+deliveries naming a merchant that was not the facility's current one. `reconcilePayment`
+reads with the *current* merchant's token, Clover cannot answer for another estate, the
+read returns "unreadable", and unreadable was skipped and left for next time.
+
+`PLAN.md` §8.6/§8.7 already say Billerica and Lowell are **two merchant accounts with two
+credential sets**. So our webhook handler will receive deliveries for two merchants and
+must dispatch on the merchant id in the delivery — not read with whichever token it
+happens to hold. Getting this wrong is silent and self-perpetuating.
+
+## The browser key is safe to expose; nothing else is
+
+**CLAIMED**, and it matches what `clover-ops.md` already says. Clover's public browser key
+tokenises and **cannot charge**. Their card-fields component receives only a `clv_` token
+and they note the rule that keeps it true:
+
+> There is deliberately no state anywhere holding anything card-shaped, and there must
+> not be. A single "let me just read the value out of the field" undoes the whole
+> arrangement.
+
+They still gate the route that serves the key — not for the key's secrecy, but because an
+open route tells anybody which businesses have a live merchant account. Worth copying.
+
 ## What this changes
 
 - [ ] **Test `POST /v1/orders/{orderId}/pay` on the sandbox.** Highest value item left.
@@ -225,3 +295,6 @@ what we need. Not worth adopting; worth reading.
 - [ ] Void-vs-refund handling belongs in whatever we build for order cancellation.
 - [ ] Read Clover's store-hours / blackout / order-type endpoints before designing our
       own opening-hours logic.
+- [ ] Webhook handler must dispatch on the merchant id in the delivery — we have two
+      merchants and reading with the wrong token fails silently and retries forever.
+- [ ] Treat HTTP 402 as a decline, not an error, and handle 429 explicitly.
