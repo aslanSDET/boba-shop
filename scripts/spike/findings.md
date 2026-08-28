@@ -4,6 +4,9 @@ Fill in as you go. Unanswered is fine; guessed is not. When this is complete, fo
 
 Date run: 2026-08-27  ·  Environment: **sandbox**  ·  Merchant: **4XKCZA8Z277R1** (Boba)
 
+Everything below we measured ourselves. For what *other people's* Clover integrations
+learned the hard way — and the leads that came out of it — see `prior-art.md`.
+
 ---
 
 ## Pre-flight (2026-08-27 — paper check, no credentials, nothing run)
