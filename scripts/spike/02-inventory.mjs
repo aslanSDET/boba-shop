@@ -52,8 +52,10 @@ console.log(`  tax rates       ${String(taxRates.length).padStart(5)}`);
 if (taxRates.length) {
   console.log("\n  tax rates — this is what retires the invented 8.75% in src/store/useCart.ts");
   for (const t of taxRates) {
-    // Clover stores rate as millionths of a percent: 6250000 => 6.25%
-    const pct = typeof t.rate === "number" ? (t.rate / 100000).toFixed(4).replace(/0+$/, "").replace(/\.$/, "") : "?";
+    // MEASURED, not inferred: a rate of 6_250_000 was charged as 62.5% tax on a
+    // real sandbox order. So percent = rate / 100_000 — hundred-thousandths of a
+    // percent, NOT millionths as the docs are usually read to say. 6.25% = 625_000.
+    const pct = typeof t.rate === "number" ? (t.rate / 100_000).toFixed(4).replace(/0+$/, "").replace(/\.$/, "") : "?";
     console.log(`    ${(t.name || "(unnamed)").padEnd(28)} ${String(pct).padStart(8)}%   ${t.isDefault ? "default" : ""}  [${t.id}]`);
   }
 }
