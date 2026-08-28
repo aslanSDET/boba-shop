@@ -19,7 +19,7 @@ inside it, because `boba-shop` is public and most of that code is unlicensed.
 |---|---|---|
 | [`Yipyy-Inc/puneet`](https://github.com/Yipyy-Inc/puneet) | Production Next.js app, Clover OAuth + terminals + ecommerce, actively pushed | By far the most valuable. Exhaustively commented, and the comments record *measured* failures, not intentions |
 | [`mbates/clover`](https://github.com/mbates/clover) | MIT TypeScript wrapper for both Clover hosts, Aug 2026 | Confirms the two-host split and the Hosted Checkout webhook signature scheme |
-| [`atinm/clover-online-orders`](https://github.com/atinm/clover-online-orders) | Source of the "Smart Online Order" WordPress plugin | The closest commercial analog to what we are building. See the architecture note below |
+| [`atinm/clover-online-orders`](https://github.com/atinm/clover-online-orders) | One developer's personal mirror of **Zaytech's** commercial "Smart Online Order for Clover" WordPress plugin. **Not Clover's**, and not the mirror-owner's work either — original author `elbanyaoui`, 2016 | A commercial vendor product. See the architecture note below |
 | [`mattlisiv/clover-api-python`](https://github.com/mattlisiv/clover-api-python) | Most-starred standalone Clover client (11 stars) | Mostly a thin v3 wrapper; low signal |
 | [`clover/*`](https://github.com/orgs/clover/repositories) | Clover's own GitHub org | `hosted-checkout-codelab` and `export-api-examples` are on our path but **both archived**. Everything else is `remote-pay-*` SDKs for physical terminals |
 
@@ -283,6 +283,89 @@ and they note the rule that keeps it true:
 They still gate the route that serves the key — not for the key's secrecy, but because an
 open route tells anybody which businesses have a live merchant account. Worth copying.
 
+## Three developers who rebuilt a real business on Clover
+
+This is the genre we actually wanted: an independent developer taking one small
+bricks-and-mortar business and putting a real storefront on its Clover account. None of
+them turn up in a repo search — every one was found by code-searching for
+`CLOVER_MERCHANT_ID`, because none of them mention Clover in the repo name or
+description. All three are zero-star, unlicensed, and actively pushed in August 2026.
+
+| Repo | Stack | Business |
+|---|---|---|
+| [`Brighter55/chiang-mai-ai-phone-ordering`](https://github.com/Brighter55/chiang-mai-ai-phone-ordering) | Django | A Thai restaurant taking orders by AI phone call |
+| [`sanqin888/sanqinMVP`](https://github.com/sanqin888/sanqinMVP) | NestJS + Prisma | A restaurant web ordering site |
+| [`cranzoid/Pizza62Sol`](https://github.com/cranzoid/Pizza62Sol) | Next.js | A pizza shop |
+
+### The Django one has independently arrived at our exact design
+
+`sync_menu_from_clover.py` and `push_order_to_clover.py` are, line for line, the two
+Amplify Functions in `PLAN.md` §6. Their model gained `clover_item_id`,
+`clover_modifiers`, `clover_order_id`, `clover_pushed` and `clover_error` in a single
+migration — our `MenuItem` keyed by `cloverItemId` and our `Order` mirror with
+`PUSH_FAILED`, arrived at by someone who never saw our plan.
+
+Two details worth stealing outright:
+
+- **The sync preserves locally-curated fields by name.** Clover owns names, prices and
+  modifiers; their phonetic aliases and Thai names survive a resync. We will have the same
+  problem the moment we add a photo, a description or a tag that Clover has no field for.
+  Their default for an item that vanishes from Clover is **mark unavailable, not delete**,
+  precisely to keep that curation.
+- **The push has a manual retry command** taking a local order id, `--force` to re-push.
+  For a two-store shop that is a better answer than an automatic retry queue.
+
+And the same rule we saw everywhere else, stated in their own words: the push "never
+raises to the caller", because "the local order + SMS are the source of truth / backup".
+
+### The NestJS one answers the question we shelved
+
+`pricing-token.service.ts` is the cleanest solution to "who calculates" that turned up
+anywhere. The server computes the total, then issues an **HMAC-signed token** binding
+`totalCents` + a cart fingerprint + the checkout intent id, with a **15-minute TTL**. The
+browser carries the token to checkout and cannot alter the price; the server verifies the
+signature, the fingerprint and the amount before charging.
+
+That is the missing half of our Hosted Checkout finding. We already know Clover has no
+calculation engine and silently ignores `taxRates`, so we must compute. This is how you
+compute on the server without trusting the client with the number — and it is about
+sixty lines.
+
+They also compute `taxCents` themselves and **recalculate rather than trust** what came
+back in the checkout metadata, which is the same conclusion `findings.md` reached.
+
+### And the pizza one runs both payment paths at once
+
+`lib/clover.ts` calls **both** `/invoicingcheckoutservice/v1/checkouts` (Hosted Checkout)
+and `/v1/charges` (the tokenising iframe, via `CloverCardForm.tsx`). Whatever the reason,
+it means our Hosted-Checkout-vs-iframe question does not have to be answered once and
+forever — the two can coexist behind one cart, and someone is shipping them that way.
+
+## Nobody calls `print_event`. Not one of them.
+
+Across all nine Clover integrations now cloned in `../clover-reference/` — including
+three restaurants and a commercial ordering plugin — **`print_event` does not appear
+once**. We are the only ones trying it.
+
+That reframes our last open risk. The other restaurants get an order in front of staff
+by pushing an **open order** to Clover and letting it land in the merchant's Orders app,
+with a second channel as the real backstop — the Django one sends an SMS and treats it,
+explicitly, as the source of truth.
+
+Two readings, and we cannot yet tell which is right:
+
+1. `print_event` is unnecessary — an open order on the device prints or alerts by itself,
+   the way an order from Clover's own online ordering does today.
+2. `print_event` is unreliable enough that people quietly stopped using it.
+
+Either way, **the fallback is proven and cheap**: push the order, and notify staff on a
+second channel we control. That is the answer if printing does not work on the shop's
+real merchant, and it means printing is no longer a risk that can sink Option B. It is
+now a question of how good the experience is, not whether the thing works.
+
+Worth asking the owner directly: *when an online order arrives today, what actually
+happens — does paper come out, or does someone watch a screen?*
+
 ## What this changes
 
 - [ ] **Test `POST /v1/orders/{orderId}/pay` on the sandbox.** Highest value item left.
@@ -298,3 +381,9 @@ open route tells anybody which businesses have a live merchant account. Worth co
 - [ ] Webhook handler must dispatch on the merchant id in the delivery — we have two
       merchants and reading with the wrong token fails silently and retries forever.
 - [ ] Treat HTTP 402 as a decline, not an error, and handle 429 explicitly.
+- [ ] Borrow the signed pricing-token pattern — it closes the "we must calculate but
+      cannot trust the client" gap in about sixty lines.
+- [ ] Catalog sync must preserve locally-curated fields, and mark vanished items
+      unavailable rather than deleting them.
+- [ ] Owner question: when an online order arrives today, does paper come out, or does
+      someone watch a screen? Printing is no longer a blocker either way.
