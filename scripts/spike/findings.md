@@ -35,6 +35,14 @@ Every Clover HTTP call in `scripts/spike/` was checked against the current publi
 
 ---
 
+## Confirmed live against a sandbox merchant (2026-08-27)
+
+**Clover answers a missing permission with 401, not 403.** The same token 401s on `/v3/merchants/{mId}` and 200s on `/items`. This sends you hunting for a credential problem that is really a checkbox problem. `hint()` in `lib/clover.mjs` said the opposite and has been corrected; `01-connect.mjs` now prints the full per-endpoint matrix instead of dying on the first denial.
+
+**403 means something different: expandable fields are permission-checked individually.** `GET /items?expand=taxRates` returns 403 `"Invalid permissions for expandable fields."` on a token that reads `/tax_rates` directly with a 200. One unpermitted name fails the whole call, so `expand=categories,modifierGroups,taxRates` fails while `expand=categories,modifierGroups` succeeds. Relevant to `catalog-sync`: prefer separate calls over a wide expand, or the sync breaks on a permission you did not know you needed.
+
+**One token per concern does not work for this integration.** Two tokens scoped "business settings" and "inventory and orders" split the endpoints the spike needs — merchant + devices on one, items + orders + tax_rates on the other. The production integration should use a single token carrying Merchant read, Inventory read, Orders read+write, Payments read.
+
 ## The two that decide the architecture
 
 ### Does an API-created order print on the merchant's own printer? (steps 03–04)

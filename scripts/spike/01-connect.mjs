@@ -8,15 +8,24 @@ import { api, MERCHANT_ID, heading, pass, ENV } from "./lib/clover.mjs";
 
 heading("01", "Connect", "the merchant API token works and carries the permissions we need");
 
-const m = await api(`/v3/merchants/${MERCHANT_ID()}`);
-console.log(`  merchant : ${m.name || "(unnamed)"}  [${m.id}]`);
-if (m.address) console.log(`  address  : ${[m.address.address1, m.address.city, m.address.state].filter(Boolean).join(", ")}`);
-console.log(`  currency : ${m.currency || "?"}    timezone: ${m.timezone || "?"}`);
+// soft: /merchants needs its own read permission, and a token scoped only to
+// inventory+orders 401s here while working perfectly everywhere else. Failing
+// hard on the first line would hide the matrix that is the point of this step.
+const m = await api(`/v3/merchants/${MERCHANT_ID()}`, { soft: true }).catch(() => null);
+if (m) {
+  console.log(`  merchant : ${m.name || "(unnamed)"}  [${m.id}]`);
+  if (m.address) console.log(`  address  : ${[m.address.address1, m.address.city, m.address.state].filter(Boolean).join(", ")}`);
+  console.log(`  currency : ${m.currency || "?"}    timezone: ${m.timezone || "?"}`);
+} else {
+  console.log(`  merchant : unreadable — this token lacks Merchant read (Clover 401s, not 403s)`);
+}
 
 // Probe each permission the integration actually needs, so a missing one is
 // named here rather than surfacing three steps later as an opaque 403.
 const probes = [
+  ["read  merchant", `/v3/merchants/${MERCHANT_ID()}`],
   ["read  inventory", `/v3/merchants/${MERCHANT_ID()}/items?limit=1`],
+  ["expand taxRates", `/v3/merchants/${MERCHANT_ID()}/items?limit=1&expand=taxRates`],
   ["read  modifier groups", `/v3/merchants/${MERCHANT_ID()}/modifier_groups?limit=1`],
   ["read  tax rates", `/v3/merchants/${MERCHANT_ID()}/tax_rates?limit=1`],
   ["read  orders", `/v3/merchants/${MERCHANT_ID()}/orders?limit=1`],

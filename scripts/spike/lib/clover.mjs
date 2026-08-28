@@ -124,8 +124,12 @@ async function handle(res, method, url, soft = false) {
 }
 
 function hint(status) {
-  if (status === 401) return "\n\n  → 401 usually means the token is wrong, or it is a sandbox token being used against production (check CLOVER_ENV).";
-  if (status === 403) return "\n\n  → 403 usually means the token lacks a permission. Re-issue it in the dashboard with the permissions listed in scripts/spike/README.md.";
+  // Measured against a real sandbox merchant: Clover answers a MISSING PERMISSION
+  // with 401, not 403. So 401 does not mean "bad token" — the same token can 401
+  // on /merchants and 200 on /items. Do not go hunting for a credential problem
+  // that is really a checkbox problem.
+  if (status === 401) return "\n\n  → 401 means this token cannot reach THIS endpoint. Either the token is wrong for\n    the environment (check CLOVER_ENV), or — more often — it lacks the permission.\n    Clover returns 401 rather than 403 for a missing permission. Run 01-connect.mjs\n    to see the full per-endpoint matrix.";
+  if (status === 403) return "\n\n  → 403 here usually means expandable fields: expand= values are permission-checked\n    individually, so one unpermitted name fails the whole call. Drop the expands to\n    confirm, then add back one at a time.";
   if (status === 404) return "\n\n  → 404 often means the merchant ID is wrong for this environment.";
   return "";
 }
