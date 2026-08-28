@@ -91,6 +91,45 @@ The second is more robust — Clover stays the arithmetic authority and our math
 - Card form is Card Number / MM-YY / CVV / **Zip** — the postal code is required, so our checkout must collect it or let Clover do so.
 - Session lifetime is short: `expirationTime` was ~30 minutes out.
 
+### ANSWERED: Hosted Checkout creates its own order — and that is good news
+
+Paying the step-05 link produced **one payment and one order**, not zero:
+
+```
+payment CN755AA6JVKN0  $16.75  SUCCESS  order=NB6NBR7F423C6
+order   NB6NBR7F423C6  total=$16.75  state=locked  paymentState=PAID  lines=2
+        Thai Dye Shaved Snow $9.50   (NOT inventory-linked)
+        Brown Sugar Milk Tea $7.25   (NOT inventory-linked)
+```
+
+The original worry was two tickets for one sale. The answer removes that risk **and removes a whole step from the design**: we do not need to create an order at all. Clover already made one, already attached the payment, and it is already in the merchant's order list.
+
+The only defect is that its line items are free-form, carrying no `item.id` — which per Clover's Orders FAQ makes them ineligible for printing.
+
+### A locked, paid order can still be rewritten
+
+Measured on the paid order above:
+
+| Action on a `locked` / `PAID` order | Result |
+|---|---|
+| Add an inventory-linked line item | **OK** |
+| Delete a line item we added | **OK** |
+| Delete one of Hosted Checkout's free-form line items | **OK** |
+| Order `total` after all of that | **unchanged at $16.75** |
+
+The total stays pinned to the payment no matter what happens to the line items. So the free-form lines can be swapped for real inventory-linked ones **without breaking the payment match** — which is exactly what print-eligibility needs.
+
+**This supersedes the atomic-order push in `PLAN.md` §8.7.** The flow becomes:
+
+1. Our server prices the cart (authority) and opens a Hosted Checkout session for the tax-inclusive total.
+2. Customer pays. Clover creates the order and the payment itself.
+3. On the webhook, we **rewrite that order's line items** to inventory-linked ones with real modifiers, rather than creating a second order.
+4. Fire `print_event`.
+
+One order, one payment, one ticket, entirely inside the shop's existing Clover account. It also dissolves the §05 tax mismatch: there is only one total, and it is the one that was charged.
+
+**Still to verify:** whether the rewritten order prints correctly, and whether the shop's reporting shows the rewritten line items rather than the originals. Neither is answerable without a device — see below.
+
 ### print_event — endpoint and permission proven, printing NOT proven
 
 `POST /print_event` returned `400 {"message":"The default printing device is missing"}`. A business-logic error, not an auth error, so the token and route are right. But a sandbox test merchant has **no devices**, so actual printing cannot be demonstrated here.
