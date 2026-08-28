@@ -174,15 +174,15 @@ Nothing downstream is worth building until an order created by code has been see
 
 Harness is built and runnable: **[`scripts/spike/README.md`](./scripts/spike/README.md)** has the runbook, six numbered scripts each print what they proved, and `scripts/spike/findings.md` is where the answers go. All four endpoint paths verified reachable (they return 401, not 404, unauthenticated). Only the account setup needs a human.
 
-- [ ] Free sandbox developer account; create a test merchant
-- [ ] Generate a merchant API token (Settings → Business Operations → API tokens) with read inventory + read/write orders + print
-- [ ] Generate an Ecommerce API token (Settings → Ecommerce → Ecommerce API Tokens), integration type **Hosted Checkout**
-- [ ] Read the test merchant's inventory through the Inventory API — proves the API path can replace the RSC scrape in `scripts/fetch-clover.mjs`
-- [ ] `GET /v3/merchants/{mId}/tax_rates` — resolves the two `taxIds` on every item into real rates, which retires the invented 8.75% in `src/store/useCart.ts`
-- [ ] Create an order via `POST /v3/merchants/{mId}/atomic_order/orders` using real inventory + modifier IDs
-- [ ] `POST /v3/merchants/{mId}/print_event` — **confirm the ticket fires**
-- [ ] Take a test payment through Hosted Checkout and answer the one open question: **does Hosted Checkout create its own order?** If it does, we must not also push an atomic order, or the shop gets two tickets
-- [ ] Push an order carrying a **discount** and confirm it shows in the merchant's reporting
+- [x] Free global developer account; test merchant `4XKCZA8Z277R1` created
+- [x] Merchant API token generated. Note: **a missing permission returns 401, not 403** — `01-connect.mjs` prints the full matrix rather than guessing
+- [x] Ecommerce API token generated, integration type **Hosted Checkout**
+- [x] Inventory readable through the API — the RSC scrape in `scripts/fetch-clover.mjs` has a supported replacement
+- [x] `GET /v3/merchants/{mId}/tax_rates` works. **Rate unit is hundred-thousandths of a percent** — 6.25% is `625000`; `6250000` silently charges 62.5%
+- [x] Atomic order created with real inventory + modifier IDs and an order-level discount — **then superseded**: Hosted Checkout makes the order for us, so we rewrite rather than create
+- [~] `POST /v3/merchants/{mId}/print_event` — route and permission proven, but returns `400 "The default printing device is missing"`: **sandbox test merchants have no devices, so the ticket itself is unproven.** Closes only on the shop's own merchant
+- [x] **Answered: yes, Hosted Checkout creates its own order** and attaches the payment. Not a hazard — it removes the push step entirely. A locked, PAID order still accepts line-item adds and deletes, and `total` stays pinned to the payment, so we rewrite its free-form lines into inventory-linked ones
+- [x] Discount recorded as a real discount (`{"name":"SPIKE10","amount":-100}`), not a rewritten price. **Discounts apply before tax.** Still to confirm on a real merchant: that reporting shows the *rewritten* line items rather than Hosted Checkout's originals
 
 ### Phase 2b — Auth + checkout wiring
 - [ ] Add Clerk: `<ClerkProvider>`, phone/SMS sign-in, guest-checkout fallback
@@ -394,7 +394,7 @@ The site does browse, cart, modifiers, accounts, promo codes and campaigns. At c
 - **The staff workflow does not change.** Orders arrive where they already arrive. A second screen during a rush is how orders get missed — that is why Phase 4 is dropped.
 - **One money rail.** One settlement batch, one deposit, one sales-tax number, refunds where staff already do them. Stripe would have meant two of each, permanently.
 - **Stripe was not actually cheaper.** Clover card-not-present is 3.5% + $0.10 against Stripe's 2.9% + $0.30; the lower percentage does not repay the higher fixed fee until a **$33.33** ticket. Average item is $5.83 (Billerica) and $4.87 (Lowell). §2.2 previously claimed the opposite and has been corrected.
-- **We keep the whole prize anyway.** Owning the cart, the customer list and the promo engine never depended on owning the processing. Clover Online Ordering has **no discount codes at all** — that gap is the differentiator, and it survives regardless of who charges the card.
+- **We keep the whole prize anyway.** Owning the cart, the customer list and the promo engine never depended on owning the processing. Reaffirmed 2026-08-28 after the spike: **the marketing engine and the storefront customisation are the point of the project.** The shop already has working online ordering, so nothing here makes order delivery better — what it buys is the cart, the customer list and discount codes, which Clover Online Ordering does not have at all. If that engine were ever judged not worth building, Option A (a menu site linking to `cloveronline.com`) becomes the correct answer instead. Clover Online Ordering has **no discount codes at all** — that gap is the differentiator, and it survives regardless of who charges the card.
 
 **What it costs us:** a dependency on Clover credentials we do not control, and a menu we mirror rather than own.
 
@@ -433,9 +433,39 @@ Two caveats, neither blocking:
 3. **Never lose a paid order.** Persist before pushing; retry with backoff; alert on `PUSH_FAILED`. A payment with no ticket is the worst state this system can reach, which is why `printEventId` is stored as proof.
 4. **Two locations, two merchant accounts, two sets of credentials.** Config is per-location, exactly like the catalogs in §8.6.
 
-### The one open technical unknown
+### Measured, not assumed — Phase 2 spike results (2026-08-27/28)
 
-**Does Clover Hosted Checkout create its own order in the merchant account?** If it does and we also push an atomic order, the shop gets **two tickets for one sale**. The docs do not say. This is the first thing the Phase 2 spike answers, and it is cheap to answer — which is precisely why the spike comes before any build.
+Run against sandbox merchant `4XKCZA8Z277R1`, seeded from the real Billerica catalog. Full detail in [`scripts/spike/findings.md`](./scripts/spike/findings.md).
+
+**The design got simpler than what is written above.** Hosted Checkout creates the order *and* attaches the payment itself. We do not push an atomic order and never needed to:
+
+1. Server prices the cart (authority) and opens a Hosted Checkout session for the tax-inclusive total.
+2. Customer pays. **Clover creates the order and the payment**, already linked, already in the merchant's order list.
+3. On the webhook, **rewrite that order's line items** into inventory-linked ones with real modifiers — a locked, PAID order accepts adds and deletes, and its `total` stays pinned to the payment throughout.
+4. Fire `print_event`.
+
+One order, one payment, one ticket, entirely inside the shop's existing account. Nothing about the staff's day changes.
+
+This also dissolves a mismatch found earlier the same day: Hosted Checkout does **not** apply the merchant tax rates (it charges exactly what it is handed) while atomic orders **do**. Creating a second order meant two totals that had to agree on every order. Rewriting one order means there is only ever one total, and it is the one that was charged.
+
+**Four measurements that change the code:**
+
+| Finding | Consequence |
+|---|---|
+| Tax rate unit is **hundred-thousandths of a percent** — 6.25% is `625000` | Setting `6250000` silently charges **62.5%**. Nothing errors. A $5.83 order became $9.27 and only a total-vs-expected check caught it |
+| **Discounts apply before tax** — `(6.45−1.00)×1.07` | The promo engine must match this ordering or every discounted order reconciles cents out |
+| `order.taxAmount` reads **0 even when tax was charged** | Reconcile against `total`, never `taxAmount` |
+| A missing permission returns **401, not 403** | 401 is not "bad token". `403` means something else entirely: `expand=` values are permission-checked individually, and one unpermitted name fails the whole call — so `catalog-sync` should prefer separate calls to a wide expand |
+
+**Credentials, confirmed self-serve.** Both come from the merchant's own dashboard behind 2FA, with no developer app and no approval: the platform API token (Settings → Business Operations → API tokens) does inventory, orders and printing; the Ecommerce API token (Settings → Ecommerce → Ecommerce API Tokens, type *Hosted Checkout*) does charging. Neither can do the other's job. Scope the production token to Inventory read, Orders read+write, Payments read, Merchant read and print write — a token that can create orders *and* print is the one credential capable of putting fake tickets in a live kitchen.
+
+**Hosted Checkout defaults, observed:** tips off unless requested, reCAPTCHA present without asking, branding limited to the merchant name on a coloured bar, postal code required on the card form, sessions expire in ~30 minutes. If owning the funnel visually matters more than it does today, that is the argument for the tokenising iframe rather than Hosted Checkout.
+
+### The one thing the sandbox cannot answer
+
+**Does the rewritten order actually print?** `POST /print_event` returns `400 "The default printing device is missing"` on a sandbox test merchant, because test merchants have no devices. The route and the permission are proven — it is a business-logic error, not an auth error — but the ticket itself is not.
+
+That, plus whether the shop's reporting shows the rewritten line items rather than Hosted Checkout's originals, closes only against the shop's own merchant with the owner present. It is question B in [`CLOVER-AND-LAUNCH.md`](./CLOVER-AND-LAUNCH.md) §14, and it is the last real risk in Option B.
 
 ## 9. Open Decisions (resolve before Phase 2/3)
 
