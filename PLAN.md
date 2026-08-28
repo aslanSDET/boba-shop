@@ -10,6 +10,8 @@ Building a mobile-first ordering **website** (not a native app) for **Snowdaes**
 
 **Not built yet:** everything cloud (auth, payments, database, kitchen view). See §6 for the phased plan.
 
+**Before starting Phase 2/3, read [`CLOVER-AND-LAUNCH.md`](./CLOVER-AND-LAUNCH.md)** — the Clover / payments / AWS decision brief. It proposes charging through Clover rather than Stripe and pushing orders into the shop’s existing POS, and it flags that the “cheaper processing” claim in §2.2 does not hold at this shop’s ticket size. Nothing there is applied to this file yet; its §15 lists the proposed amendments, all gated on the owner questions in its §14.
+
 ## 1. Reference Benchmarks
 
 Two real sites define the target experience — one for look, one for flow. Don't blend them into a third thing; keep the split explicit when making UI decisions.
@@ -40,7 +42,7 @@ The shop this is aimed at (Snowdaes, currently) relies on third-party aggregator
 
 | Challenge (current state) | Solution (this platform) |
 |---|---|
-| High third-party fees: DoorDash/Uber Eats take 15–30% per order | Direct Stripe processing: standard card fees ($0.30 + 2.9%) |
+| High third-party fees: DoorDash/Uber Eats take 15–30% per order | Direct ordering on the shop's own Clover merchant account: no aggregator commission at all (card-not-present ~3.5% + $0.10, which they already pay today) |
 | Lost customer data: aggregators own emails/phone numbers | 100% data ownership: SMS/phone login populates an owned customer database |
 | Generic ordering UI: clunky modifier lists for shaved snow/drinks | Purpose-built modifier drawer: bottom sheets for size, ice, sweetness, multi-topping selection |
 | Outdated brand identity: basic Wix/template presence | Modern editorial look: dark-mode aesthetic, high-contrast imagery (The Alley-inspired) |
@@ -66,12 +68,19 @@ The shop this is aimed at (Snowdaes, currently) relies on third-party aggregator
          │
          ├── AppSync GraphQL API + typed client (generated from schema)
          ├── DynamoDB (one table per model: MenuItem, Order)
-         ├── Amplify Function (Lambda) ── Stripe webhook verification + order status update
-         ├── Stripe API (PCI-compliant payment processing)
-         └── Real-time subscription ──> Kitchen Display Board (/kitchen) — no polling loop
+         ├── Amplify Functions (Lambda)
+         │     ├── catalog-sync ──> Clover Inventory API (nightly)
+         │     ├── checkout-session ──> Clover Hosted Checkout
+         │     ├── clover-webhook ── signature verify, payment captured
+         │     └── order-push ──> Clover Atomic Orders + print_event
+         └── Customer status page reads our Order mirror
 ```
+                                 │
+                                 ▼
+                   [ The shop's existing Clover account ]
+                     money · order state · kitchen ticket
 
-Pure serverless: near-$0/month idle cost, scales automatically with order volume. No servers to patch or size. The only hand-written backend logic is the Stripe webhook function — everything else (menu CRUD, order CRUD, kitchen queue queries) comes from the schema.
+Pure serverless: near-$0/month idle cost, scales automatically with order volume. No servers to patch or size. **Clover remains the system of record for money, order state and fulfilment** (§8.7); our DynamoDB `Order` is a mirror kept for customer history, promo attribution and the confirmation page — not the authority.
 
 ### 2.5 Franchise Negotiation Leverage
 
@@ -101,11 +110,11 @@ Off-the-shelf over custom everywhere possible: Clerk for auth, Stripe for paymen
 ## 4. Tech Stack
 
 - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind v4 + shadcn/ui + Zustand (cart state)
-- **Hosting:** AWS S3 + CloudFront (static/edge) — or Vercel if we want zero-ops for the frontend specifically (open decision, §9)
+- **Hosting:** **AWS Amplify Hosting** — CloudFront underneath, so the CDN, TLS and edge caching come with the deploy rather than being wired by hand. Resolved 2026-08-27; Vercel dropped (see §9)
 - **Backend:** **AWS Amplify Gen 2** — schema-driven Data layer (`amplify/data/resource.ts`), auto-provisions DynamoDB + AppSync GraphQL API + typed client + real-time subscriptions. A custom Amplify Function (Lambda under the hood) handles the one piece Data can't: the Stripe webhook, which needs signature verification logic, not simple model CRUD.
 - **Database:** Amazon DynamoDB — one table per model (`MenuItem`, `Order`), provisioned by Amplify, not a hand-crafted single table. See §6 Phase 3 for the schema.
 - **Auth:** Clerk (phone/SMS sign-in) — decoupled from the backend choice; only needs to hand a `userId` to Amplify Data. (Cognito, bundled with Amplify, remains the single-vendor alternative if Clerk ever feels like an extra moving part — not needed today.)
-- **Payments:** Stripe Checkout + webhooks
+- **Payments:** **Clover Hosted Checkout + Clover Orders API** on the shop's existing merchant account (§8.7). Stripe is no longer in the critical path; it stays on the shelf for recurring billing if a paid drink club ever happens
 - **IaC:** Amplify Gen 2's own CDK-based deploy (`ampx sandbox` / `ampx pipeline-deploy`) — still fully AWS, still versioned as code, just generated from the schema instead of hand-written CDK constructs
 - **Testing:** Playwright (E2E — cart math, modifier combinations, mocked Stripe flow) — natural fit given SDET background
 
@@ -159,13 +168,28 @@ Skinned to the real shop: Snowdaes, Billerica MA, est. 2013, "Make every day a S
 
 ## 6. Roadmap
 
-### Phase 2 — Auth + Payments (off-the-shelf integration)
+### Phase 2 — Clover sandbox spike (**do this first — it de-risks everything else**)
+
+Nothing downstream is worth building until an order created by code has been seen to print. Target: two days, throwaway script, no UI.
+
+Harness is built and runnable: **[`scripts/spike/README.md`](./scripts/spike/README.md)** has the runbook, six numbered scripts each print what they proved, and `scripts/spike/findings.md` is where the answers go. All four endpoint paths verified reachable (they return 401, not 404, unauthenticated). Only the account setup needs a human.
+
+- [ ] Free sandbox developer account; create a test merchant
+- [ ] Generate a merchant API token (Settings → Business Operations → API tokens) with read inventory + read/write orders + print
+- [ ] Generate an Ecommerce API token (Settings → Ecommerce → Ecommerce API Tokens), integration type **Hosted Checkout**
+- [ ] Read the test merchant's inventory through the Inventory API — proves the API path can replace the RSC scrape in `scripts/fetch-clover.mjs`
+- [ ] `GET /v3/merchants/{mId}/tax_rates` — resolves the two `taxIds` on every item into real rates, which retires the invented 8.75% in `src/store/useCart.ts`
+- [ ] Create an order via `POST /v3/merchants/{mId}/atomic_order/orders` using real inventory + modifier IDs
+- [ ] `POST /v3/merchants/{mId}/print_event` — **confirm the ticket fires**
+- [ ] Take a test payment through Hosted Checkout and answer the one open question: **does Hosted Checkout create its own order?** If it does, we must not also push an atomic order, or the shop gets two tickets
+- [ ] Push an order carrying a **discount** and confirm it shows in the merchant's reporting
+
+### Phase 2b — Auth + checkout wiring
 - [ ] Add Clerk: `<ClerkProvider>`, phone/SMS sign-in, guest-checkout fallback
-- [ ] `POST /api/checkout` (Next.js route handler, local-only for now) that builds a Stripe Checkout Session from cart line items
-- [ ] Redirect to Stripe Checkout (test mode keys)
-- [ ] `POST /api/webhooks/stripe` handler for `checkout.session.completed`
-- [ ] Order confirmation page (`/orders/[id]`) showing a receipt from session data
-- [ ] `.env.local` for `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CLERK_*` — never commit real keys (already gitignored)
+- [ ] `POST /api/checkout` — recomputes the cart server-side from the synced catalog, then opens a Clover Hosted Checkout session
+- [ ] `POST /api/webhooks/clover` — verify signature, then create the atomic order and fire `print_event`
+- [ ] Order confirmation page (`/orders/[id]`) reading our mirror record
+- [ ] Secrets per location (two merchant accounts, probably): `CLOVER_MERCHANT_ID_*`, `CLOVER_API_TOKEN_*`, `CLOVER_ECOMM_PRIVATE_KEY_*`. Only the Ecommerce **public** key may be `NEXT_PUBLIC_`
 
 ### Phase 3 — AWS Backend (move persistence off local/mock)
 - [ ] `npm create amplify@latest` — scaffolds `amplify/` directory in this repo
@@ -180,7 +204,12 @@ Skinned to the real shop: Snowdaes, Billerica MA, est. 2013, "Make every day a S
 
 ```ts
 const schema = a.schema({
+  // Mirror of Clover inventory, refreshed nightly by catalog-sync. Clover is the
+  // source of truth; nothing here is edited by us. Keyed by the Clover item ID so
+  // an order push can reference it directly.
   MenuItem: a.model({
+    cloverItemId: a.string(),        // e.g. "28XHGQDK3TNHM" — the join key
+    locationId: a.string(),          // 'billerica' | 'lowell' — two catalogs, §8.6
     categoryId: a.string(),
     productType: a.enum(['DRINK','SHAVED_SNOW','EGG_PUFF','SHAVED_ICE']),
     name: a.string(),
@@ -204,23 +233,72 @@ const schema = a.schema({
     tax: a.float(),
     tip: a.float(),
     total: a.float(),
-    status: a.enum(['PENDING','PAID','PREPARING','READY','COMPLETED','CANCELLED']),
-    stripePaymentIntentId: a.string(),
+    discountCode: a.string(),        // applied PromoCode.code, if any
+    discount: a.float(),
+    locationId: a.string(),
+    // Clover owns order state and money. These are references, not authority.
+    cloverOrderId: a.string(),
+    cloverPaymentId: a.string(),
+    printEventId: a.string(),        // proof the ticket fired
+    status: a.enum(['PENDING','PAID','PUSHED','PUSH_FAILED']),  // OUR push pipeline only —
+                                     // PREPARING/READY live in Clover, not here
   })
     .secondaryIndexes((index) => [
       index('status'),           // kitchen active queue: filter by status
       index('customerUserId'),   // user order history
     ])
-    .authorization((allow) => [allow.owner(), allow.publicApiKey().to(['create'])]),
+    .authorization((allow) => [allow.owner()]),
+    // NOTE: the browser can no longer create orders. A public API key that can
+    // create orders can create garbage orders — and worse, unpaid ones that
+    // print. Orders are created only by the clover-webhook Lambda, after a
+    // payment is verified.
+
+  Customer: a.model({
+    phone: a.string(),
+    email: a.string(),
+    marketingConsent: a.boolean(),
+    consentAt: a.datetime(),
+    sourceCampaign: a.string(),
+  }).authorization((allow) => [allow.owner()]),
+
+  Campaign: a.model({
+    name: a.string(),
+    channel: a.string(),             // email | sms | qr | instagram
+    startsAt: a.datetime(),
+    endsAt: a.datetime(),
+  }).authorization((allow) => [allow.owner()]),
+
+  PromoCode: a.model({
+    code: a.string(),
+    campaignId: a.string(),
+    kind: a.enum(['PERCENT','FIXED','FREE_ITEM']),
+    value: a.float(),
+    minSpend: a.float(),
+    maxRedemptions: a.integer(),
+    redemptionCount: a.integer(),    // guarded by a conditional write, not a read-then-write
+    singleUsePerCustomer: a.boolean(),
+    locationId: a.string(),          // a 10% code at Lowell is not a 10% code at Billerica
+    expiresAt: a.datetime(),
+  }).authorization((allow) => [allow.owner()]),
+
+  Redemption: a.model({
+    promoCodeId: a.string(),
+    customerId: a.string(),
+    orderId: a.string(),
+    discountApplied: a.float(),
+  }).authorization((allow) => [allow.owner()]),
 });
 ```
 
 This directly replaces the earlier hand-crafted single-table `PK`/`SK` design — Amplify provisions one table per model plus the secondary indexes declared above, and the generated client (`client.models.Order.observeQuery(...)`) is what the kitchen board subscribes to for real-time updates.
 
-### Phase 4 — Kitchen / Staff View
-- [ ] Password-protected `/kitchen` route (Clerk role check or a simple shared passcode for MVP)
-- [ ] Poll or subscribe to `STORE#MAIN` active-queue items
-- [ ] Tap-to-advance status: `PAID → PREPARING → READY → COMPLETED`
+### Phase 4 — ~~Kitchen / Staff View~~ — **dropped 2026-08-27**
+
+Clover's Orders app and the shop's existing printer *are* the kitchen display. Building a second screen for staff to watch during a rush is how orders get missed (§8.7). The shared-passcode idea is dropped with it — it would have been the weakest surface in the system.
+
+Replaced by: nothing to build. The only staff-facing work left is confirming with the owner that auto-print is on and that the ticket lands where they expect (§14-B of `CLOVER-AND-LAUNCH.md`).
+
+Reopen this only if the shop leaves Clover.
 
 ### Phase 5 — Testing & Hardening
 
@@ -305,13 +383,67 @@ Lowell and Billerica each run their own Clover catalog, and they are **not the s
 - **CLI profile name:** `boba-shop` (in `~/.aws/credentials`, not project-local). Use `--profile boba-shop` or `export AWS_PROFILE=boba-shop` for any AWS/Amplify command in this repo.
 - **Never redirect credential-generating AWS CLI output to a file inside this repo** (e.g. `aws iam create-access-key ... > .aws`) — this happened once already, caught before it was committed. `.gitignore` now has a belt-and-suspenders pattern for it, but the real fix is: don't do it in the first place. Access keys go straight into `~/.aws/credentials` via `aws configure --profile <name>` or `aws configure set`, never through a file that lives under the repo root.
 
+## 8.7 Clover Integration — Option B (RESOLVED 2026-08-27)
+
+**Decided: we own the storefront, Clover owns the money and the kitchen.** Full analysis in [`CLOVER-AND-LAUNCH.md`](./CLOVER-AND-LAUNCH.md); this is the record of what was chosen and what it costs us.
+
+The site does browse, cart, modifiers, accounts, promo codes and campaigns. At checkout, the card is charged on **the shop's existing Clover merchant account** via Clover Hosted Checkout, and the order is then written into Clover with the **real inventory IDs we already hold**, so the ticket prints on the same printer as today.
+
+**Why, in one line each:**
+
+- **The staff workflow does not change.** Orders arrive where they already arrive. A second screen during a rush is how orders get missed — that is why Phase 4 is dropped.
+- **One money rail.** One settlement batch, one deposit, one sales-tax number, refunds where staff already do them. Stripe would have meant two of each, permanently.
+- **Stripe was not actually cheaper.** Clover card-not-present is 3.5% + $0.10 against Stripe's 2.9% + $0.30; the lower percentage does not repay the higher fixed fee until a **$33.33** ticket. Average item is $5.83 (Billerica) and $4.87 (Lowell). §2.2 previously claimed the opposite and has been corrected.
+- **We keep the whole prize anyway.** Owning the cart, the customer list and the promo engine never depended on owning the processing. Clover Online Ordering has **no discount codes at all** — that gap is the differentiator, and it survives regardless of who charges the card.
+
+**What it costs us:** a dependency on Clover credentials we do not control, and a menu we mirror rather than own.
+
+### Access path — no App Market listing required
+
+The earlier worry that this needed a published, Clover-approved app was **wrong, and the correction is load-bearing**: it turns the biggest schedule risk into a form the owner fills in.
+
+| Credential | Where the owner gets it | Used for |
+|---|---|---|
+| **Merchant API token** | Merchant Dashboard → Settings → Business Operations → API tokens, permissions scoped per endpoint | Inventory read, atomic order create, `print_event` |
+| **Ecommerce API token** | Merchant Dashboard → Settings → Ecommerce → Ecommerce API Tokens, integration type *Hosted Checkout* | Charging the card |
+
+Clover's own OAuth FAQ: *"For single merchant integrations… you can use a merchant-generated token which allows you to access Clover APIs for that specific merchant without initiating the full OAuth flow."* Both tokens are self-serve from the owner's dashboard, behind 2FA. No developer app, no OAuth, no approval queue.
+
+Two caveats, neither blocking:
+- One Clover docs page frames merchant tokens as a **sandbox** convenience while the OAuth FAQ describes them as fine in production for exactly this case. **Confirm in writing with Clover developer relations before Phase 2b** — one email, not a six-week unknown.
+- **Only one Ecommerce API token exists per merchant account.** If the shop already uses it for something, we share or replace it. Ask before generating.
+- A *private app* was the assumed fallback and is not free either: Clover's docs are explicit that private apps still require approval before distribution. Merchant tokens avoid that entirely; keep private apps as the multi-location fallback only.
+
+### Consequences already applied to this file
+
+| Change | Where |
+|---|---|
+| Fee claim corrected — Clover is cheaper than Stripe at this ticket size | §2.2 |
+| Clover added as the system of record; our `Order` demoted to a mirror | §2.4 |
+| Payments → Clover; hosting resolved to Amplify Hosting | §4, §9 |
+| Phase 2 replaced by a **sandbox spike**: prove a coded order prints, before building anything | §6 |
+| Phase 4 `/kitchen` board **dropped**, shared passcode with it | §6 |
+| `MenuItem` keyed by `cloverItemId`; `Order` gains Clover references; `Customer`/`Campaign`/`PromoCode`/`Redemption` added; `publicApiKey().to(['create'])` removed from `Order` | §6 schema |
+| Tax becomes an API call (`/v3/merchants/{mId}/tax_rates`) rather than a question | §9 |
+
+### Design rules this locks in
+
+1. **The server is the pricing authority; Clover is the fulfilment authority.** The browser's total is display only — the server recomputes from the synced catalog before charging. Otherwise `curl` buys a Thai Dye for a penny.
+2. **Push the discount into the Clover order, not just into our arithmetic.** If a promo is applied and Clover records full price, the shop's books disagree with the deposit every time a code is used.
+3. **Never lose a paid order.** Persist before pushing; retry with backoff; alert on `PUSH_FAILED`. A payment with no ticket is the worst state this system can reach, which is why `printEventId` is stored as proof.
+4. **Two locations, two merchant accounts, two sets of credentials.** Config is per-location, exactly like the catalogs in §8.6.
+
+### The one open technical unknown
+
+**Does Clover Hosted Checkout create its own order in the merchant account?** If it does and we also push an atomic order, the shop gets **two tickets for one sale**. The docs do not say. This is the first thing the Phase 2 spike answers, and it is cheap to answer — which is precisely why the spike comes before any build.
+
 ## 9. Open Decisions (resolve before Phase 2/3)
 
 - [x] ~~Backend approach: raw CDK+Lambda+DynamoDB vs. Amplify Gen 2~~ — **resolved: Amplify Gen 2**. See decision log in §4.
-- [ ] Frontend hosting: S3+CloudFront (matches the AWS-native plan) vs. Vercel (zero-ops, faster to ship) — pick one before wiring CI/CD
-- [ ] Stripe account: personal test account now, migrate to business account when a real shop is attached
+- [x] ~~Frontend hosting: S3+CloudFront vs. Vercel~~ — **resolved 2026-08-27: AWS Amplify Hosting.** It *is* CloudFront, so the CDN question answers itself; it matches the Amplify Gen 2 backend already chosen, and keeps one AWS account for the franchise-handover story.
+- [x] ~~Stripe account~~ — **moot 2026-08-27.** Payments run on the shop's existing Clover merchant account (§8.7); we never hold a merchant account of our own. Revisit only for a recurring drink club.
 - [ ] Clerk vs. rolling a lighter phone-OTP flow ourselves — Clerk is faster to ship, adds a vendor dependency
-- [ ] Tax handling: flat rate (current mock uses 8.75%) vs. Stripe Tax — revisit once a real store address/jurisdiction is known
+- [ ] Tax handling: the invented 8.75% flat rate stands until Phase 2 reads the real rates from `GET /v3/merchants/{mId}/tax_rates`. Every item at both stores carries exactly two `taxIds` (119/119 and 124/124), so this is an API call, not a question for the owner — but still worth confirming with them that both rates apply to every item.
 - [ ] Domain name / branding — placeholder "Boba Shop" name throughout `src/` until this is settled
 - [x] ~~Confirm target shop~~ — **Snowdaes.** UI, brand, copy, categories and assets are all Snowdaes now; the §8 model expansion is done. Gathered from snowdaes.com 2026-08-26: six categories (Milk Teas, Shaved Snow, Egg Puffs, Specialty Drinks, Asian Ice, Hawaiian Ice), two locations (Lowell original, Billerica new), est. 2013, tagline "Make every day a Snowdae". Their current site has **no menu and no online ordering at all** — a homepage, an about page, socials, and a Google Form. That absence is the concrete gap this project closes and the sharpest line in the §2.5 pitch.
 - [x] ~~**Real menu pricing** — the shop publishes none~~ — **source found 2026-08-27.** Both shops run Clover online ordering (`snowdaes-north-billerica.cloveronline.com`, `snowdaes-lowell.cloveronline.com`) and publish the full priced catalog, embedded in the page as an RSC payload. Extraction is prototyped. The prices in `src/config/menu.ts` are **still invented** — importing them is the Phase 6 menu rebuild, and it is much larger than a price list: 119/124 items against 24 coded, 85/82 modifier groups against 11. See the rebuild plan for the modelling decision it hinges on.
