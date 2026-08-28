@@ -2,7 +2,7 @@
 
 Fill in as you go. Unanswered is fine; guessed is not. When this is complete, fold the conclusions into `PLAN.md §8.7` and delete the parts of the spike that no longer teach anything.
 
-Date run: ____________  ·  Environment: sandbox / production  ·  Merchant: ____________
+Date run: 2026-08-27  ·  Environment: **sandbox**  ·  Merchant: **4XKCZA8Z277R1** (Boba)
 
 ---
 
@@ -42,6 +42,38 @@ Every Clover HTTP call in `scripts/spike/` was checked against the current publi
 **403 means something different: expandable fields are permission-checked individually.** `GET /items?expand=taxRates` returns 403 `"Invalid permissions for expandable fields."` on a token that reads `/tax_rates` directly with a 200. One unpermitted name fails the whole call, so `expand=categories,modifierGroups,taxRates` fails while `expand=categories,modifierGroups` succeeds. Relevant to `catalog-sync`: prefer separate calls over a wide expand, or the sync breaks on a permission you did not know you needed.
 
 **One token per concern does not work for this integration.** Two tokens scoped "business settings" and "inventory and orders" split the endpoints the spike needs — merchant + devices on one, items + orders + tax_rates on the other. The production integration should use a single token carrying Merchant read, Inventory read, Orders read+write, Payments read.
+
+## Measured on a live sandbox merchant — steps 01–04 (2026-08-27)
+
+Merchant `4XKCZA8Z277R1` ("Boba"), seeded from the real Billerica catalog by `seed-sandbox.mjs`.
+
+### Tax rates are hundred-thousandths of a percent, not millionths
+
+**percent = rate / 100_000.** 6.25% is `625000`. This was inferred wrong from the docs in *both* directions during one session, and only an order total caught it: a rate of `6_250_000` was charged as **62.5%**, turning a $5.83 order into $9.27.
+
+Nothing in the API errors. The order just quietly costs the customer ten times the tax. This is the strongest argument for the server recomputing the total and *comparing* against Clover, rather than trusting either side alone.
+
+### Discounts apply BEFORE tax
+
+`(6.45 − 1.00) × 1.07 = 5.83`, not `6.45 × 1.07 − 1.00 = 5.90`. The promo engine must match this ordering or every discounted order reconciles cents out.
+
+### `taxAmount` reads 0 even when tax was charged
+
+`total` was correct at `583` while `taxAmount` stayed `0`. **Do not reconcile against `taxAmount`.** Trust `total`.
+
+### Atomic orders work as designed
+
+One call created an inventory-linked order carrying a modifier and an order-level discount. The discount is recorded as a real discount — `{"name":"SPIKE10 (test promo)","amount":-100}` — not a rewritten line price, so the shop's books stay right. The line item carries `item.id` and both tax rates.
+
+### Order state on creation is `OPEN`, `paymentState: OPEN`
+
+An API-created order is not "pending payment" in any special sense. Whether that alone fires a ticket on a merchant with auto-print enabled is **still unknown**, and it matters: if it does, pushing an order before payment would print an unpaid ticket.
+
+### print_event — endpoint and permission proven, printing NOT proven
+
+`POST /print_event` returned `400 {"message":"The default printing device is missing"}`. A business-logic error, not an auth error, so the token and route are right. But a sandbox test merchant has **no devices**, so actual printing cannot be demonstrated here.
+
+**This is the one gap the sandbox cannot close.** It closes only against the shop's own merchant, with the owner watching.
 
 ## The two that decide the architecture
 
