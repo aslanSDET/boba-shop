@@ -10,8 +10,12 @@ trust it:
 
 Nothing here has been copied into our code. This is a map of where the mines are.
 
-All six are cloned at `../clover-reference/` — deliberately a sibling of this repo, never
+All nine are cloned at `../clover-reference/` — deliberately a sibling of this repo, never
 inside it, because `boba-shop` is public and most of that code is unlicensed.
+
+**`../clover-reference/README.md` is the index**: what each repo is, what to borrow from
+it, and which files to open. Start there; this document is the analysis, that one is the
+map.
 
 ## The repos worth reading
 
@@ -366,6 +370,28 @@ now a question of how good the experience is, not whether the thing works.
 Worth asking the owner directly: *when an online order arrives today, what actually
 happens — does paper come out, or does someone watch a screen?*
 
+## Clover's own codelab admits two Hosted Checkout limitations
+
+**CONFIRMED** — from the README of `clover/hosted-checkout-codelab`, Clover's own
+tutorial repo (archived 2024, so worth re-checking against current docs):
+
+> 1. A merchant's Clover inventory cannot be used with hosted checkout.
+> 2. Refunds and voids are not available with hosted checkout. Hosted checkout provides a
+>    customer-facing payment interface, not a fully-featured payment system for merchants.
+
+The first is Clover confirming, in writing, what we measured the hard way — no inventory
+link, no calculation engine, `taxRates` silently ignored.
+
+**The second is new, and it is the strongest argument yet against Hosted Checkout.** A
+boba shop refunds wrong orders. If refunds and voids are unavailable on that path, every
+refund has to happen inside the Clover dashboard by hand, and our side only learns about
+it by webhook or sweep — which is exactly the reconciliation burden the Yipyy repo shows
+is expensive to get right.
+
+The tokenising iframe path (`/v1/charges` + `/v1/refunds`) does not have this problem, and
+`Pizza62Sol` demonstrates both paths can run side by side. This does not need deciding
+now, but it should be decided before Phase 2b rather than discovered during it.
+
 ## What this changes
 
 - [ ] **Test `POST /v1/orders/{orderId}/pay` on the sandbox.** Highest value item left.
@@ -387,3 +413,6 @@ happens — does paper come out, or does someone watch a screen?*
       unavailable rather than deleting them.
 - [ ] Owner question: when an online order arrives today, does paper come out, or does
       someone watch a screen? Printing is no longer a blocker either way.
+- [ ] Settle Hosted Checkout vs the tokenising iframe before Phase 2b. Clover states
+      refunds and voids are unavailable on Hosted Checkout, and a boba shop refunds
+      wrong orders.
