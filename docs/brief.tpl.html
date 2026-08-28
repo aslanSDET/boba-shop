@@ -359,7 +359,7 @@ html{scroll-behavior:smooth}
   <h3>Why each piece</h3>
   <ul>
     <li><strong>Hosted Checkout or iframe, not the raw Ecommerce API.</strong> API-only requires independent PCI DSS certification. Hosted Checkout redirects to a Clover-hosted branded page; the iframe tokenises the card in-page and returns a <code>clv_</code> token. Either keeps us at SAQ-A. Start with Hosted Checkout; move to the iframe later if the redirect hurts conversion.</li>
-    <li><strong>Atomic Orders, with real inventory IDs.</strong> Clover's docs are explicit: API-created orders must reference valid Clover inventory items and linked modifier groups <em>to be eligible for printing</em>. Custom line items with unlinked modifiers cause print failures. We already hold every required ID.</li>
+    <li><strong>Rewrite Clover&#39;s order — do not create a second one.</strong> <em>(Revised 28 Aug 2026 after the spike.)</em> Hosted Checkout creates the order and attaches the payment itself, so pushing an atomic order too would mean two orders for one sale. The webhook instead rewrites the order Clover already made: its line items arrive free-form with no <code>item.id</code>, which makes them ineligible for printing, so we swap them for inventory-linked ones with real modifiers. Measured: a <code>locked</code> / <code>PAID</code> order accepts adds and deletes, and its <code>total</code> stays pinned to the payment — the rewrite cannot break the payment match.</li>
     <li><strong>Merchant-generated API tokens — no app, no approval.</strong> The biggest assumed risk in Option B has largely evaporated. Clover's own OAuth FAQ: <em>"For single merchant integrations… you can use a merchant-generated token which allows you to access Clover APIs for that specific merchant without initiating the full OAuth flow."</em> The owner generates both credentials from their own dashboard, behind 2FA. For the record, the fallback is worse than assumed — <strong>private apps still require Clover approval before distribution</strong>; keep them in reserve for a multi-location rollout.</li>
     <li><strong>Refunds stay in Clover.</strong> The Platform API does not process refunds; the Ecommerce API does for its own payments, and the dashboard always does. Do not build a refund UI.</li>
     <li><strong>The Clover catalog stays the source of truth.</strong> Sync nightly into DynamoDB. The owner keeps editing the menu where they already edit it, and our site follows. This is what makes the system maintainable after we walk away.</li>
@@ -381,10 +381,27 @@ html{scroll-behavior:smooth}
     <li><strong>Never lose a paid order.</strong> Persist before pushing, retry with backoff, alert on failure. A payment with no ticket is the worst state this system can reach.</li>
   </ul>
 
-  <div class="note warn">
-    <span class="tag">The one open technical unknown</span>
-    <p><strong>Does Hosted Checkout create its own order in the merchant account?</strong> If it does, and we also push an atomic order, the shop gets <strong>two tickets for one sale</strong>. Clover's docs don't say. This is the first question the sandbox spike answers, and it is cheap to answer — which is exactly why the spike now comes before any build.</p>
+  <div class="note good">
+    <span class="tag">Answered · 28 Aug 2026</span>
+    <p><strong>Yes — and it simplifies the design.</strong> Hosted Checkout creates the order <em>and</em> the payment. The fear was two tickets for one sale; the actual result removes the push step entirely, and with it the tax mismatch — there is now only one total, and it is the one that was charged.</p>
   </div>
+
+  <div class="note warn">
+    <span class="tag">The last real risk</span>
+    <p><strong>Printing is still unproven.</strong> <code>print_event</code> returns <code>400 "The default printing device is missing"</code> because sandbox test merchants have no devices. Route and permission are proven — a business-logic error, not an auth error — but the ticket itself is not. That closes only on the shop&#39;s own merchant, with the owner watching.</p>
+  </div>
+
+  <h3>Measured in the sandbox — each one changes the code</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Finding</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr class="hi"><td>Tax rate unit is <strong>hundred-thousandths of a percent</strong> — 6.25% is <code>625000</code></td><td>Setting <code>6250000</code> silently charges <strong>62.5%</strong>. Nothing errors. It turned a $5.83 order into $9.27, and only a total-vs-expected check caught it</td></tr>
+      <tr><td><strong>Discounts apply before tax</strong></td><td>The promo engine must match, or every discounted order reconciles cents out</td></tr>
+      <tr><td><code>order.taxAmount</code> reads 0 even when tax was charged</td><td>Reconcile against <code>total</code>, never <code>taxAmount</code></td></tr>
+      <tr><td>A missing permission returns <strong>401, not 403</strong></td><td>401 is not "bad token". 403 means an <code>expand=</code> value was individually rejected — one bad name fails the whole call</td></tr>
+      <tr><td>Hosted Checkout adds <strong>no tax</strong>; atomic orders <strong>do</strong></td><td>Moot now that we rewrite one order instead of creating a second — but it is why creating a second was untenable</td></tr>
+    </tbody>
+  </table></div>
 </section>
 
 <!-- 7 -->

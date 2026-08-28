@@ -220,7 +220,7 @@ sequenceDiagram
     participant W as Our site — Amplify/CloudFront
     participant L as Our API — Lambda
     participant D as DynamoDB
-    participant CE as Clover Ecommerce API
+    participant CE as Clover Hosted Checkout
     participant CO as Clover Orders API
     participant P as Kitchen printer
 
@@ -228,26 +228,30 @@ sequenceDiagram
     U->>W: Apply promo code SNOW10
     W->>L: Validate code + cart
     L->>D: Look up code, limits, redemptions
-    Note over L: Recomputes EVERY price from<br/>the server-side catalog.<br/>Client-sent totals are ignored.
-    L-->>W: Authoritative total
+    Note over L: Recomputes EVERY price from the<br/>server-side catalog, applies the discount<br/>BEFORE tax, and adds tax itself —<br/>Hosted Checkout adds none.
+    L-->>W: Authoritative tax-inclusive total
 
     U->>W: Checkout
     W->>L: Create checkout session
     L->>CE: Hosted Checkout session, server-side total
     CE-->>U: Clover-hosted card form
     Note over U,CE: Card data never touches our servers.<br/>SAQ-A. reCAPTCHA included.
+
+    CE->>CO: Clover creates the order AND the payment<br/>itself — line items are free-form
     CE-->>L: Webhook — payment captured, signature verified
 
-    L->>CO: POST atomic_order with real Clover<br/>item + modifier IDs from the catalog
-    CO->>P: Ticket auto-prints, same as today
-    L->>D: Persist order, customer, redemption
+    L->>CO: Rewrite that order's line items into<br/>inventory-linked ones with real modifiers
+    Note over L,CO: Measured: a locked PAID order accepts<br/>adds and deletes, and total stays pinned<br/>to the payment. No second order.
+    L->>CO: POST print_event
+    CO->>P: Ticket prints, same printer as today
+    L->>D: Persist order mirror, customer, redemption
     L-->>U: Confirmation + status page
 ```
 
 **Why each piece:**
 
 - **Hosted Checkout or iframe, not the raw Ecommerce API.** The API-only route requires independent PCI DSS certification. Hosted Checkout redirects to a Clover-hosted, branded page; the iframe tokenises the card in-page and hands back a `clv_` token. Either keeps us at SAQ-A. Start with Hosted Checkout, move to the iframe later if the redirect hurts conversion.
-- **Atomic Orders, with real inventory IDs.** Clover's docs are explicit: orders created via the API must reference **valid Clover inventory items and linked modifier groups to be eligible for printing.** Custom line items with unlinked modifiers cause print failures. We already have every required ID.
+- **Rewrite Clover's order — do not create a second one.** *(Revised 2026-08-28 after the spike.)* Hosted Checkout creates the order and attaches the payment itself, so pushing an atomic order too would mean two orders for one sale. Instead the webhook rewrites the order Clover already made: its line items arrive free-form with no `item.id`, which per Clover's docs makes them **ineligible for printing**, so we swap them for inventory-linked ones carrying real modifiers. Measured: a `locked` / `PAID` order accepts both adds and deletes, and its `total` stays pinned to the payment throughout — so the rewrite cannot break the payment match. One order, one payment, one ticket.
 - **Merchant-generated API tokens — no app, no approval.** This was the biggest assumed risk in Option B and it has largely evaporated. Clover's own OAuth FAQ: *"For single merchant integrations… you can use a merchant-generated token which allows you to access Clover APIs for that specific merchant without initiating the full OAuth flow."* The owner generates both credentials from their own dashboard, behind 2FA:
 
   | Credential | Where the owner clicks | What we use it for |
@@ -265,7 +269,9 @@ sequenceDiagram
 
 **Fallback if the order push fails:** never lose the order. Persist first, retry with backoff, and alert. A paid order that isn't in Clover is the worst failure mode in the system.
 
-**The one open technical unknown: does Hosted Checkout create its own order?** If it does, and we also push an atomic order, the shop gets **two tickets for one sale**. Clover's docs don't say. This is the first question the sandbox spike answers, and it is cheap to answer — which is exactly why the spike comes before any build.
+**Answered 2026-08-28: yes, and it simplifies things.** Hosted Checkout creates the order *and* the payment. The fear was two tickets for one sale; the actual result removes the push step entirely. What remains unproven is the **printing itself** — `print_event` returns `400 "The default printing device is missing"` because sandbox test merchants have no devices. Route and permission are proven; the ticket is not. That closes only on the shop's own merchant, and it is now the last real risk in Option B.
+
+**Also measured, and each one changes the code:** the tax rate unit is **hundred-thousandths of a percent** — 6.25% is `625000`, and `6250000` silently charges 62.5% with no error (it turned a $5.83 order into $9.27); **discounts apply before tax**; `order.taxAmount` reads 0 even on a taxed order, so reconcile against `total`; and a missing permission returns **401, not 403**, while 403 means an `expand=` value was individually rejected. Full detail in `scripts/spike/findings.md`.
 
 **Push the discount into the Clover order, not just into our arithmetic.** If a promo is applied and Clover records full price, the shop's books disagree with the deposit every time a code is used. Clover orders support order-level and line-item discounts; use them.
 
