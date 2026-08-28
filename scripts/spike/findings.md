@@ -69,6 +69,28 @@ One call created an inventory-linked order carrying a modifier and an order-leve
 
 An API-created order is not "pending payment" in any special sense. Whether that alone fires a ticket on a merchant with auto-print enabled is **still unknown**, and it matters: if it does, pushing an order before payment would print an unpaid ticket.
 
+### Hosted Checkout does NOT apply the merchant tax rates — and atomic orders DO
+
+The checkout page rendered **Tax $0.00, Total $16.75** — exactly the sum of the line items we sent. Hosted Checkout charges what you hand it, full stop. Step 03 proved the opposite for orders: an atomic order referencing inventory items applies the merchant tax rates itself and returned $5.83 on a $5.45 net cart.
+
+**So the two halves of Option B disagree by default.** Charge $16.75 through Hosted Checkout, then push an atomic order for the same items, and Clover computes $17.92 on the order. The shop is then holding a paid order whose recorded total does not match its payment — on every single order, not as an edge case.
+
+This is the sharpest argument yet for rule 1 in `PLAN.md` §8.7 (*the server is the pricing authority*), and it needs an explicit resolution rather than a default:
+
+- compute tax server-side, send the tax-inclusive total to Hosted Checkout, and create the order with tax suppressed (`taxRemoved`) or with explicit line prices; **or**
+- create the order first, read back Clover's computed total, and charge exactly that.
+
+The second is more robust — Clover stays the arithmetic authority and our maths only has to *agree*, not *lead*. It depends on being able to create an order without it firing a ticket before payment, which is the remaining unknown below.
+
+### Other Hosted Checkout defaults, observed rather than assumed
+
+- **Tips: off by default.** No tip prompt appeared without sending `tips`. Sending `tips:{enabled:true}` is opt-in, not opt-out.
+- **Branding is thin**: merchant name in a coloured header bar, otherwise a plain white card. Owning the funnel visually means the iframe integration, not Hosted Checkout. Acceptable for v1.
+- **reCAPTCHA is present** without being asked for, which is the card-testing protection the brief credited it with.
+- **Customer fields prefill** from the `customer` object we sent, with the email partly masked in the UI.
+- Card form is Card Number / MM-YY / CVV / **Zip** — the postal code is required, so our checkout must collect it or let Clover do so.
+- Session lifetime is short: `expirationTime` was ~30 minutes out.
+
 ### print_event — endpoint and permission proven, printing NOT proven
 
 `POST /print_event` returned `400 {"message":"The default printing device is missing"}`. A business-logic error, not an auth error, so the token and route are right. But a sandbox test merchant has **no devices**, so actual printing cannot be demonstrated here.
