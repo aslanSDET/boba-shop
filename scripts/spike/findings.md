@@ -130,6 +130,34 @@ One order, one payment, one ticket, entirely inside the shop's existing Clover a
 
 **Still to verify:** whether the rewritten order prints correctly, and whether the shop's reporting shows the rewritten line items rather than the originals. Neither is answerable without a device — see below.
 
+### Who calculates? We do — Hosted Checkout has no calculation engine at all
+
+Clover *does* have one, and it works: step 03 built an order from inventory items and Clover computed $5.83 from a $5.45 net cart, applying both tax rates itself. But that engine only runs when **Clover** builds the order out of inventory items. On the Hosted Checkout money path it never runs.
+
+Measured:
+
+- Hosted Checkout renders and charges **exactly the line items handed to it**. Tax $0.00, Total = the sum we sent.
+- Passing `shoppingCart.taxRates: [{name, rate}]` **is accepted without error and silently ignored** — the page still showed Tax $0.00 on a cart that should have been $17.92. Do not assume an accepted field is an honoured one.
+- After payment the order `total` is **pinned** and cannot be moved by editing line items.
+
+So there is no "hand it to Clover" option on this path. The number must be correct before Clover ever sees it.
+
+**The rule that follows:** compute server-side, but compute from *Clover's own inputs* — item prices, modifier prices and tax rates synced from their API. We are not inventing a parallel pricing model, we are evaluating theirs. That keeps `PLAN.md` §8.7 rule 1 honest: the browser is display, the server is authority, and the server's authority is derived from Clover's data.
+
+### The accounting catch — and the strongest argument yet for the iframe
+
+The payment records **`taxAmount: $0.00`**, and rewriting the order's line items does not fix it. Inventory-linked lines added afterwards *do* carry their tax rates (verified: a rewritten line showed `MA Meals Tax 6.25% + Local Option Meals Tax 0.75%`), so the ticket and item detail are right — but the payment still attributes zero tax.
+
+For a Massachusetts food business filing meals tax, that means **every online order reports zero tax collected** even though the customer paid it. That is not a rounding annoyance, it is a bookkeeping defect.
+
+Three ways out, in increasing order of correctness:
+
+1. **Fold tax into the line prices** sent to Hosted Checkout. Total is right; attribution is still zero. Reconcile outside Clover.
+2. **Send tax as its own cart line.** Visible to the customer, still not a real tax field.
+3. **Switch to the tokenising iframe.** We create the order from inventory items, Clover computes the tax with its own engine, and we charge the total it returns. The engine goes back on the money path and the attribution is correct by construction.
+
+Option 3 was previously framed as a conversion/branding preference. It is now a **reporting correctness** argument, which is a much stronger one. Worth settling before Phase 2b — and worth asking the owner how their accountant currently sees online-order tax (§14-F).
+
 ### print_event — endpoint and permission proven, printing NOT proven
 
 `POST /print_event` returned `400 {"message":"The default printing device is missing"}`. A business-logic error, not an auth error, so the token and route are right. But a sandbox test merchant has **no devices**, so actual printing cannot be demonstrated here.
