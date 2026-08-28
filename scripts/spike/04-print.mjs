@@ -45,9 +45,15 @@ console.log(`  state          ${ev.state ?? "(none)"}`);
 if (ev.deviceRef) console.log(`  device         ${ev.deviceRef.id}`);
 
 if (ev.id) {
-  const status = await api(`/v3/merchants/${mId}/print_event/${ev.id}`).catch(() => null);
+  // GET only answers for jobs still in CREATED / PRINTING / FAILED. A job that
+  // already printed is discarded and the GET errors — so an error here is the
+  // *good* outcome, not a failure. soft:true, or it would exit the script.
+  const status = await api(`/v3/merchants/${mId}/print_event/${ev.id}`, { soft: true }).catch(() => null);
   if (status) console.log(`  polled state   ${status.state ?? "(none)"}`);
+  else console.log(`  polled state   gone — Clover discards a job once it prints, so this reads as printed`);
   console.log(`\n  Note: once a job prints, Clover discards it — the status is not replayable.`);
+  console.log(`  A state stuck at CREATED means no order printer is configured, or the`);
+  console.log(`  order is not print-eligible (custom line items / unlinked modifiers).`);
 }
 
 pass(`Print event ${ev.id} accepted. If a real device is attached, a ticket should be in hand.`);

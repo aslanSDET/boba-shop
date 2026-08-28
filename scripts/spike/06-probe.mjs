@@ -23,6 +23,12 @@ if (!existsSync(p)) fail("No snapshot. Run 05-hosted-checkout.mjs and pay the li
 const { before, session, sentCart } = JSON.parse(readFileSync(p, "utf8"));
 
 const mId = MERCHANT_ID();
+// expand names are the documented ones for getOrders, and two is inside the
+// three-per-call ceiling. orderBy uses Clover's documented `<field>%20DESC`
+// form; descending-by-creation-time is also the documented default, so the
+// 50-row window should be the newest 50 either way. WINDOW_OK below refuses to
+// trust that silently — a param Clover ignores does not error, and this is the
+// one experiment the architecture hangs on.
 const [orders, payments] = await Promise.all([
   api(`/v3/merchants/${mId}/orders?limit=50&orderBy=createdTime%20DESC&expand=lineItems,payments`),
   api(`/v3/merchants/${mId}/payments?limit=50&orderBy=createdTime%20DESC`),
@@ -30,6 +36,13 @@ const [orders, payments] = await Promise.all([
 
 const newOrders = (orders.elements ?? []).filter((o) => !before.orderIds.includes(o.id));
 const newPayments = (payments.elements ?? []).filter((x) => !before.paymentIds.includes(x.id));
+
+// If the window really is newest-first, at least one row in it postdates the
+// snapshot — the payment we just made guarantees that. If nothing does, we are
+// looking at a stale slice of the account and "0 new orders" would be a lie.
+const newest = (rows) => Math.max(0, ...(rows ?? []).map((r) => r.createdTime ?? 0));
+const WINDOW_OK =
+  newest(payments.elements) >= before.at || newest(orders.elements) >= before.at;
 
 console.log(`  new payments since the snapshot: ${newPayments.length}`);
 for (const pay of newPayments) {
@@ -47,6 +60,11 @@ console.log(`\n${"═".repeat(72)}`);
 if (newPayments.length === 0) {
   console.log(`  INCONCLUSIVE — no payment landed. Was the checkout link actually paid?`);
   console.log(`  Session: ${session.checkoutSessionId}`);
+} else if (!WINDOW_OK) {
+  console.log(`  INCONCLUSIVE — a payment landed, but nothing in the 50-row window is`);
+  console.log(`  newer than the snapshot. The list is not coming back newest-first, so`);
+  console.log(`  "no new orders" here would mean nothing. Re-query with an explicit`);
+  console.log(`  filter=createdTime>${before.at} before trusting any answer.`);
 } else if (newOrders.length === 0) {
   console.log(`  ANSWER: Hosted Checkout is PAYMENT-ONLY. It created no order.`);
   console.log(`  → PLAN.md §8.7 stands: charge with HCO, then push the atomic order (step 03).`);

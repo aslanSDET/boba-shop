@@ -64,8 +64,16 @@ export function need(name) {
 
 export const MERCHANT_ID = () => need("CLOVER_MERCHANT_ID");
 
-/** Platform REST API (v3): inventory, orders, print. Auth = merchant API token. */
-export async function api(path, { method = "GET", body, token } = {}) {
+/**
+ * Platform REST API (v3): inventory, orders, print. Auth = merchant API token.
+ *
+ * `soft: true` throws instead of exiting, for the callers that are *asking a
+ * question* rather than depending on the answer — the permission probes in 01,
+ * the print-event poll in 04 (a job that already printed is documented to error),
+ * and the snapshot in 05. Without it their try/catch and .catch() are dead code,
+ * because handle() → fail() → process.exit(1) never unwinds.
+ */
+export async function api(path, { method = "GET", body, token, soft = false } = {}) {
   const url = `${BASE.platform}${path.startsWith("/") ? path : "/" + path}`;
   const res = await fetch(url, {
     method,
@@ -77,7 +85,7 @@ export async function api(path, { method = "GET", body, token } = {}) {
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  return handle(res, method, url);
+  return handle(res, method, url, soft);
 }
 
 /** Hosted Checkout lives on the platform host but authenticates with the ecommerce private key. */
@@ -96,11 +104,17 @@ export async function hostedCheckout(body) {
   return handle(res, "POST", url);
 }
 
-async function handle(res, method, url) {
+async function handle(res, method, url, soft = false) {
   const text = await res.text();
   let json = null;
   try { json = text ? JSON.parse(text) : null; } catch { /* keep raw */ }
   if (!res.ok) {
+    if (soft) {
+      const e = new Error(`HTTP ${res.status} ${res.statusText} — ${method} ${url}`);
+      e.status = res.status;
+      e.body = text;
+      throw e;
+    }
     fail(
       `${method} ${url}\n  HTTP ${res.status} ${res.statusText}\n  ${text.slice(0, 800) || "(empty body)"}` +
         hint(res.status),

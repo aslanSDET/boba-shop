@@ -13,20 +13,28 @@ import { api, MERCHANT_ID, heading, pass, money } from "./lib/clover.mjs";
 
 heading("02", "Inventory", "the Inventory API returns the same catalog the scrape does, plus tax data");
 
-/** Clover paginates with offset/limit and caps limit at 1000. */
+/**
+ * Clover paginates with offset/limit: limit defaults to 100 and is capped at
+ * 1000, and offset paging is the documented approach for these collections.
+ * PAGE stays at 100 so a short page is an unambiguous end-of-list signal.
+ */
+const PAGE = 100;
 async function all(path, expand = "") {
   const out = [];
   const sep = path.includes("?") ? "&" : "?";
-  for (let offset = 0; ; offset += 100) {
-    const page = await api(`${path}${sep}limit=100&offset=${offset}${expand ? `&expand=${expand}` : ""}`);
+  for (let offset = 0; ; offset += PAGE) {
+    const page = await api(`${path}${sep}limit=${PAGE}&offset=${offset}${expand ? `&expand=${expand}` : ""}`);
     const els = page?.elements ?? [];
     out.push(...els);
-    if (els.length < 100) break;
+    if (els.length < PAGE) break;
   }
   return out;
 }
 
 const mId = MERCHANT_ID();
+// Clover limits expansions to three fields per call, and the items expand below
+// is already at that ceiling. A fourth (itemStock, options, tags) needs its own
+// request rather than being appended here.
 const [items, groups, categories, taxRates] = await Promise.all([
   all(`/v3/merchants/${mId}/items`, "categories,modifierGroups,taxRates"),
   all(`/v3/merchants/${mId}/modifier_groups`, "modifiers"),

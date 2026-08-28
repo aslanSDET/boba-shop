@@ -19,10 +19,15 @@ heading("05", "Hosted Checkout", "we can charge a card, and we capture the 'befo
 
 const mId = MERCHANT_ID();
 
+// orderBy=<field>%20DESC is Clover's documented sort syntax, and descending by
+// creation time is also the documented default — so this is belt-and-braces:
+// if orderBy were silently ignored on these two collections we would still get
+// the newest rows. 06 asserts that rather than assuming it. soft:true so a
+// snapshot failure degrades to an empty "before" instead of killing the step.
 async function snapshot() {
   const [orders, payments] = await Promise.all([
-    api(`/v3/merchants/${mId}/orders?limit=50&orderBy=createdTime%20DESC`).catch(() => ({ elements: [] })),
-    api(`/v3/merchants/${mId}/payments?limit=50&orderBy=createdTime%20DESC`).catch(() => ({ elements: [] })),
+    api(`/v3/merchants/${mId}/orders?limit=50&orderBy=createdTime%20DESC`, { soft: true }).catch(() => ({ elements: [] })),
+    api(`/v3/merchants/${mId}/payments?limit=50&orderBy=createdTime%20DESC`, { soft: true }).catch(() => ({ elements: [] })),
   ]);
   return {
     at: Date.now(),
@@ -33,6 +38,13 @@ async function snapshot() {
 
 const before = await snapshot();
 console.log(`  before: ${before.orderIds.length} recent orders, ${before.paymentIds.length} recent payments`);
+if (!before.orderIds.length && !before.paymentIds.length) {
+  console.log(
+    `\n  ⚠ Empty snapshot. On a brand-new test merchant that is just true, but if the\n` +
+      `    reads failed instead, step 06 will call every order it sees "new" and answer\n` +
+      `    the architecture question backwards. Confirm 01 passed before paying.`,
+  );
+}
 
 const body = {
   customer: { email: "spike@example.com", firstName: "Spike", lastName: "Test", phoneNumber: "9785551010" },
@@ -66,11 +78,14 @@ console.log(
 if (ENV === "production") console.log(`\n  ⚠ CLOVER_ENV=production — this URL will charge a REAL card. Stop unless that is intended.`);
 
 console.log(
-  `\n  While you are on the page, note for findings.md:\n` +
-    `    · how much branding control is there? (this is our checkout, visually)\n` +
-    `    · is tax added, or is the total exactly what we sent?\n` +
-    `    · is there a tip prompt, and can it be turned off?\n` +
-    `    · where does it redirect afterwards?\n\n` +
+  `\n  While you are on the page, note for findings.md. Clover documents four body\n` +
+    `  fields we are deliberately NOT sending, so record the default each produces:\n` +
+    `    · branding — pageConfigUuid selects a saved Hosted Checkout page config\n` +
+    `    · tax — taxRates:[{name, rate}] is accepted; is tax added without it, or is\n` +
+    `      the total exactly the ${money(total)} we sent?\n` +
+    `    · tips — tips:{enabled:false} is the documented off switch; is it on by default?\n` +
+    `    · redirect — redirectUrls:{success, failure}, HTTPS only, and a Merchant\n` +
+    `      Dashboard setting (Settings → Ecommerce → Hosted Checkout) OVERRIDES it\n\n` +
     `  Then run:  node scripts/spike/06-probe.mjs`,
 );
 

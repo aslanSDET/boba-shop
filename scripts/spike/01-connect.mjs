@@ -29,25 +29,27 @@ console.log("\n  permission probes");
 let missing = 0;
 for (const [label, path] of probes) {
   try {
-    const r = await api(path);
+    // soft: the point of this loop is to name EVERY missing permission in one
+    // run, so a 403 must not take the script down with it.
+    const r = await api(path, { soft: true });
     const n = r?.elements?.length ?? 0;
     console.log(`    ✓ ${label.padEnd(22)} ok${n === 0 ? "  (empty, but readable)" : ""}`);
-  } catch {
-    // api() exits on failure, so reach this only if that changes.
-    console.log(`    ✗ ${label.padEnd(22)} DENIED`);
+  } catch (e) {
+    console.log(`    ✗ ${label.padEnd(22)} DENIED  (HTTP ${e.status ?? "?"})`);
     missing++;
   }
 }
 
 console.log(
   `\n  Write access (creating orders, printing) is not probed here — it would leave\n` +
-    `  junk on the merchant. Steps 04 and 05 exercise it for real.`,
+    `  junk on the merchant. Steps 03 and 04 exercise it for real. Clover documents\n` +
+    `  print_event as needing "Write orders" to fire and "Read orders" to poll.`,
 );
 
 if (ENV === "production") {
   console.log(
-    `\n  ⚠ CLOVER_ENV=production. Step 04 will create a REAL order on a REAL merchant\n` +
-      `    and step 05 will print a REAL ticket. Do that only with the owner watching.`,
+    `\n  ⚠ CLOVER_ENV=production. Step 03 will create a REAL order on a REAL merchant\n` +
+      `    and step 04 will print a REAL ticket. Do that only with the owner watching.`,
   );
 }
 

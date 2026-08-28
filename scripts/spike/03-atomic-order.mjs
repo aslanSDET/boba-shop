@@ -35,6 +35,9 @@ if (!ids.length) {
 const lineItems = [];
 for (const id of ids) {
   const item = await api(`/v3/merchants/${mId}/items/${id}?expand=modifierGroups`);
+  // `printed` is in Clover's own atomic-order example, though that example
+  // quotes it as the string "false"; sent as a real boolean here. If the POST
+  // is rejected on this field, try the string — and note it in findings.md.
   const line = { item: { id: item.id }, printed: false };
   const group = item.modifierGroups?.elements?.[0];
   if (group) {
@@ -55,8 +58,10 @@ const orderCart = {
   discounts: [{ name: "SPIKE10 (test promo)", amount: -DISCOUNT_CENTS }],
 };
 
-// orderType is optional but is what makes the order look like a real online
-// order on the POS rather than an untyped one.
+// orderType is what makes the order look like a real online order on the POS
+// rather than an untyped one. Clover's reference calls orderType.id required
+// while the surrounding prose treats it as optional, so this stays conditional
+// — if the POST fails with no order types on the merchant, that is the answer.
 const types = await api(`/v3/merchants/${mId}/order_types?limit=20`);
 const online =
   (types.elements ?? []).find((t) => /online|web|pickup|to.?go/i.test(t.label || "")) || types.elements?.[0];
