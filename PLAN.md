@@ -513,6 +513,41 @@ A boba shop refunds wrong orders. On the Hosted Checkout path every refund happe
 
 **Smaller API facts now written into `prior-art.md` rather than repeated here:** a declined card is HTTP **402** with no `error.type` (naive handlers return 500); Clover rate-limits with **429**; `externalPaymentId` silently caps at **32 characters** while a UUID is 36; a `clv_` token is **single-use**; a refund that omits its amount takes the **whole charge**; and `POST /v1/orders/{id}/returns` refunds the entire order while echoing your requested amount back.
 
+### Why this stays small — the Yipyy comparison (2026-08-29)
+
+Recorded because the scope will feel like it is growing again, and this is the
+answer. `../clover-reference/puneet` is the most complete Clover integration we
+found — **7,210 lines across 22 modules and 68 files**. Ours is **1,114 lines
+across 4 modules and 10 files**, and it has taken real money end to end.
+
+Their own orientation doc (`puneet/artifact/yipyy-and-clover.html`) is unusually
+honest about where the weight comes from. Every reason is something Snowdaes
+does not have:
+
+| Why Yipyy is big | Snowdaes | Modules it deletes |
+|---|---|---|
+| **Multi-tenant** — one deployment, many pet businesses, isolated by row-level security. Forces OAuth, signed state, per-facility token storage and rotation | Two stores **we control**. Merchant-generated tokens, no OAuth, no consent handshake | `oauth`, `connection`, `capabilities`, `merchant` |
+| **They are a Clover reseller** — they bring Clover *new merchants*: legal name, business structure, owning principals, documents, underwriting. That is why a booking app contains an underwriting pipeline | Snowdaes **already has a Clover account** | the whole `merchant_applications` pipeline |
+| **Physical terminals** — countertop readers, and a card-present refund must go back through the same device, a separate path entirely | **Online only** | `devices`, `terminal`, their `print` path |
+| **They estimate payouts** — Clover publishes no settlement endpoint to an OAuth app, so they net their own records and label the figure an estimate on every screen | The owner opens **their own Clover dashboard** | `payouts` |
+| **They are the system of record** for a business's entire operation | **Clover is the system of record.** The order lives there; we are a nicer way to place it | `reconcile`, `sweep`, `reversal`, `vault`, `receipt`×3 |
+
+Four of their twenty-two are ours: `config`, `request`, `orders`, `charge`.
+
+**The complexity is real. It is just not ours.** It is the cost of being a
+multi-tenant reseller with hardware. We are one shop with a website.
+
+Two things will genuinely add weight later, and neither is large:
+
+- **Refunds**, if the owner refunds often — owner questions 5–6 in
+  [`docs/OWNER-ASKS.md`](./docs/OWNER-ASKS.md). Until then they refund in their
+  dashboard exactly as they do today.
+- **One webhook**, so a payment still lands if the customer's phone dies between
+  paying and the confirmation screen. One route handler, when we need it.
+
+If a proposal cannot be traced to one of those two, it is Yipyy's problem being
+imported into our codebase, and the answer is no.
+
 ## 9. Open Decisions (resolve before Phase 2/3)
 
 - [x] ~~Backend approach: raw CDK+Lambda+DynamoDB vs. Amplify Gen 2~~ — **resolved: Amplify Gen 2**. See decision log in §4.

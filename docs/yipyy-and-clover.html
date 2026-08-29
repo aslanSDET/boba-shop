@@ -1,0 +1,455 @@
+<title>Yipyy and Clover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root {
+    --paper:      #F6F7F9;
+    --surface:    #FFFFFF;
+    --surface-2:  #EDEFF3;
+    --ink:        #141C26;
+    --ink-2:      #3E4A59;
+    --ink-3:      #6B7787;
+    --rule:       #D9DEE6;
+    --rule-soft:  #E7EAF0;
+
+    /* Ownership is the encoding: indigo = Yipyy's, clay = Clover's. */
+    --yipyy:      #33487A;
+    --yipyy-fill: #E7EBF4;
+    --clover:     #A0563A;
+    --clover-fill:#F6E9E3;
+
+    --gap:        #8A93A0;
+    --good:       #2A6B58;
+    --good-fill:  #E4EFEA;
+
+    --measure: 68ch;
+    --s1: 0.5rem; --s2: 0.875rem; --s3: 1.5rem; --s4: 2.5rem; --s5: 4rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #10161E;
+      --surface:    #161E28;
+      --surface-2:  #1D2733;
+      --ink:        #E8ECF2;
+      --ink-2:      #B3BECD;
+      --ink-3:      #7D8998;
+      --rule:       #2A3543;
+      --rule-soft:  #212B37;
+
+      --yipyy:      #93A9DC;
+      --yipyy-fill: #1E2942;
+      --clover:     #DE9273;
+      --clover-fill:#33201A;
+
+      --gap:        #79838F;
+      --good:       #6FC4A5;
+      --good-fill:  #16302A;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #10161E;
+    --surface:    #161E28;
+    --surface-2:  #1D2733;
+    --ink:        #E8ECF2;
+    --ink-2:      #B3BECD;
+    --ink-3:      #7D8998;
+    --rule:       #2A3543;
+    --rule-soft:  #212B37;
+
+    --yipyy:      #93A9DC;
+    --yipyy-fill: #1E2942;
+    --clover:     #DE9273;
+    --clover-fill:#33201A;
+
+    --gap:        #79838F;
+    --good:       #6FC4A5;
+    --good-fill:  #16302A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    font-size: 1.0625rem;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell { max-width: 940px; margin: 0 auto; padding: var(--s4) var(--s3) var(--s5); }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.75rem; letter-spacing: 0.04em;
+    color: var(--ink-3); margin: 0 0 var(--s2);
+  }
+  h1 {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-weight: 700; letter-spacing: -0.03em; line-height: 1.02;
+    font-size: clamp(2.2rem, 6vw, 3.5rem);
+    margin: 0 0 var(--s2); text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 1.1875rem; color: var(--ink-2);
+    max-width: var(--measure); margin: 0 0 var(--s3); text-wrap: pretty;
+  }
+  h2 {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-weight: 600; letter-spacing: -0.022em; line-height: 1.14;
+    font-size: clamp(1.4rem, 2.8vw, 1.8rem);
+    margin: 0 0 var(--s2); text-wrap: balance;
+  }
+  h3 {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-weight: 600; font-size: 1.0625rem; letter-spacing: -0.008em;
+    margin: 0 0 0.4rem;
+  }
+  section { margin-top: var(--s5); }
+  section > p, section > ul, section > ol { max-width: var(--measure); }
+  p { margin: 0 0 var(--s2); text-wrap: pretty; }
+  ul { margin: 0 0 var(--s2); padding-left: 1.15rem; }
+  li { margin-bottom: 0.45rem; }
+  strong { font-weight: 600; }
+
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.86em; }
+  code { background: var(--surface-2); color: var(--ink); padding: 0.1em 0.36em; border-radius: 3px; overflow-wrap: break-word; }
+
+  .kicker {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 0.5rem;
+  }
+
+  blockquote {
+    margin: var(--s3) 0; padding: var(--s2) var(--s3);
+    border-left: 3px solid var(--yipyy); background: var(--surface);
+    border-radius: 0 5px 5px 0; max-width: var(--measure);
+    font-size: 1.03125rem; color: var(--ink-2);
+  }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote cite {
+    display: block; margin-top: 0.5rem; font-style: normal;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.75rem; color: var(--ink-3);
+  }
+
+  .note {
+    border-left: 3px solid var(--clover); background: var(--surface);
+    padding: var(--s2) var(--s3); border-radius: 0 5px 5px 0;
+    margin-top: var(--s3); max-width: var(--measure);
+  }
+  .note.stale { border-left-color: var(--gap); }
+  .note p:last-child { margin-bottom: 0; }
+
+  /* ---------- figures ---------- */
+  figure { margin: var(--s4) 0 0; }
+  .fig-wrap {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 6px; padding: var(--s3); overflow-x: auto;
+  }
+  figure svg { display: block; width: 100%; min-width: 640px; height: auto; }
+  figcaption {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 0.8125rem; color: var(--ink-3);
+    margin-top: 0.7rem; max-width: var(--measure); line-height: 1.5;
+  }
+
+  /* SVG semantics, themed through the same tokens as the page */
+  .n-yipyy  { fill: var(--yipyy-fill);  stroke: var(--yipyy);  stroke-width: 1.5; }
+  .n-clover { fill: var(--clover-fill); stroke: var(--clover); stroke-width: 1.5; }
+  .lbl      { fill: var(--ink); font-family: "Archivo", system-ui, sans-serif; font-size: 13px; font-weight: 600; }
+  .lbl-sm   { fill: var(--ink-2); font-family: "Archivo", system-ui, sans-serif; font-size: 11px; }
+  .edge     { stroke: var(--ink-2); stroke-width: 1.5; fill: none; }
+  .edge-gap { stroke: var(--gap); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+  .edge-lbl { fill: var(--ink-3); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px; }
+  .band-lbl { fill: var(--ink-3); font-family: "Archivo", system-ui, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; }
+  .gap-x    { stroke: var(--gap); stroke-width: 2; }
+  .step-n   { fill: var(--ink-3); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; font-weight: 700; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: var(--s3);
+    font-family: "Archivo", system-ui, sans-serif; font-size: 0.8125rem;
+    color: var(--ink-2); margin-top: 0.9rem;
+  }
+  .legend span { display: flex; align-items: center; gap: 0.42rem; }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; flex: none; border: 1.5px solid; }
+  .sw-y { background: var(--yipyy-fill); border-color: var(--yipyy); }
+  .sw-c { background: var(--clover-fill); border-color: var(--clover); }
+
+  /* ---------- cards ---------- */
+  .cols { display: grid; gap: var(--s3); margin-top: var(--s3); }
+  @media (min-width: 760px) { .cols.three { grid-template-columns: repeat(3, 1fr); } .cols.two { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: var(--s3); }
+  .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+  .card .tag {
+    display: inline-block; font-family: "Archivo", system-ui, sans-serif;
+    font-size: 0.625rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.15rem 0.42rem; border-radius: 3px; margin-bottom: 0.6rem;
+    background: var(--clover-fill); color: var(--clover);
+  }
+  .card p { font-size: 0.9375rem; color: var(--ink-2); }
+
+  /* ---------- tables ---------- */
+  .scroll { overflow-x: auto; margin-top: var(--s3); border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; }
+  th, td { text-align: left; padding: 0.62rem 0.9rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-3); background: var(--surface-2); border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .yes { color: var(--good); font-weight: 600; }
+  .no  { color: var(--clover); font-weight: 600; }
+
+  footer {
+    margin-top: var(--s5); padding-top: var(--s3); border-top: 1px solid var(--rule);
+    font-family: "Archivo", system-ui, sans-serif; font-size: 0.8125rem;
+    color: var(--ink-3); max-width: var(--measure);
+  }
+  a { color: var(--yipyy); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--yipyy); outline-offset: 2px; border-radius: 2px; }
+</style>
+
+<div class="shell">
+  <p class="eyebrow">Yipyy-Inc/puneet &middot; orientation &middot; 2026-08-29</p>
+  <h1>Yipyy and Clover</h1>
+  <p class="standfirst">What this product actually is, who pays whom, and why a pet-care booking system contains twenty modules of payments code.</p>
+
+  <section>
+    <p class="kicker">The product</p>
+    <h2>Yipyy is software a pet business runs on</h2>
+    <p>Not a booking widget — the whole operation. Yipyy Inc sells it to dog daycares, boarding kennels, grooming salons, training schools, pet retailers and vets. Each business that buys it is called a <strong>facility</strong> in the code, and the platform is multi-tenant: one deployment, many facilities, kept apart by row-level security in Postgres.</p>
+    <p>The pitch is consolidation. A grooming salon might otherwise run booking in one tool, payroll in another, a card terminal from a third and a loyalty punch-card on paper. Yipyy tries to be the single place all of that happens.</p>
+
+    <div class="cols two">
+      <div class="card">
+        <h3>What a pet owner does</h3>
+        <p>Books daycare or a groom, manages their pets' records and vaccinations, signs waivers electronically, completes check-in before arrival via a QR code, pays invoices, buys gift cards, earns loyalty points, and reads a "report card" describing how their dog's day went.</p>
+      </div>
+      <div class="card">
+        <h3>What the business does</h3>
+        <p>Checks pets in and out, assigns kennels and rooms, logs care through the day, rings up retail on a counter terminal, rosters staff, runs the time clock and payroll, sets pricing, chases lapsed clients, and — for multi-site groups — compares locations from an HQ view.</p>
+      </div>
+    </div>
+
+    <p style="margin-top:var(--s3)">Four kinds of person use it, and which one you are decides which portal you land in: <strong>customers</strong> (<code>/customer</code>), <strong>facility admins</strong> (<code>/facility/dashboard</code>), <strong>staff</strong> (<code>/employee</code>, scoped by permission), and <strong>Yipyy's own platform team</strong> (<code>/dashboard</code>). The address matters too: <code>www.yipyy.com</code> is Yipyy's console, while <code>&lt;slug&gt;.yipyy.com</code> is one facility's front door for its own staff and customers.</p>
+  </section>
+
+  <section>
+    <p class="kicker">The other half</p>
+    <h2>Clover is how the money actually moves</h2>
+    <p>Clover is a payments company owned by Fiserv. You have seen their hardware without necessarily knowing the name — the white countertop terminals and card readers at small independent businesses. They do two things that matter here: they sell those terminals, and they act as the <strong>acquirer</strong>, the institution that processes a card transaction and settles the money into the merchant's bank account.</p>
+    <p>So Yipyy is the software; Clover is the money. The reason this repo carries so much payments code is that connecting the two is not a single API call — it is an onboarding process, a consent handshake, two different charge paths, and a reconciliation problem.</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <svg viewBox="0 0 880 400" role="img" aria-label="A customer's card details go straight into Clover's hosted fields and on to Clover's acquirer and the facility's bank, never passing through Yipyy's server, which only receives the charge result and records it; no settlement data comes back from the bank because Clover exposes no payout API.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <text class="band-lbl" x="20" y="30">CLOVER &mdash; THE PROCESSOR</text>
+          <text class="band-lbl" x="20" y="300">YIPYY &mdash; THIS CODEBASE</text>
+
+          <!-- customer -->
+          <rect class="n-yipyy" x="20" y="170" width="150" height="62" rx="5"/>
+          <text class="lbl" x="95" y="196" text-anchor="middle">Customer's card</text>
+          <text class="lbl-sm" x="95" y="214" text-anchor="middle">typed on Yipyy's page</text>
+
+          <!-- clover hosted fields -->
+          <rect class="n-clover" x="228" y="48" width="172" height="62" rx="5"/>
+          <text class="lbl" x="314" y="74" text-anchor="middle">Hosted card fields</text>
+          <text class="lbl-sm" x="314" y="92" text-anchor="middle">Clover's iframe</text>
+
+          <!-- acquirer -->
+          <rect class="n-clover" x="452" y="48" width="158" height="62" rx="5"/>
+          <text class="lbl" x="531" y="74" text-anchor="middle">Clover acquirer</text>
+          <text class="lbl-sm" x="531" y="92" text-anchor="middle">authorises &amp; settles</text>
+
+          <!-- bank -->
+          <rect class="n-clover" x="662" y="48" width="178" height="62" rx="5"/>
+          <text class="lbl" x="751" y="74" text-anchor="middle">Facility's bank</text>
+          <text class="lbl-sm" x="751" y="92" text-anchor="middle">merchant account</text>
+
+          <!-- yipyy server -->
+          <rect class="n-yipyy" x="452" y="252" width="158" height="62" rx="5"/>
+          <text class="lbl" x="531" y="278" text-anchor="middle">Yipyy server</text>
+          <text class="lbl-sm" x="531" y="296" text-anchor="middle">never sees the PAN</text>
+
+          <!-- payments table -->
+          <rect class="n-yipyy" x="662" y="252" width="178" height="62" rx="5"/>
+          <text class="lbl" x="751" y="278" text-anchor="middle">payments table</text>
+          <text class="lbl-sm" x="751" y="296" text-anchor="middle">Yipyy's own ledger</text>
+
+          <!-- edges -->
+          <path class="edge" d="M 170 186 L 222 110" marker-end="url(#ah)" color="var(--ink-2)"/>
+          <text class="edge-lbl" x="176" y="140">card data</text>
+
+          <path class="edge" d="M 400 79 L 446 79" marker-end="url(#ah)" color="var(--ink-2)"/>
+          <path class="edge" d="M 610 79 L 656 79" marker-end="url(#ah)" color="var(--ink-2)"/>
+          <text class="edge-lbl" x="616" y="70">settles</text>
+
+          <path class="edge" d="M 531 110 L 531 246" marker-end="url(#ah)" color="var(--ink-2)"/>
+          <text class="edge-lbl" x="540" y="182">result + token only</text>
+
+          <path class="edge" d="M 610 283 L 656 283" marker-end="url(#ah)" color="var(--ink-2)"/>
+          <text class="edge-lbl" x="612" y="274">records</text>
+
+          <!-- the absent edge -->
+          <path class="edge-gap" d="M 780 110 L 780 246"/>
+          <line class="gap-x" x1="770" y1="168" x2="790" y2="188"/>
+          <line class="gap-x" x1="790" y1="168" x2="770" y2="188"/>
+          <text class="edge-lbl" x="798" y="166">no settlement</text>
+          <text class="edge-lbl" x="798" y="180">API exists</text>
+          <text class="edge-lbl" x="798" y="200">so payouts are</text>
+          <text class="edge-lbl" x="798" y="214">ESTIMATED</text>
+        </svg>
+        <div class="legend">
+          <span><i class="swatch sw-y"></i> Yipyy owns it</span>
+          <span><i class="swatch sw-c"></i> Clover owns it</span>
+        </div>
+      </div>
+      <figcaption>Card numbers travel from the customer straight into Clover's iframe and never reach Yipyy's server, which receives only a result and a token. The crossed dashed line is the important one: nothing flows back from settlement, because Clover publishes no payout endpoint to an OAuth application.</figcaption>
+    </figure>
+
+    <p style="margin-top:var(--s3)">That missing arrow drives a real product decision. Since Yipyy cannot ask Clover what has settled, it nets its own recorded card payments and reversals to work out what <em>should</em> land, then labels the figure an estimate on every screen that shows it, with a link to Clover for the authoritative number.</p>
+
+    <blockquote>
+      <p>Clover publishes no payout or settlement endpoint to an OAuth application&hellip; So the choice is between showing nothing and showing a number Yipyy can actually justify.</p>
+      <cite>src/lib/clover/payouts.ts</cite>
+    </blockquote>
+  </section>
+
+  <section>
+    <p class="kicker">Three jobs, not one</p>
+    <h2>What Clover is doing in this codebase</h2>
+    <p>"Clover integration" undersells it. There are three genuinely different relationships here, and they involve different code, different failure modes and different parts of the business.</p>
+
+    <div class="cols three">
+      <div class="card">
+        <span class="tag">Card not present</span>
+        <h3>Paying online</h3>
+        <p>A customer opens a payment link and types their card into Clover's hosted fields, embedded in Yipyy's page. Yipyy stays out of PCI scope because the card never touches its servers.</p>
+        <p style="margin-top:0.6rem"><code>app/pay/[ref]</code><br><code>lib/clover/charge.ts</code></p>
+      </div>
+      <div class="card">
+        <span class="tag">Card present</span>
+        <h3>The counter terminal</h3>
+        <p>Physical Clover readers sit on the facility's counter for retail and walk-ins. A card-present refund must go back through the same device rather than the online endpoint — a separate code path entirely.</p>
+        <p style="margin-top:0.6rem"><code>lib/clover/devices.ts</code><br><code>lib/clover/terminal.ts</code></p>
+      </div>
+      <div class="card">
+        <span class="tag">Underwriting</span>
+        <h3>Becoming a merchant</h3>
+        <p>Yipyy walks the business through <em>getting</em> a merchant account: legal name, business structure, owning principals, supporting documents, then submission to the acquirer.</p>
+        <p style="margin-top:0.6rem"><code>merchant_applications</code><br><code>api/merchant-application/*</code></p>
+      </div>
+    </div>
+
+    <p style="margin-top:var(--s3)">That third one is the surprise, and it changes how you read the product. Yipyy is not merely <em>accepting</em> Clover payments — it is bringing Clover new merchants. That is a reseller relationship, and it is why a booking app contains an underwriting pipeline.</p>
+
+    <figure>
+      <div class="fig-wrap">
+        <svg viewBox="0 0 880 250" role="img" aria-label="A facility moves through four stages: Yipyy collects the application, the acquirer underwrites it and alone may set its status, the facility approves an OAuth connection whose signed state names the facility, and only then can Yipyy charge cards.">
+          <defs>
+            <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <text class="step-n" x="20" y="42">01</text>
+          <rect class="n-yipyy" x="20" y="54" width="184" height="72" rx="5"/>
+          <text class="lbl" x="112" y="80" text-anchor="middle">Application</text>
+          <text class="lbl-sm" x="112" y="98" text-anchor="middle">legal name, principals,</text>
+          <text class="lbl-sm" x="112" y="113" text-anchor="middle">documents</text>
+          <text class="lbl-sm" x="112" y="150" text-anchor="middle">Yipyy's screens collect it</text>
+
+          <text class="step-n" x="248" y="42">02</text>
+          <rect class="n-clover" x="248" y="54" width="184" height="72" rx="5"/>
+          <text class="lbl" x="340" y="80" text-anchor="middle">Underwriting</text>
+          <text class="lbl-sm" x="340" y="98" text-anchor="middle">approved, rejected,</text>
+          <text class="lbl-sm" x="340" y="113" text-anchor="middle">or more info needed</text>
+          <text class="lbl-sm" x="340" y="150" text-anchor="middle">facility may never set status</text>
+
+          <text class="step-n" x="476" y="42">03</text>
+          <rect class="n-clover" x="476" y="54" width="184" height="72" rx="5"/>
+          <text class="lbl" x="568" y="80" text-anchor="middle">OAuth connect</text>
+          <text class="lbl-sm" x="568" y="98" text-anchor="middle">facility approves at</text>
+          <text class="lbl-sm" x="568" y="113" text-anchor="middle">Clover's own screen</text>
+          <text class="lbl-sm" x="568" y="150" text-anchor="middle">signed state names the facility</text>
+
+          <text class="step-n" x="704" y="42">04</text>
+          <rect class="n-yipyy" x="704" y="54" width="156" height="72" rx="5"/>
+          <text class="lbl" x="782" y="80" text-anchor="middle">Charging</text>
+          <text class="lbl-sm" x="782" y="98" text-anchor="middle">online + terminal,</text>
+          <text class="lbl-sm" x="782" y="113" text-anchor="middle">refunds, webhooks</text>
+          <text class="lbl-sm" x="782" y="150" text-anchor="middle">real money from here on</text>
+
+          <path class="edge" d="M 204 90 L 242 90" marker-end="url(#ah2)" color="var(--ink-2)"/>
+          <path class="edge" d="M 432 90 L 470 90" marker-end="url(#ah2)" color="var(--ink-2)"/>
+          <path class="edge" d="M 660 90 L 698 90" marker-end="url(#ah2)" color="var(--ink-2)"/>
+
+          <rect x="20" y="185" width="840" height="50" rx="5" fill="none" stroke="var(--rule)" stroke-width="1"/>
+          <text class="lbl-sm" x="38" y="206">Why the state is signed: Clover returns every merchant to one registered URL, so the return must say which facility was connecting.</text>
+          <text class="lbl-sm" x="38" y="223">A plain query parameter would let an attacker attach their own merchant account to someone else's business — and every screen would look normal.</text>
+        </svg>
+      </div>
+      <figcaption>The four stages a facility passes through before Yipyy can take a card on its behalf. Stages two and three happen on Clover's side; the status field is deliberately unwritable by the facility, because a business that could mark itself approved would then try to connect to an account that does not exist.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <p class="kicker">Branding</p>
+    <h2>"Yipyy Pay" is a name, not a processor</h2>
+    <p>The screens say Yipyy Pay. The money is Clover's the whole way. The code is unusually candid about why:</p>
+    <blockquote>
+      <p>The money moves through Clover&hellip; What was missing was a product around it — a facility met "Clover" as a green card between Twilio and SendGrid, with no setup, no dashboard, and somebody else's brand as the headline.</p>
+      <cite>src/lib/settings/yipyy-pay.ts</cite>
+    </blockquote>
+    <p>"Powered by Clover" appears only where the facility is genuinely dealing with the processor — the landing hero, the dashboard header, and either side of the redirect to Clover's consent screen. What matters technically is the boundary this creates around what the product may claim, because Clover is an acquirer rather than a platform:</p>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Setting</th><th>Who actually controls it</th><th>Yipyy can set it?</th></tr></thead>
+        <tbody>
+          <tr><td>Payout schedule</td><td>The facility, at Clover</td><td class="no">No &mdash; declared to Yipyy so it can date its estimates</td></tr>
+          <tr><td>Bank statement descriptor</td><td>Clover</td><td class="no">No &mdash; shown read-only</td></tr>
+          <tr><td>Receipt descriptor</td><td>Yipyy's own receipts and emails</td><td class="yes">Yes</td></tr>
+          <tr><td>Who absorbs the card fee</td><td>Yipyy's arithmetic</td><td class="yes">Yes</td></tr>
+          <tr><td>Identity / business verification</td><td>The acquirer</td><td class="no">No partner-driven API exists</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:var(--s3)">Every field the product exposes is either something Yipyy genuinely owns, or something the facility is <em>declaring</em> so Yipyy can compute with it. Nothing in this domain commands Clover, and no screen is allowed to imply otherwise.</p>
+  </section>
+
+  <section>
+    <p class="kicker">Reading the repo</p>
+    <h2>Where to look, and one doc not to trust</h2>
+    <p>If the payments integration is why this repo was handed to you, the relevant surface is small and well-commented:</p>
+    <ul>
+      <li><code>src/lib/clover/</code> — 20 modules: OAuth, charge, refund, reversal, terminals, devices, receipts, reconciliation, payouts</li>
+      <li><code>src/app/api/payments/</code> — 23 route handlers, the online and terminal charge paths, and the retail counter</li>
+      <li><code>src/app/api/webhooks/clover</code> — how the ledger corrects itself when someone refunds inside Clover's own dashboard</li>
+      <li><code>payments</code>, <code>payment_intents</code>, <code>payment_connections</code>, <code>payment_webhook_events</code> — the schema behind all of it</li>
+    </ul>
+    <p>The comments in these files are worth reading properly. Several record things established by probing Clover's live sandbox because the published documentation covers a different flow — for instance that a merchant's public key lives on a third host entirely, and the same path on the main API host returns a bare 404.</p>
+
+    <div class="note stale">
+      <p><strong>One document will actively mislead you.</strong> <code>docs/product/overview.md</code> describes Yipyy as "a mock-driven prototype" where "data is in-memory", "real payments are mocked", and Anthropic is "the only live integration."</p>
+      <p style="margin-top:0.6rem">That was true once and is now wrong: 188 of 216 API routes query Postgres, there are 214 migrations and 462 row-level-security policies, and the Clover integration runs against a real merchant account. <code>AGENTS.md</code> and <code>CLAUDE.md</code> are current — that product doc was never updated after the backend landed.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Written from the code and its comments, with counts measured against this working copy at commit <span class="mono">9eaf5147</span> on 2026-08-29. A companion page maps the codebase itself — portals, the fixture/live split, and what runs without credentials.</p>
+  </footer>
+</div>
