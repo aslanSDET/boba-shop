@@ -208,3 +208,58 @@ without us doing anything — are worth real money on a phone-heavy dessert menu
 
 Pay one of these sessions with a sandbox card and read back `order.taxAmount` and
 `payment.taxAmount`. That single number decides the architecture.
+
+---
+
+# How everyone else handles the discount
+
+Asked because Clover ignores `lineItems[].discounts`, and we cannot be the first to hit it.
+
+**Stripe has what Clover lacks.** A Checkout Session takes a `Coupon` or `Promotion Code`
+and the customer sees the discount applied *on Stripe's own hosted page* before paying.
+One coupon per session. So the redirect pattern is capable of proper discounts — it is
+Clover's implementation that is missing the feature, not the pattern.
+
+**Shopify loses the same thing we would.** From their own developer community, on cart
+transforms that reduce a line price:
+
+> the backend receives only the reduced line item price, with the `line_item.total_discount`
+> field showing as nil with no recorded discount amount
+
+That is exactly our workaround, with exactly our loss. **Baking the discount into the line
+price and naming it is a recognised pattern, not a hack** — Shopify merchants using cart
+transforms live with the same missing field. (Shopify's *native* discount codes do record
+properly; it is the price-transform route that does not.)
+
+**Worth noting about the comparison that started this.** `checkout.directtoolsoutlet.com`
+is Shopify, and Shopify's native discounts do record correctly at checkout. So that site
+is not evidence that a redirect loses the discount record — it is evidence that a redirect
+*can* keep it, if the platform supports it. Clover does not.
+
+## What that settles
+
+The redirect architecture is sound and widely used. The gap is specifically **Clover's
+Hosted Checkout has no discount object**, and no amount of pattern-copying fixes that. Our
+options remain: bake it into the price and name the line (industry-normal, loses the
+field), or attach a real discount to the order by API after payment (a call we own, but
+one whose failure degrades data rather than losing a sale).
+
+## Blocked, and why
+
+**The one measurement that decides this — `order.taxAmount` on a paid Hosted Checkout
+order — could not be taken.** Clover's card fields on the hosted page are cross-origin
+iframes and do not appear in the accessibility tree at all. Three approaches failed:
+element refs (the refs are the container, not the input), raw coordinates, and
+viewport-scaled coordinates.
+
+That is the isolation working exactly as intended — nothing outside those frames can read
+or write them, which is the whole reason the page is safe. It also means **this step needs
+a person**, and no amount of automation will change that.
+
+To finish it: open the session below, type the sandbox card, pay, and the order can then be
+read back by id.
+
+```
+https://sandbox.dev.clover.com/pay-checkout/61ef5489-8127-4218-8762-c27dffec9acd?mode=checkout
+expected: Snow - Small $7.75 · Tax $0.54 · Total $8.29
+```
