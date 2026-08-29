@@ -138,12 +138,20 @@ export default function Home() {
             than a free-floating cut-out, so it needs more area to read as a
             product. Sourced from the AVIF (456x550) instead of the 400x480 PNG
             because at 250px on a 2x screen the PNG has no resolution to spare. */}
+        {/* The only DISC in the composition — egg puffs are a full-frame
+            photograph and the other three are cut-outs that float and bleed.
+            A solid circle carries far more visual weight than a transparent
+            cut-out of the same width, so matching the cut-outs' 220/260px made
+            it the loudest thing in a hero whose subject is the wordmark. It is
+            now clearly the smallest, and it bleeds off the top-left corner so
+            it belongs to the same family instead of sitting on the page like
+            an avatar. */}
         <HeroArt
           src="/eggpuffs.avif"
           width={456}
           height={550}
           sizes="(min-width: 1280px) 250px, 180px"
-          className="pointer-events-none absolute -top-4 left-2 hidden size-[180px] rounded-full object-cover lg:block xl:top-0 xl:left-10 xl:size-[250px]"
+          className="pointer-events-none absolute -top-6 -left-8 hidden size-[150px] rounded-full object-cover lg:block xl:-top-4 xl:-left-6 xl:size-[200px]"
         />
         <HeroArt
           src="/menu/mangonada.png"

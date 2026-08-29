@@ -19,6 +19,16 @@ import { merchantId, platform } from "@/lib/clover";
  * for all 7 days"), so a set is always complete once it exists.
  */
 
+const SHORT: Record<string, string> = {
+  sunday: "Sun",
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+};
+
 const DAYS = [
   "sunday",
   "monday",
@@ -77,6 +87,14 @@ function nowAtShop(timeZone: string): { day: Day; clock: number } {
   return { day: DAYS.includes(weekday) ? weekday : "sunday", clock: hour * 100 + minute };
 }
 
+export interface DayHours {
+  /** "Mon", "Tue" — short enough for a column of seven. */
+  label: string;
+  /** "12–7:30pm", or null when closed that day. */
+  hours: string | null;
+  today: boolean;
+}
+
 export interface OpenState {
   /** null when the shop has published no hours — say nothing rather than guess. */
   open: boolean | null;
@@ -84,6 +102,8 @@ export interface OpenState {
   todayLabel: string | null;
   /** "Opens 12pm" / "Closes 7:30pm" — the useful half of the answer. */
   detail: string | null;
+  /** The whole week, so the badge can show it without a second request. */
+  week: DayHours[];
 }
 
 /**
@@ -100,24 +120,37 @@ export async function openState(timeZone = SHOP_TIMEZONE): Promise<OpenState> {
   );
 
   const set = response.elements?.[0];
-  if (!set) return { open: null, todayLabel: null, detail: null };
+  if (!set) return { open: null, todayLabel: null, detail: null, week: [] };
 
   const { day, clock } = nowAtShop(timeZone);
-  const ranges = (set[day]?.elements ?? []).filter(
-    (r): r is Required<Range> => typeof r.start === "number" && typeof r.end === "number",
-  );
+
+  const rangesFor = (d: Day) =>
+    (set[d]?.elements ?? []).filter(
+      (r): r is Required<Range> => typeof r.start === "number" && typeof r.end === "number",
+    );
+
+  const label = (rs: Required<Range>[]) =>
+    rs.length === 0 ? null : rs.map((r) => `${formatClock(r.start)}–${formatClock(r.end)}`).join(", ");
+
+  // Weeks start Monday on a door, not Sunday — DAYS is ordered to match
+  // Clover's own indexing, so it is rotated here rather than reordered above.
+  const week: DayHours[] = [...DAYS.slice(1), DAYS[0]].map((d) => ({
+    label: SHORT[d],
+    hours: label(rangesFor(d)),
+    today: d === day,
+  }));
+
+  const ranges = rangesFor(day);
 
   if (ranges.length === 0) {
-    return { open: false, todayLabel: null, detail: "Closed today" };
+    return { open: false, todayLabel: null, detail: "Closed today", week };
   }
 
-  const todayLabel = ranges
-    .map((r) => `${formatClock(r.start)}–${formatClock(r.end)}`)
-    .join(", ");
+  const todayLabel = label(ranges)!;
 
   const current = ranges.find((r) => clock >= r.start && clock < r.end);
   if (current) {
-    return { open: true, todayLabel, detail: `Closes ${formatClock(current.end)}` };
+    return { open: true, todayLabel, detail: `Closes ${formatClock(current.end)}`, week };
   }
 
   const later = ranges.find((r) => clock < r.start);
@@ -125,5 +158,6 @@ export async function openState(timeZone = SHOP_TIMEZONE): Promise<OpenState> {
     open: false,
     todayLabel,
     detail: later ? `Opens ${formatClock(later.start)}` : "Closed for today",
+    week,
   };
 }

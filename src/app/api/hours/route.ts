@@ -16,6 +16,6 @@ export async function GET() {
   try {
     return Response.json(await openState());
   } catch {
-    return Response.json({ open: null, todayLabel: null, detail: null });
+    return Response.json({ open: null, todayLabel: null, detail: null, week: [] });
   }
 }
