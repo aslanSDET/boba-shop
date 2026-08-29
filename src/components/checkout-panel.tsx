@@ -195,7 +195,7 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
 
   if (phase === "done" && paid) {
     return (
-      <div className="px-5 py-10 text-center">
+      <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-5 py-10 text-center">
         <span className="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-foreground">
           <Check className="size-7" />
         </span>
@@ -217,7 +217,8 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-2 pb-4">
       {phase === "pricing" ? (
         <p className="flex items-center gap-2.5 py-8 text-[15px] text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -262,9 +263,12 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
                 {field.label}
               </span>
               {/* Clover mounts its iframe in here. Never populated by us. */}
+              {/* Clover sizes its own iframe. Our box gives it a fixed height
+                  and no padding — adding our own made every field taller than
+                  the sheet could show and pushed the Pay button off-screen. */}
               <span
                 id={field.id}
-                className="block min-h-[52px] rounded-2xl border border-border bg-card px-4 py-3"
+                className="block h-[46px] overflow-hidden rounded-2xl border border-border bg-card px-3 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0"
               />
             </label>
           ))}
@@ -277,6 +281,9 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
         </p>
       )}
 
+      </div>
+
+      <div className="border-t border-border bg-card px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
       {phase !== "error" && (
         <button
           type="button"
@@ -300,6 +307,7 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
       <p className="mt-2.5 text-center font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
         Card handled by Clover · never touches this site
       </p>
+      </div>
     </div>
   );
 }
