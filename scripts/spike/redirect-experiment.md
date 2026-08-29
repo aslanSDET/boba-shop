@@ -263,3 +263,51 @@ read back by id.
 https://sandbox.dev.clover.com/pay-checkout/61ef5489-8127-4218-8762-c27dffec9acd?mode=checkout
 expected: Snow - Small $7.75 · Tax $0.54 · Total $8.29
 ```
+
+---
+
+# What a production site actually does
+
+`Ooak21/rekindlemarriage.com` (`convex/clover.ts`) is a live site taking money through
+Clover Hosted Checkout. Its cart construction is the whole story:
+
+```js
+shoppingCart: { lineItems: [{ name: a.itemName, note, unitQty: 1, price: a.amountCents }] },
+redirectUrls: { success, failure },
+```
+
+**One line, one pre-computed figure, no tax fields, no discount fields.** They work
+everything out upstream and hand Clover a number to collect. Grepping the file for
+`tax|discount|coupon|promo` returns nothing at all.
+
+Two things worth taking from it:
+
+- **`note` carries their own order reference** (`orderRef:…`), which is how they reconcile
+  a Clover payment back to their own record. We would want the same.
+- Their own comment records something we had not established: *"Clover does not hand back
+  a `clv_` token from hosted checkout"* — so a card used on that page cannot be reused by
+  us later, and vaulting has to be walked from the Platform payment to an Ecommerce
+  customer.
+
+**What this does and does not tell us.** It confirms the bake-it-into-the-price pattern is
+what a real integration does. It does **not** prove Clover cannot do better — this team may
+simply never have needed tax or discounts, and my `lineItems[].taxRates` result is already
+better than what they ship. One example is one example.
+
+## Things I have been stating too confidently
+
+Worth writing down, because several claims in this document rest on less evidence than
+their tone suggests:
+
+- **`order.taxAmount` is `$0.00` on every order on this merchant** — including the ones
+  paid through `/v1/orders/{id}/pay`, where I earlier reported tax "recorded correctly".
+  What is correct there is **`payment.taxAmount`** ($0.88, $0.74, $0.49). Whether Clover's
+  own tax *report* reads the order or the payment, I do not know, and that is the number
+  the shop's accountant would use.
+- **Whether a paid Hosted Checkout order records tax at all is still untested.** The
+  checkout page displays it. The page is not the record.
+- **"Hosted Checkout has no discount object"** is a conclusion from four shapes failing,
+  not from documentation. There may be one I have not found.
+
+None of these change the shape of the decision, but they change how firmly it can be
+argued, and the meeting deserves the honest version.
