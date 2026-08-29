@@ -140,6 +140,24 @@ const FALLBACK: Record<ProductType, ItemArt> = {
   },
 };
 
-export function itemArtFor(itemId: string, productType: ProductType): ItemArt {
-  return ART[itemId] ?? FALLBACK[productType];
+/**
+ * Colourways are keyed by a slug of the item NAME, not by its id.
+ *
+ * The menu is generated from Clover (`scripts/import-menu.mjs`) and its ids are
+ * Clover's — opaque, and free to change if an item is ever rebuilt in their
+ * dashboard. Names are what a person recognises and what survives a re-import,
+ * so keying on the name is what keeps this curation from being silently lost.
+ * The surveyed Django integration preserves its own curated fields by name for
+ * exactly this reason (`scripts/spike/prior-art.md`).
+ *
+ * An item with a photograph never reaches here, and an unrecognised name falls
+ * back to the product type rather than to nothing.
+ */
+export function itemArtFor(nameOrId: string, productType: ProductType): ItemArt {
+  const slug = nameOrId
+    .toLowerCase()
+    .replace(/['\u2019]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return ART[slug] ?? ART[nameOrId] ?? FALLBACK[productType];
 }

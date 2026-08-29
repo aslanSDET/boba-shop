@@ -28,7 +28,7 @@ export function ItemVisual({
    */
   sizes?: string;
 }) {
-  const tint = itemArtFor(item.id, item.productType).tint;
+  const tint = itemArtFor(item.name, item.productType).tint;
 
   return (
     <span
@@ -58,7 +58,7 @@ export function ItemVisual({
         />
       ) : (
         <ItemArt
-          itemId={item.id}
+          itemId={item.name}
           productType={item.productType}
           className="h-[82%] w-auto"
         />
