@@ -6,6 +6,7 @@ import { categoryIdByName, MENU_CATEGORIES, MENU_ITEMS, startingPrice } from "@/
 import { SHOP } from "@/config/shop";
 import { Testimonials } from "@/components/testimonials";
 import { SiteFooter } from "@/components/site-footer";
+import { OpenBadge } from "@/components/open-badge";
 import { PromoStrip } from "@/components/promo-strip";
 import { Wordmark } from "@/components/wordmark";
 import { HeroArt } from "@/components/hero-art";
@@ -219,10 +220,11 @@ export default function Home() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            <span className="flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2">
-              <span className="size-2 rounded-full bg-[#4f9d3a]" />
-              Open now
-            </span>
+            {/* Real, from the shop's Clover hours. Renders nothing when we
+                cannot find out — see OpenBadge. */}
+            <OpenBadge />
+            {/* Still hardcoded, and correctly so: Clover returns no prep time,
+                and this is the figure the owner puts on their own listing. */}
             <span className="rounded-full border border-border bg-card px-3.5 py-2">
               Ready in {SHOP.wait}
             </span>

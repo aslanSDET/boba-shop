@@ -110,6 +110,27 @@ for (const [name, pct] of [["MA Meals Tax", 6.25], ["Local Option Meals Tax", 0.
   console.log(`  + tax  ${name}  ${pct}%`);
 }
 
+// --- opening hours ---------------------------------------------------------
+// The real Billerica hours (PLAN.md §9, read off the shop's own Clover page):
+// 12:00–7:30pm, every day. Seeded so the OPEN NOW badge is driven by data
+// rather than hardcoded, and so the closed state can actually be tested.
+//
+// MEASURED shape: a named set carrying ALL SEVEN days, each day holding its own
+// `elements` array of ranges, times as four-digit local integers — 1930 is
+// 7:30pm, not 1930 minutes. The API refuses a partial week outright
+// ("sunday is missing. Please specify hour range for all 7 days").
+{
+  const existing = await api(`/v3/merchants/${mId}/opening_hours`);
+  if ((existing.elements ?? []).length === 0) {
+    const week = { name: "Business Hours" };
+    for (const day of ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"]) {
+      week[day] = { elements: [{ start: 1200, end: 1930 }] };
+    }
+    await write(`/v3/merchants/${mId}/opening_hours`, week);
+    console.log("  + opening hours  12:00–19:30 daily");
+  }
+}
+
 // --- categories ------------------------------------------------------------
 const catOfItem = new Map();
 for (const c of Object.values(src.categories)) for (const id of c.items ?? []) if (!catOfItem.has(id)) catOfItem.set(id, c);
