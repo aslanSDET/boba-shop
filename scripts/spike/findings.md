@@ -167,6 +167,38 @@ Option 3 was previously framed as a conversion/branding preference. It is now a 
 
 **This is the one gap the sandbox cannot close.** It closes only against the shop's own merchant, with the owner watching.
 
+### CONFIRMED: `POST /v1/orders/{orderId}/pay` exists, and it is Ecommerce-host only (2026-08-28)
+
+Chased from `prior-art.md` — another integration reported this endpoint but could not verify
+it. Run by `07-order-pay.mjs`, which creates a real inventory-linked order and then POSTs to
+`/pay` with a **deliberately unusable source**, so nothing can be charged and the status is
+purely about whether the route exists and accepts our order.
+
+| Host + credential | Path | Status | Body |
+|---|---|---|---|
+| **ecomm + Ecommerce private key** | `/v1/orders/{id}/pay` | **400** | `"Please provide a valid source for the charge."` |
+| ecomm + platform token | `/v1/orders/{id}/pay` | 401 | `401 Unauthorized` |
+| platform + platform token | `/v1/orders/{id}/pay` | 405 | `POST not allowed` |
+| platform + platform token | `/v3/merchants/{mId}/orders/{id}/pay` | 405 | `POST not allowed` |
+
+**The 400 is the answer.** It resolved order `6BWKBSR4D50NA`, got all the way to the card, and
+refused on the card alone. A route that did not exist would 404; one that rejected the order
+would say so. The 405s confirm it is **Ecommerce-host only** — exactly as reported.
+
+The order itself came out right: two items at $6.45 = $12.90, total **$13.81**. That is
+$12.90 x 1.07 — **Clover applied its own MA 6.25% + local 0.75% meals tax**, unprompted,
+because the lines are inventory-linked. This is the path where tax works without us
+computing it.
+
+**What it means for the design.** We can invert the flow in `PLAN.md` 8.7: build the order
+properly first — inventory-linked, Clover taxing it — and *then* pay it, instead of letting
+Hosted Checkout create a bare order and rewriting its lines afterwards. One order, correct
+from birth, and the `taxAmount: $0.00` reporting gap closes for free.
+
+**Still unproven, and it is the last step:** that a real payment through `/pay` actually
+attaches to the order and leaves it PAID with the line items intact. That needs a `clv_`
+token from a card, so it is a human step, not a script one.
+
 ## The two that decide the architecture
 
 ### Does an API-created order print on the merchant's own printer? (steps 03–04)
