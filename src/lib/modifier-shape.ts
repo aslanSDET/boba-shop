@@ -55,9 +55,22 @@ export function shapeGroup(group: ModifierGroup): ShapedGroup {
   const included: IncludedIngredient[] = [];
   const pairedExtras = new Set<string>();
 
-  for (const option of group.options) {
+  // Only a checkbox group can have things it "comes with". In a radio group
+  // "No X" is one of the mutually exclusive choices, not a removal: Ice Level
+  // is [Extra Ice, Lite Ice, No Ice], and reading "No Ice" as an ingredient
+  // chip leaves a one-pill ice level next to a chip whose state the radio can
+  // silently overwrite. Three groups on the real menu hit this.
+  for (const option of group.kind === "multi" ? group.options : []) {
     if (!NO.test(option.name)) continue;
     const label = option.name.replace(NO, "").trim();
+    // "Cover" is [Cover, No Cover]; Bomb Mass Lychee lists "Lychee Jelly"
+    // alongside "No Lychee Jelly". When the plain option is right there, the
+    // shop is offering a choice, not describing what is already in the cup —
+    // and pairing them would render the same ingredient twice, once as
+    // included and once as an add-on.
+    if (group.options.some((o) => o.id !== option.id && norm(o.name) === norm(label))) {
+      continue;
+    }
     const extra = group.options.find(
       (o) => EXTRA.test(o.name) && norm(o.name.replace(EXTRA, "")) === norm(label),
     );

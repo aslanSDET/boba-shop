@@ -24,6 +24,7 @@ import { ItemVisual } from "@/components/item-visual";
 import {
   calculateCartItemPrice,
   defaultSelection,
+  startingPrice,
   unmetGroups,
 } from "@/config/menu";
 import { formatPrice } from "@/lib/format";
@@ -194,6 +195,18 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
   const Title = isDesktop ? DialogTitle : DrawerTitle;
   const Description = isDesktop ? DialogDescription : DrawerDescription;
 
+  const start = startingPrice(item);
+  /**
+   * Radix warns when a dialog advertises a description that is not on the
+   * page, and 42 items have no description to render. Passing the attribute
+   * as an explicit `undefined` is the documented way to say "there is no
+   * description", which is why this is a spread: passing `undefined` in the
+   * other branch would also clear the id Radix sets for itself.
+   */
+  const describedBy: { "aria-describedby"?: undefined } = item.description
+    ? {}
+    : { "aria-describedby": undefined };
+
   const heading = (
     <div className="flex items-start gap-4">
       <ItemVisual item={item} className="size-[104px] rounded-full" px={208} sizes="104px" />
@@ -201,12 +214,23 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
         <Title className="font-display text-[26px] leading-tight font-semibold">
           {item.name}
         </Title>
-        <Description className="mt-2 text-base leading-relaxed">
-          {item.description}
-        </Description>
+        {/* 42 of 93 items carry `description: ""`. Rendering the element anyway
+            left a blank line under the name and pointed the sheet's
+            `aria-describedby` at an empty node, so it is dropped entirely and
+            the describedby link is cleared with it below. */}
+        {item.description && (
+          <Description className="mt-2 text-base leading-relaxed">
+            {item.description}
+          </Description>
+        )}
         <p className="mt-2.5 font-mono text-[15px] tabular-nums">
-          {formatPrice(item.basePrice)}
-          <span className="ml-1.5 text-muted-foreground">base</span>
+          {/* "$0.00 base" on the eight snow items whose price lives in the
+              required Snow Size group. `startingPrice` reads that group. */}
+          {start.from && (
+            <span className="mr-1.5 font-sans text-muted-foreground">from</span>
+          )}
+          {formatPrice(start.amount)}
+          {!start.from && <span className="ml-1.5 text-muted-foreground">base</span>}
         </p>
       </div>
     </div>
@@ -302,15 +326,23 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
             {sg.adds.length > 0 && isOpen && (
               <>
                 {sg.adds.length > FILTERABLE && (
-                  <label className="mt-3 flex items-center gap-2 rounded-2xl border border-border px-4 py-2.5">
+                  /* The icon is the only thing next to the field, and lucide
+                     hides it from assistive tech, so the input would otherwise
+                     be an unnamed control. The ring moves to the wrapper
+                     because the input's own outline is suppressed. */
+                  <label className="mt-3 flex items-center gap-2 rounded-2xl border border-border px-4 py-2.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-ink">
                     <Search className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="sr-only">Search {group.label}</span>
                     <input
                       type="search"
                       value={filters[group.id] ?? ""}
                       onChange={(e) =>
                         setFilters((f) => ({ ...f, [group.id]: e.target.value }))
                       }
-                      placeholder={`Search ${sg.adds.length} options`}
+                      autoComplete="off"
+                      spellCheck={false}
+                      enterKeyHint="search"
+                      placeholder={`Search ${sg.adds.length} options…`}
                       className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground"
                     />
                   </label>
@@ -386,9 +418,15 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
         <span>
           {unmet.length > 0 ? `Choose ${unmet[0].label.toLowerCase()}` : "Add to order"}
         </span>
-        <span className="font-mono tabular-nums">
-          {formatPrice(unitPrice * quantity)}
-        </span>
+        {/* While a required group is unmet the running total can still be
+            $0.00 — the snow items keep their whole price in "Snow Size". A
+            disabled button reading "$0.00" looks like the bug it is describing,
+            so the price appears once there is one. */}
+        {unitPrice > 0 && (
+          <span className="font-mono tabular-nums">
+            {formatPrice(unitPrice * quantity)}
+          </span>
+        )}
       </button>
     </div>
   );
@@ -396,7 +434,10 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+        <DialogContent
+          {...describedBy}
+          className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
+        >
           <DialogHeader className="px-5 pt-6 pb-4 text-left">{heading}</DialogHeader>
           {options}
           <DialogFooter className="mx-0 mt-auto mb-0 w-full rounded-none border-t border-border bg-card px-5 py-4 sm:flex-row sm:justify-stretch">
@@ -409,7 +450,7 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-xl">
+      <DrawerContent {...describedBy} className="mx-auto max-w-xl">
         {/* Dialog and Sheet both ship a close X; the drawer had only the drag
             handle, leaving a gesture as the only discoverable way out. */}
         <DrawerClose className="absolute top-3 right-4 z-10 grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">

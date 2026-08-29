@@ -50,6 +50,49 @@ export const MENU_ITEMS: MenuItem[] = LOCATIONS[DEFAULT_LOCATION].items.filter((
   MENU_CATEGORIES.some((c) => c.id === item.categoryId),
 );
 
+/**
+ * Categories are looked up by NAME, not by id, for the same reason the
+ * illustration colourways are (`src/config/item-art.ts`): the ids are Clover's,
+ * opaque, and free to change whenever an item is rebuilt in their dashboard.
+ * Anything in our own code that points at a category — a promo card, a deep
+ * link — has to survive a re-import, and only the name does.
+ */
+export function categoryIdByName(name: string): string | undefined {
+  const wanted = name.trim().toLowerCase();
+  return MENU_CATEGORIES.find((c) => c.name.trim().toLowerCase() === wanted)?.id;
+}
+
+/**
+ * The cheapest this item can actually be bought for, and whether that is a
+ * floor rather than the price.
+ *
+ * Eight shaved-snow items carry `basePrice: 0` because Clover keeps their whole
+ * price in a required "Snow Size" group — Thai Dye is $0.00 + Kiddie $9.25. A
+ * tile rendering `basePrice` therefore reads "$0.00", which is not a cheap
+ * dessert, it is a broken page. So the minimum cost of satisfying every
+ * required group is folded in, and `from` says whether to label it as a floor.
+ *
+ * `from` is deliberately *not* set for a required group whose cheapest option
+ * is free (every "Milk Tea Type" group, where oat milk is +$0.55 but the
+ * default is $0.00). Those items have a real price; saying "from $6.45" would
+ * be hedging a number we know exactly.
+ */
+export function startingPrice(item: MenuItem): { amount: number; from: boolean } {
+  let amount = item.basePrice;
+  let from = false;
+  for (const group of item.modifierGroups) {
+    if (group.min <= 0) continue;
+    const cheapest = group.options
+      .map((o) => o.priceDelta)
+      .sort((a, b) => a - b)
+      .slice(0, group.min)
+      .reduce((sum, delta) => sum + delta, 0);
+    amount += cheapest;
+    if (cheapest > 0) from = true;
+  }
+  return { amount, from };
+}
+
 export function defaultSelection(item: MenuItem): SelectedModifiers {
   const selection: SelectedModifiers = {};
   for (const group of item.modifierGroups) {

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Plus, ShoppingBag } from "lucide-react";
-import { MENU_CATEGORIES, MENU_ITEMS } from "@/config/menu";
+import { categoryIdByName, MENU_CATEGORIES, MENU_ITEMS, startingPrice } from "@/config/menu";
 import { SHOP } from "@/config/shop";
 import { Testimonials } from "@/components/testimonials";
 import { SiteFooter } from "@/components/site-footer";
@@ -18,6 +18,27 @@ import { useCart } from "@/store/useCart";
 import { cn } from "@/lib/utils";
 import type { MenuItem } from "@/types/boba";
 
+/**
+ * Eight shaved-snow items are `basePrice: 0` — Clover keeps their price in a
+ * required "Snow Size" group — so a tile printing `basePrice` says "$0.00" and
+ * the whole card reads as broken. `startingPrice` folds in the cheapest way to
+ * satisfy the required groups; "from" only appears when that floor is genuinely
+ * above the base, which is those eight items and nothing else.
+ */
+function ItemPrice({ item }: { item: MenuItem }) {
+  const { amount, from } = startingPrice(item);
+  return (
+    <>
+      {from && (
+        <span className="mr-1.5 font-sans text-[13px] font-normal text-muted-foreground">
+          from
+        </span>
+      )}
+      {formatPrice(amount)}
+    </>
+  );
+}
+
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState(MENU_CATEGORIES[0].id);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
@@ -26,6 +47,7 @@ export default function Home() {
 
   const itemCount = useCart((s) => s.totalItemCount());
   const railRef = useRef<HTMLElement>(null);
+  const railScrollerRef = useRef<HTMLDivElement>(null);
 
   const itemsForCategory = useMemo(
     () => MENU_ITEMS.filter((item) => item.categoryId === activeCategory),
@@ -36,6 +58,18 @@ export default function Home() {
     setActiveCategory(id);
     // Otherwise a shorter category can leave you scrolled past its last item.
     railRef.current?.scrollIntoView({ block: "start" });
+    // Eleven categories do not fit a 375px rail, so the one that just became
+    // active is usually off-screen when the jump came from a promo card. Set
+    // `scrollLeft` directly rather than calling `scrollIntoView` on the pill:
+    // that would also scroll the page vertically and fight the line above.
+    const scroller = railScrollerRef.current;
+    const pill = scroller?.querySelector<HTMLElement>(`[data-category="${CSS.escape(id)}"]`);
+    if (scroller && pill) {
+      scroller.scrollTo({
+        left: pill.offsetLeft - (scroller.clientWidth - pill.offsetWidth) / 2,
+        behavior: "smooth",
+      });
+    }
   }
 
   function handlePromo(target: string) {
@@ -43,7 +77,12 @@ export default function Home() {
       document.getElementById("locations")?.scrollIntoView({ block: "center" });
       return;
     }
-    selectCategory(target);
+    // Promo cards name a category, because category ids are Clover's and change
+    // on a re-import. Before this resolved by name they still held ids from the
+    // hand-written menu ("shaved-snow"), so two of the three cards selected a
+    // category that no longer exists and emptied the grid.
+    const id = categoryIdByName(target);
+    if (id) selectCategory(id);
   }
 
   function openDrawerFor(item: MenuItem) {
@@ -181,27 +220,39 @@ export default function Home() {
           aria-label="Menu categories"
           className="sticky top-0 z-30 border-y border-border bg-background/88 backdrop-blur-md"
         >
-          <div className="no-scrollbar mx-auto flex max-w-6xl gap-2.5 overflow-x-auto px-5 py-3.5 sm:justify-center sm:px-8">
-            {MENU_CATEGORIES.map((category) => {
-              const active = category.id === activeCategory;
-              return (
-                <button
-                  key={category.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => selectCategory(category.id)}
-                  className={cn(
-                    "shrink-0 rounded-full px-5 py-3 text-base font-medium whitespace-nowrap transition-colors",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-card text-muted-foreground hover:border-primary hover:text-foreground",
-                  )}
-                >
-                  {category.name}
-                </button>
-              );
-            })}
+          {/* `justify-center` on the scroller itself is a trap once the rail
+              overflows — it pushes the first pills into the unreachable
+              start-overflow, and eleven categories overflow even at max-w-6xl.
+              An auto-margined `w-max` track centres when it fits and stays
+              fully scrollable when it doesn't. Padding lives on the track so
+              both ends survive the scroll. */}
+          <div
+            ref={railScrollerRef}
+            className="no-scrollbar overflow-x-auto overscroll-x-contain py-3.5"
+          >
+            <div className="mx-auto flex w-max gap-2.5 px-5 sm:px-8">
+              {MENU_CATEGORIES.map((category) => {
+                const active = category.id === activeCategory;
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    data-category={category.id}
+                    aria-pressed={active}
+                    onClick={() => selectCategory(category.id)}
+                    className={cn(
+                      "shrink-0 rounded-full px-5 py-3 text-base font-medium whitespace-nowrap transition-colors",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-card text-muted-foreground hover:border-primary hover:text-foreground",
+                    )}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </nav>
 
@@ -248,11 +299,17 @@ export default function Home() {
                     <span className="mt-4 block font-display text-xl leading-snug font-semibold text-balance sm:text-[22px]">
                       {item.name}
                     </span>
-                    <span className="mt-1.5 line-clamp-2 text-[15px] leading-relaxed text-muted-foreground">
-                      {item.description}
-                    </span>
+                    {/* 42 of 93 items have `description: ""` in Clover. An
+                        always-rendered subtitle leaves those cards carrying a
+                        dangling empty line, so the element only exists when
+                        there is copy for it. */}
+                    {item.description && (
+                      <span className="mt-1.5 line-clamp-2 text-[15px] leading-relaxed text-muted-foreground">
+                        {item.description}
+                      </span>
+                    )}
                     <span className="mt-auto pt-3 font-mono text-base font-medium tabular-nums">
-                      {formatPrice(item.basePrice)}
+                      <ItemPrice item={item} />
                     </span>
                   </button>
                 </li>

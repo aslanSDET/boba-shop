@@ -131,14 +131,15 @@ Off-the-shelf over custom everywhere possible: Clerk for auth, Stripe for paymen
 | `src/config/menu.{billerica,lowell}.generated.ts` | **The real menu, generated from Clover** by `scripts/import-menu.mjs`. Billerica 119 items / 85 modifier groups / 12 categories; Lowell 122 / 82 / 14. Do not edit — re-run the script |
 | `scripts/import-menu.mjs` | Clover catalog → typed menu data. Cents→dollars, `maxAllowed: 2147483647`→no ceiling, 12 categories→4 product types, local photos matched by name slug |
 | `src/store/useCart.ts` | Zustand cart store (add/remove/updateQuantity, subtotal/tax/total) |
-| `src/components/modifier-drawer.tsx` | Size/sugar/ice/toppings bottom sheet, qty stepper, live price |
+| `src/components/modifier-drawer.tsx` | Size/sugar/ice/toppings bottom sheet, qty stepper, live price. Reads `src/lib/modifier-shape.ts` for the "Comes with" band |
+| `src/lib/modifier-shape.ts` | Parses the structure Clover encodes in modifier *names* — "No X"/"Extra X" become one removable chip, the rest an add-on list. **`multi` groups only**: in a radio group "No Ice" is a choice, not a removal |
 | `src/components/cart-sheet.tsx` | Line items, qty controls, receipt-style totals |
 | `src/components/cart-bar-button.tsx` | The persistent order control (fixed bottom on phones, brand rail on desktop) |
 | `src/components/item-art.tsx` | Hand-built SVG stand-ins: cup, snow/ice mound, egg-puff bubble sheet |
 | `src/components/item-visual.tsx` | Picks photo vs. illustration; one tinted tile for both |
-| `src/config/item-art.ts` | Per-item colorways for the illustrations (presentational, deliberately not in `MenuItem`) |
+| `src/config/item-art.ts` | Colourways for the illustrations, keyed by item **name**. A curated map first, then a flavour keyword table (mango, taro, brown sugar…), then the per-`ProductType` fallback |
 | `src/config/shop.ts` | Shop facts: real addresses/phones, socials, about copy, **placeholder testimonials** |
-| `src/components/promo-strip.tsx` | Seasonal/featured cards; each jumps to a category or the locations block |
+| `src/components/promo-strip.tsx` | Seasonal/featured cards; each jumps to a category **by name** (ids are Clover's and change on re-import) or to the locations block |
 | `src/components/testimonials.tsx` | Review cards — all quotes are fabricated placeholders |
 | `src/components/site-footer.tsx` | Locations, phones, socials, about, legal |
 | `src/components/social-icons.tsx` | Instagram/Facebook/TikTok marks (lucide v1 dropped brand icons) |
@@ -148,6 +149,20 @@ Off-the-shelf over custom everywhere possible: Clerk for auth, Stripe for paymen
 | `src/app/globals.css`, `src/app/layout.tsx` | Design tokens, three-role type system, light theme only (see §5.1) |
 
 Verified: `tsc --noEmit` clean, `eslint` clean, `next build` clean, manual click-through in the browser across all six categories. Cart maths checked on a mixed three-product order: Hawaiian ice $5.50 + brown sugar milk tea (large, boba) $7.75 + Thai Dye $9.50 = $22.75 subtotal, $1.99 tax, $24.74 total. Max-selection enforcement confirmed (3-of-3 syrups disables the rest; add button stays disabled and names the group still needed).
+
+#### 5.0.1 Storefront pass against the real catalog (2026-08-29)
+
+The generated catalog took the storefront from 6 categories / 24 items to **11 / 93**, and the jump broke five things that the invented menu never exercised. All five are fixed; the counts below are measured against `menu.billerica.generated.ts`, not estimated.
+
+| Broke | Why the real data broke it | Fix |
+|---|---|---|
+| Tiles reading **"$0.00"** on 8 shaved-snow items | Clover keeps Thai Dye, Almond Joy, S'Mores, Birthday Cake, Rainbow Mango, Cottonfetti, Green Tea Special and Ube Bae at `basePrice: 0` and puts the whole price in a required "Snow Size" group | `startingPrice()` in `menu.ts` adds the cheapest way to satisfy every required group → **"from $9.25"**. `from` is suppressed when the cheapest required option is free, so the 13 milk teas with a paid oat-milk upgrade keep their exact price rather than being hedged |
+| **Two of three promo cards emptied the grid** | They still held ids from the hand-written menu (`"shaved-snow"`, `"asian-ice"`); category ids are now Clover's (`6J21VZ3AS6YBW`) | Promo cards name a category; `categoryIdByName()` resolves it. Same name-not-id bet as `item-art.ts` — only names survive a re-import |
+| First categories **unreachable on desktop** | 11 pills measure ~1,570px against a 1,152px `max-w-6xl` rail, and `justify-center` on an overflowing scroller puts the leading overflow past `scrollLeft: 0` | Auto-margined `w-max` track inside the scroller: centres when it fits, scrolls fully when it doesn't. Selecting a category now also scrolls its pill into view |
+| **40 identical brown boba cups** | Art is keyed by item name; 49 items have no photo and only 5 names hit the curated map, so Kiwi, Watermelon Fruit Slush and Vanilla Milkshake all drew as a milk tea | Flavour keyword table under the curated map — **34 distinct colourways across the 49**. Tapioca pearls now only appear on milk teas instead of in every fruit slush |
+| Dangling blank line under 42 item names | `description: ""` — whole categories have none (Milk Tea: 1 of 13, Milkshakes: 0 of 3) | Subtitle and the drawer's `Description` render only when there is copy; the sheet's `aria-describedby` is cleared with it |
+
+Also fixed in the drawer, from reading the shaped output of all 93 items: the "Comes with" parse was misreading three **radio** groups — "Ice Level" is `[Extra Ice, Lite Ice, No Ice]`, and treating "No Ice" as an ingredient removal left a one-pill ice level beside a chip the radio could silently overwrite. The parse is now `multi`-only, and it skips a "No X" whose plain `X` sits in the same group (`Cover` was rendering as both a chip and a duplicate pill; Bomb Mass Lychee listed Lychee Jelly twice). The add-on filter input gained an accessible name and a focus ring.
 
 ### 5.1 Design system (settled — do not re-derive)
 
@@ -316,9 +331,10 @@ Still open:
 - [ ] Basic Lighthouse/perf pass before calling anything "launch-ready"
 
 ### Phase 6 — Real Content
-- [ ] Real menu data (replace mock `src/config/menu.ts`) — pricing TBD depending on which shop this ends up serving
-- [ ] Real drink/dessert photography (replace emoji placeholder tiles) — will need shaved snow and egg waffle item types added to the data model if Snowdaes is the eventual target (currently modeled for boba/milk tea only)
-- [ ] Copy pass on brand voice/description text
+- [x] **Real menu data** — imported 2026-08-29 from the shops' own Clover catalogs by `scripts/import-menu.mjs`; `src/config/menu.ts` holds no invented prices. Storefront renders 93 items across 11 categories (§9). The UI pass that made the storefront survive that data is in §5.0.1
+- [~] Real drink/dessert photography — **44 of 93 items have a photo, 49 do not** and fall back to the drawn SVG stand-in. Those 49 now get 34 distinct flavour colourways instead of one repeated brown cup (§5.0.1), which is a floor, not a finish: photograph the 13 milk teas, 14 fruit teas, 12 fruit slushes and 3 milkshakes and the whole lower half of the menu stops being illustrations
+- [ ] Copy pass on brand voice/description text — **42 of 93 items have `description: ""`**, whole categories among them (Milk Tea 1 of 13, Fruit Teas 2 of 14, Milkshakes 0 of 3, Egg Puffs 0 of 3). The tile and drawer no longer break on it, but the menu reads thin without it. Clover has the field; the shop simply has not filled it in, so this is a copy task, not a code one
+- [ ] Ask the owner about four data oddities the import surfaced: nothing on the menu is flagged `isPopular` (the POPULAR badge is dead code until something is), Ice Cream is modelled as four size-named items ("Kiddie - Ice Cream", "Medium- Ice Cream" — note the missing space, it is theirs), two items carry a trailing `*` in their name ("Avocado Fruit Slush *"), and "Snow Size" prices live on the modifier rather than the item
 
 ## 7. Suggested Agent/Subagent Split
 
