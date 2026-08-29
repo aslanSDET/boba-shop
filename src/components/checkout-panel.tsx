@@ -44,9 +44,21 @@ interface CheckoutTotals {
 interface PaidResult {
   paid: boolean;
   amount: number;
+  cloverOrderId?: string;
+  chargeId?: string;
   card?: { brand?: string; last4?: string };
+  /** Clover's own auth code — what staff read back when tracing a payment. */
+  authCode?: string;
   printed?: boolean;
 }
+
+/**
+ * Clover order ids are 13 opaque characters. Nobody reads one aloud at a
+ * counter, so the last four become the pickup number — short enough to say,
+ * and still a real substring of the id staff can search on in Clover rather
+ * than a number we invented that exists nowhere in their system.
+ */
+const pickupCode = (orderId?: string) => (orderId ? orderId.slice(-4).toUpperCase() : null);
 
 // Plain ids on purpose: Clover mounts by selector, and useId() yields colons.
 const FIELDS = [
@@ -70,6 +82,8 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
   const [totals, setTotals] = useState<CheckoutTotals | null>(null);
   const [paid, setPaid] = useState<PaidResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Per-field messages from Clover's own validation, keyed by element id. */
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const cloverRef = useRef<CloverSdk>(null);
   const mountedRef = useRef(false);
 
@@ -143,7 +157,32 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
         for (const field of FIELDS) {
           // A SELECTOR, never the node. Handing it an element fails the whole
           // mount and the only evidence is a generic message.
-          elements.create(field.key, {}).mount(`#${field.id}`);
+          const element = elements.create(field.key, {});
+          element.mount(`#${field.id}`);
+
+          // Clover validates inside its own iframe and reports through this
+          // event — it is the only way to tell somebody their card number is
+          // short, because we cannot read the field. Without it a bad card just
+          // sat there and the Pay button did nothing visible.
+          //
+          // The payload has been documented both as { CARD_NUMBER: { error } }
+          // and as a bare { error }, so both are read rather than betting on
+          // one and silently showing nothing.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          element.addEventListener("change", (event: any) => {
+            const detail = event?.[field.key] ?? event ?? {};
+            const message: string | undefined = detail.error || undefined;
+            setFieldErrors((prev) => {
+              if (!message) {
+                if (!prev[field.id]) return prev;
+                const next = { ...prev };
+                delete next[field.id];
+                return next;
+              }
+              if (prev[field.id] === message) return prev;
+              return { ...prev, [field.id]: message };
+            });
+          });
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Card fields could not load.");
@@ -155,13 +194,32 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
   // ---- 3. Tokenise, then pay ----------------------------------------------
   const pay = useCallback(async () => {
     if (!totals || !cloverRef.current) return;
+    if (Object.keys(fieldErrors).length > 0) {
+      setError("Fix the card details above first.");
+      return;
+    }
     setPhase("paying");
     setError(null);
     try {
       const result = await cloverRef.current.createToken();
       if (result?.errors) {
-        const first = Object.values(result.errors)[0];
-        setError(typeof first === "string" ? first : "Check the card details.");
+        // createToken reports the same per-field shape. Put each message under
+        // the box it belongs to rather than showing one of them at the bottom
+        // and leaving the customer to guess which field is wrong.
+        const mapped: Record<string, string> = {};
+        for (const field of FIELDS) {
+          const message = result.errors[field.key];
+          if (typeof message === "string" && message) mapped[field.id] = message;
+        }
+        setFieldErrors((prev) => ({ ...prev, ...mapped }));
+        const leftover = Object.values(result.errors).filter(
+          (v): v is string => typeof v === "string",
+        );
+        setError(
+          Object.keys(mapped).length > 0
+            ? null
+            : (leftover[0] ?? "Check the card details."),
+        );
         setPhase("ready");
         return;
       }
@@ -191,24 +249,58 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
       setError("Could not reach the shop. Your card was not charged.");
       setPhase("ready");
     }
-  }, [totals, clearCart]);
+  }, [totals, clearCart, fieldErrors]);
 
   if (phase === "done" && paid) {
+    const code = pickupCode(paid.cloverOrderId);
     return (
       <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-5 py-10 text-center">
         <span className="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-foreground">
           <Check className="size-7" />
         </span>
         <h2 className="mt-5 font-display text-2xl font-semibold">Order placed</h2>
-        <p className="mt-2 text-[15px] text-muted-foreground">
-          {formatPrice(paid.amount / 100)} charged
-          {paid.card?.last4 ? ` to ${paid.card.brand ?? "card"} ••${paid.card.last4}` : ""}.
-          It’s on the counter’s screen now.
+
+        {code && (
+          <>
+            <p className="mt-6 font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
+              Pickup code
+            </p>
+            <p className="mt-1 font-mono text-4xl font-semibold tracking-[0.12em] tabular-nums">
+              {code}
+            </p>
+          </>
+        )}
+
+        <p className="mx-auto mt-6 max-w-[34ch] text-[15px] leading-relaxed text-muted-foreground">
+          Your order is on the counter’s screen at Snowdaes now — the same place
+          their other online orders land. Give this code when you collect it.
         </p>
+
+        <dl className="mx-auto mt-7 flex w-full max-w-[30ch] flex-col gap-2 border-t border-border pt-5 font-mono text-[13px] tabular-nums">
+          <div className="flex justify-between">
+            <dt className="text-muted-foreground">Paid</dt>
+            <dd>{formatPrice(paid.amount / 100)}</dd>
+          </div>
+          {paid.card?.last4 && (
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Card</dt>
+              <dd>
+                {paid.card.brand ?? "Card"} ••{paid.card.last4}
+              </dd>
+            </div>
+          )}
+          {paid.authCode && (
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Auth</dt>
+              <dd>{paid.authCode}</dd>
+            </div>
+          )}
+        </dl>
+
         <button
           type="button"
           onClick={onClose}
-          className="mt-7 w-full rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground"
+          className="mt-8 w-full rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground"
         >
           Done
         </button>
@@ -268,8 +360,16 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
                   the sheet could show and pushed the Pay button off-screen. */}
               <span
                 id={field.id}
-                className="block h-[46px] overflow-hidden rounded-2xl border border-border bg-card px-3 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0"
+                className={cn(
+                  "block h-[46px] overflow-hidden rounded-2xl border bg-card px-3 [&_iframe]:h-full [&_iframe]:w-full [&_iframe]:border-0",
+                  fieldErrors[field.id] ? "border-destructive" : "border-border",
+                )}
               />
+              {fieldErrors[field.id] && (
+                <span role="alert" className="text-[12px] text-destructive">
+                  {fieldErrors[field.id]}
+                </span>
+              )}
             </label>
           ))}
         </div>
