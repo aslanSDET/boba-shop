@@ -166,9 +166,27 @@ export default function Home() {
           className="pointer-events-none absolute -right-10 -bottom-8 hidden h-auto w-[220px] rotate-[7deg] lg:block xl:-right-4 xl:w-[260px]"
         />
         <header className="relative mx-auto flex w-full max-w-2xl flex-col items-center px-5 pt-14 pb-12 text-center sm:px-8 sm:pt-20">
-          <h1 className="whitespace-nowrap text-[4rem] leading-[0.9] sm:text-[12rem]">
-            {/* 4rem on a phone, 12rem from sm; the mark is 0.65em of that */}
-            <Wordmark priority sizes="(min-width: 640px) 128px, 48px" />
+          {/* "Snowdaes" is set `whitespace-nowrap`, so its width is not a
+              layout result but a fixed multiple of the font-size: 4.68em in
+              Fraunces 600 with `tracking-tight` (4.8825em of advances, less
+              8 x 0.025em of negative tracking). A flat 192px from the `sm`
+              breakpoint up was therefore 899px of unbreakable text at a
+              640px viewport, which is why it both got guillotined by the
+              section's `overflow-hidden` below ~900px and ran under the
+              corner art above `lg`. The size has to be derived from the
+              space available, not picked.
+
+              Below `lg` the only constraint is the viewport, so 17vw (capped
+              at 9rem) keeps the phone lockup the size it already was.
+
+              From `lg` the art appears and becomes the binding constraint:
+              the left shot reaches x=188 at `lg` and x=290 at `xl`, so the
+              half-width has to stay clear of 290px. `(100vw - 676px) / 4.75`
+              solves that with ~50px of air, and the 4.75 divisor is the
+              4.68em text ratio rounded up so the margin errs wide. */}
+          <h1 className="text-[length:clamp(3rem,17vw,9rem)] leading-[0.9] whitespace-nowrap lg:text-[length:clamp(8rem,calc((100vw-676px)/4.75),12rem)]">
+            {/* The mark is 0.65em: up to ~94px below lg, ~125px at the 12rem cap */}
+            <Wordmark priority sizes="(min-width: 1024px) 125px, 95px" />
           </h1>
           <p className="mt-4 font-display text-2xl leading-snug text-brand-ink italic sm:mt-5 sm:text-[2rem]">
             {SHOP.tagline}
