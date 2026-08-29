@@ -1,0 +1,206 @@
+<title>What I Need From You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#FCFBF9; --surface:#FFFFFF; --surface2:#F4F1EC;
+  --ink:#1A1A1C; --ink2:#3D3A38; --muted:#6E6A66;
+  --rule:#E5E1DB; --rule-soft:#EFECE7;
+  --a:#3E6B8A; --a-bg:#E9F0F5;      /* Option A — keep Clover ordering */
+  --b:#C4601F; --b-bg:#FBEEE3;      /* Option B — new site takes the order */
+  --good:#3F7A4E; --good-bg:#E8F2EA;
+  --warn:#8A6410; --warn-bg:#FAF2DE;
+  --fd:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
+  --fb:'Newsreader',Georgia,serif;
+  --fm:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141416; --surface:#1B1B1E; --surface2:#232327;
+  --ink:#EDEBE8; --ink2:#CFCBC6; --muted:#948F8A;
+  --rule:#31312F; --rule-soft:#26262A;
+  --a:#8FBBD9; --a-bg:#1B2A35; --b:#E89A5E; --b-bg:#33220F;
+  --good:#79C08C; --good-bg:#14261A; --warn:#D9B45E; --warn-bg:#2E2510;
+}}
+:root[data-theme="dark"]{
+  --paper:#141416; --surface:#1B1B1E; --surface2:#232327;
+  --ink:#EDEBE8; --ink2:#CFCBC6; --muted:#948F8A;
+  --rule:#31312F; --rule-soft:#26262A;
+  --a:#8FBBD9; --a-bg:#1B2A35; --b:#E89A5E; --b-bg:#33220F;
+  --good:#79C08C; --good-bg:#14261A; --warn:#D9B45E; --warn-bg:#2E2510;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--fb);font-size:19px;line-height:1.65;margin:0;padding:0 clamp(18px,5vw,40px) 110px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto}
+.wide{max-width:980px;margin:0 auto}
+h1{font-family:var(--fd);font-weight:800;font-size:clamp(34px,6vw,54px);line-height:1.03;letter-spacing:-.025em;margin:0 0 18px;text-wrap:balance}
+h2{font-family:var(--fd);font-weight:700;font-size:clamp(25px,3.6vw,34px);line-height:1.15;letter-spacing:-.018em;margin:0 0 12px;text-wrap:balance}
+h3{font-family:var(--fd);font-weight:700;font-size:20px;margin:0 0 8px}
+p{margin:0 0 17px}
+section{margin:0 0 clamp(52px,8vw,86px)}
+a{color:var(--b)}
+strong{font-weight:600}
+.eyebrow{font-family:var(--fm);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+.standfirst{font-size:clamp(19px,2.3vw,23px);line-height:1.5;color:var(--ink2);margin:0 0 30px}
+.masthead{padding:clamp(46px,8vw,86px) 0 30px;border-bottom:2px solid var(--ink);margin-bottom:44px}
+
+/* THE SIGNATURE: every technical word gets an everyday one */
+.plain{border:1px solid var(--rule);border-left:4px solid var(--good);background:var(--good-bg);border-radius:0 12px 12px 0;padding:18px 22px;margin:24px 0}
+.plain .tag{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--good);display:block;margin-bottom:7px}
+.plain p{margin:0;font-size:18px;color:var(--ink2)}
+.plain p + p{margin-top:11px}
+
+figure{margin:28px 0}
+figure img{width:100%;display:block;border:1px solid var(--rule);border-radius:12px;background:var(--surface2)}
+figcaption{font-size:16px;color:var(--muted);margin-top:11px;line-height:1.5}
+figcaption b{color:var(--ink);font-weight:600}
+
+.cards{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:760px){.cards.two{grid-template-columns:1fr 1fr}}
+.card{border:1px solid var(--rule);border-radius:14px;background:var(--surface);padding:24px}
+.card.a{border-top:4px solid var(--a)}
+.card.b{border-top:4px solid var(--b)}
+.card h3{margin-bottom:10px}
+.card p:last-child{margin-bottom:0}
+.pill{display:inline-block;font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border-radius:20px;margin-bottom:12px}
+.pill.a{background:var(--a-bg);color:var(--a)} .pill.b{background:var(--b-bg);color:var(--b)}
+.pill.good{background:var(--good-bg);color:var(--good)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+
+.scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;background:var(--surface);margin:26px 0}
+table{border-collapse:collapse;width:100%;font-family:var(--fd);font-size:16px}
+th{background:var(--surface2);text-align:left;font-weight:600;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:14px 16px;border-bottom:1px solid var(--rule-soft);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+td.k{color:var(--ink);font-weight:600}
+.yes{color:var(--good);font-weight:600} .no{color:var(--muted)}
+
+ul{margin:0 0 17px;padding-left:22px} li{margin-bottom:10px}
+li::marker{color:var(--b)}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:26px 0;display:grid;gap:12px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:15px;align-items:start;margin:0}
+ol.steps li::before{content:counter(s);font-family:var(--fd);font-weight:700;font-size:14px;color:var(--b);background:var(--b-bg);width:30px;height:30px;display:grid;place-items:center;border-radius:50%}
+.q{border-left:3px solid var(--rule);padding-left:20px;margin:22px 0}
+.q p{margin-bottom:10px}
+.q p:last-child{margin-bottom:0}
+footer{border-top:1px solid var(--rule);padding-top:26px;margin-top:70px;color:var(--muted);font-size:16px}
+.note{background:var(--warn-bg);border:1px solid var(--rule);border-left:4px solid var(--warn);border-radius:0 12px 12px 0;padding:18px 22px;margin:24px 0}
+.note .tag{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--warn);display:block;margin-bottom:7px}
+.note p{margin:0;font-size:18px;color:var(--ink2)}
+</style>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Snowdaes · 3 of 3 · for Jennifer &amp; Brian</p>
+  <h1>What I need from you</h1>
+  <p class="standfirst">Where this actually stands, what I'd want from each of you, and what
+  I'm hoping to get out of it — because I should be straight about that part too.</p>
+</header>
+
+<section>
+  <h2>Where it stands right now</h2>
+  <p>Everything I've shown you runs <strong>on my laptop</strong>. Nobody else can see it. If I
+  close the lid, it's gone until I open it again.</p>
+
+  <div class="plain">
+    <span class="tag">In plain terms</span>
+    <p>It's a cake I've baked in my own kitchen. It's real, you could eat it — but it's in my
+    kitchen, not in your shop window. Putting it somewhere the public can reach is a separate
+    job, and it costs a bit of money every month. I haven't done it yet, because I don't want
+    to build the wrong thing first.</p>
+  </div>
+
+  <p>The payments I showed you were run against a <strong>practice copy of Clover</strong> —
+  a pretend shop with your menu in it, that Clover gives away free to people building things.
+  No real money has moved and I've never touched your actual account.</p>
+
+  <div class="plain">
+    <span class="tag">In plain terms</span>
+    <p>Like a training till. Same buttons, same receipts, fake money. It means I can make
+    mistakes without any of them landing on your books.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What I'd need — Option A</h2>
+  <p>If you want the simpler one, the site that looks good and hands over to Clover:</p>
+  <ul>
+    <li><strong>Permission to use your photos and the penguin.</strong> I've been using them as placeholders. I need a yes, or I need to take them off.</li>
+    <li><strong>Real reviews.</strong> The site currently shows three made-up ones I wrote to fill the space. They're invented, and they come off before anyone sees this publicly.</li>
+    <li><strong>Who owns snowdaes.com</strong> and who can log in to it.</li>
+    <li><strong>Confirm the opening hours</strong> and whether "ready in 15–20 minutes" is right.</li>
+  </ul>
+  <p>That's genuinely most of it. Option A is a few weeks, evenings and weekends.</p>
+</section>
+
+<section>
+  <h2>What I'd need — Option B</h2>
+  <p>Everything above, plus two things only you can give me:</p>
+  <ol class="steps">
+    <li><div><h3>Two access codes from your Clover, per shop</h3>
+      <p>You make them yourself in your Clover settings — about five minutes each, once
+      two-factor login is switched on. Nobody from Clover is involved, nothing gets
+      installed, and you can cancel them any time. Think of it as cutting me a key to one
+      specific door, that you can take back.</p></div></li>
+    <li><div><h3>Twenty minutes at the shop with the Station</h3>
+      <p>I want to watch what happens when an online order comes in today, and check whether
+      a ticket prints. That's the one thing I genuinely can't test from home.</p></div></li>
+  </ol>
+
+  <div class="note">
+    <span class="tag">One question that changes the build</span>
+    <p><strong>How often do you refund an order?</strong> Daily, weekly, or almost never? It sounds
+    like a small thing, but it decides which of two ways I take the payment — and it's much
+    cheaper to know now than to find out in December.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Questions I'd rather ask in person</h2>
+  <div class="q">
+    <p><strong>Brian — you're at the counter.</strong> When an online order comes in, what actually
+    happens? Does the Station beep? Does someone have to be watching it? What goes wrong on a
+    busy Saturday — missed orders, wrong toppings, people turning up too early?</p>
+  </div>
+  <div class="q">
+    <p><strong>Jennifer — is any of this a priority?</strong> If online ordering is 5% of your day
+    and the real problem is staffing or the Lowell lease, tell me and I'll stop. I'd rather
+    be useful than busy.</p>
+  </div>
+  <div class="q">
+    <p><strong>Both — would you actually use a discount code?</strong> Everything I've argued rests
+    on that being worth something to you. If you wouldn't run one, Option A is the honest answer
+    and it's a lot less work.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What I want out of it</h2>
+  <p>I should say this plainly rather than let you wonder.</p>
+  <p>I'd like to <strong>come and work in the shop, maybe from November</strong>. Not as a favour —
+  I want to learn how the business actually runs. What a Saturday rush feels like, where the
+  money goes, what breaks, what the suppliers are like.</p>
+  <p>I'd like to open one in <strong>Alabama</strong>. So the more of this we sort out before
+  November — the website, the ordering, what maintaining it looks like month to month, whether
+  campaigns actually bring people back — the more useful I am to you while I'm there, and the
+  more I understand before I try it myself.</p>
+  <p>That's the trade, and I think it's a fair one: you get a website and someone who cares
+  about it, I get an education you can't get from the outside.</p>
+</section>
+
+<section>
+  <h2>What I'm asking today</h2>
+  <ul>
+    <li><strong>Tell me which option</strong> — or tell me neither, that's a real answer.</li>
+    <li><strong>Correct my assumptions</strong> in the first document. I'll have got things wrong.</li>
+    <li><strong>Half an hour at the shop</strong> when it suits, ideally on a quieter day.</li>
+  </ul>
+  <p>Nothing goes live, nothing touches your Clover, and nothing changes at the counter until
+  you say so.</p>
+</section>
+
+<footer>
+  <p>Three documents: <strong>Where Snowdaes is today</strong> · <strong>Two ways forward</strong> ·
+  this one. Happy to walk through any of it again.</p>
+</footer>
+
+</div>
