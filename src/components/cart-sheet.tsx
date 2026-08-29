@@ -13,6 +13,7 @@ import { ItemVisual } from "@/components/item-visual";
 import { describeModifiers } from "@/config/menu";
 import { formatPrice } from "@/lib/format";
 import { useCart } from "@/store/useCart";
+import { CheckoutPanel } from "@/components/checkout-panel";
 import { cn } from "@/lib/utils";
 
 interface CartSheetProps {
@@ -35,6 +36,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
 
   const [code, setCode] = useState("");
   const [rejected, setRejected] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   function submitCode(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +60,14 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
           </SheetDescription>
         </SheetHeader>
 
-        {items.length === 0 ? (
+        {checkingOut ? (
+          <CheckoutPanel
+            onClose={() => {
+              setCheckingOut(false);
+              onOpenChange(false);
+            }}
+          />
+        ) : items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
             <p className="text-base text-muted-foreground">
               Pick a drink from the menu and it will show up here.
@@ -211,13 +220,11 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
                 </div>
               </dl>
 
-              {/* describedby so the disabled state is announced with its reason,
-                  not as a dead control */}
               <button
                 type="button"
-                disabled
+                onClick={() => setCheckingOut(true)}
                 aria-describedby="checkout-status"
-                className="mt-5 w-full rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground disabled:opacity-40"
+                className="mt-5 w-full rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground transition-transform active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
               >
                 Checkout
               </button>
