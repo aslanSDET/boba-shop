@@ -1,21 +1,36 @@
-import { openState } from "@/lib/clover-hours";
+import { fetchWeek, nowAtShop, SHOP_TIMEZONE, type HoursPayload } from "@/lib/clover-hours";
 
 /**
- * GET /api/hours — is the shop open right now, per its own Clover account.
+ * GET /api/hours — the schedule, plus the shop's local time as an anchor.
  *
- * Cached for a minute at the edge. Hours change about twice a year, but "open"
- * flips on a minute boundary, and a stale badge saying OPEN NOW ninety seconds
- * after closing sends somebody to a locked door.
+ * The response deliberately does NOT say whether the shop is open. That answer
+ * changes every minute; the schedule changes twice a year. Sending the schedule
+ * and letting the browser decide means one Clover call an hour instead of one a
+ * minute, and a badge that flips exactly on the minute rather than up to a
+ * cache window late.
  *
- * A failure returns `open: null`, not `false`. If Clover is unreachable we do
- * not know whether the shop is open, and claiming it is shut costs real orders.
+ * The anchor is our clock, not the visitor's, so a device with the wrong time
+ * cannot send somebody to a locked door.
+ *
+ * `week: []` means we could not find out — no hours published, or Clover
+ * unreachable. The badge renders nothing. A shop whose hours we cannot read is
+ * not a closed shop, and a wrong CLOSED costs real orders.
  */
-export const revalidate = 60;
+// Dynamic on purpose: the anchor must be read fresh on every request. The
+// expensive half — the Clover call — is memoised inside `fetchWeek`.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const timeZone = SHOP_TIMEZONE;
   try {
-    return Response.json(await openState());
+    const week = await fetchWeek();
+    const payload: HoursPayload = {
+      week,
+      anchor: nowAtShop(timeZone),
+      timeZone,
+    };
+    return Response.json(payload);
   } catch {
-    return Response.json({ open: null, todayLabel: null, detail: null, week: [] });
+    return Response.json({ week: [], anchor: null, timeZone } satisfies HoursPayload);
   }
 }

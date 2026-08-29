@@ -1,46 +1,54 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { OpenState } from "@/lib/clover-hours";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { advance, openAt, type HoursPayload } from "@/lib/clover-hours";
 import { cn } from "@/lib/utils";
 
 /**
  * Open / closed, from the shop's own Clover hours, with the week behind it.
  *
- * Fetched rather than server-rendered because the page is otherwise static and
- * a build-time answer would be wrong within the hour. One request; the route
- * caches for a minute and returns the whole week, so opening the panel costs
- * nothing.
+ * ── ONE REQUEST, AND THE CLOCK RUNS HERE ─────────────────────────────────────
+ *
+ * The route sends the schedule plus the shop's local time as an anchor. This
+ * ticks the anchor forward locally and recomputes with `openAt`, a pure
+ * function, so the badge flips exactly at closing time without ever asking
+ * again. Elapsed time is measured with `performance.now()`, which is monotonic
+ * and immune to a visitor's clock being wrong or changing under us — only the
+ * ELAPSED time comes from the device, never the absolute time.
+ *
+ * That is the whole reason the schedule and the verdict were separated: the
+ * schedule changes twice a year, the verdict every minute, and conflating them
+ * meant a Clover call every minute forever.
  *
  * ── SILENCE IS A VALID ANSWER ────────────────────────────────────────────────
  *
- * `open: null` means we could not find out — no hours published, or Clover
- * unreachable — and the badge renders nothing at all. A shop whose hours we
- * cannot read is not a closed shop, and a wrong CLOSED costs real orders in a
- * way a missing badge never does. Nothing renders while loading either: a badge
- * that says OPEN NOW and then flips to CLOSED is worse than one that arrives a
- * moment late.
+ * An empty week means we could not find out — none published, or Clover
+ * unreachable — and nothing renders. A shop whose hours we cannot read is not a
+ * closed shop, and a wrong CLOSED costs real orders in a way a missing badge
+ * never does. Nothing renders while loading either: OPEN NOW flipping to CLOSED
+ * is worse than arriving a moment late.
  *
  * ── THE PANEL IS A BUTTON, NOT A TOOLTIP ─────────────────────────────────────
  *
- * `title` was doing this job and doing it badly: a native tooltip waits a
- * second, never appears on touch, and cannot be reached from the keyboard —
- * which on a shop's opening hours is most of the audience. This opens on hover
- * AND on focus AND on tap, closes on Escape and on click-away, and the trigger
- * is a real button so a screen reader announces the state rather than reading
- * an orphaned string.
+ * `title` did this job badly: a native tooltip waits a second, never appears on
+ * touch, and cannot be reached from the keyboard — which for a shop's opening
+ * hours is most of the audience.
  */
 export function OpenBadge() {
-  const [state, setState] = useState<OpenState | null>(null);
+  const [data, setData] = useState<HoursPayload | null>(null);
+  const [minutes, setMinutes] = useState(0);
   const [showWeek, setShowWeek] = useState(false);
   const wrapper = useRef<HTMLSpanElement>(null);
+  const startedAt = useRef<number>(0);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/hours")
       .then((r) => r.json())
-      .then((data: OpenState) => {
-        if (!cancelled) setState(data);
+      .then((payload: HoursPayload) => {
+        if (cancelled) return;
+        startedAt.current = performance.now();
+        setData(payload);
       })
       .catch(() => {
         // Deliberately silent: see the note above.
@@ -49,6 +57,16 @@ export function OpenBadge() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!data?.anchor) return;
+    // Half-minute ticks so the flip is never more than 30s late, and the work
+    // is one comparison against an array of seven.
+    const id = setInterval(() => {
+      setMinutes(Math.floor((performance.now() - startedAt.current) / 60000));
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [data]);
 
   useEffect(() => {
     if (!showWeek) return;
@@ -64,8 +82,14 @@ export function OpenBadge() {
     };
   }, [showWeek]);
 
-  if (!state || state.open === null) return null;
-  const hasWeek = state.week.length > 0;
+  const state = useMemo(() => {
+    if (!data?.anchor) return { open: null as boolean | null, detail: null };
+    const now = advance(data.anchor, minutes);
+    return openAt(data.week, now.day, now.clock);
+  }, [data, minutes]);
+
+  if (!data || state.open === null) return null;
+  const hasWeek = data.week.length > 0;
 
   return (
     <span
@@ -99,28 +123,28 @@ export function OpenBadge() {
       </button>
 
       {showWeek && hasWeek && (
-        <span
-          role="table"
-          className="absolute bottom-[calc(100%+8px)] left-1/2 z-40 w-max -translate-x-1/2 rounded-2xl border border-border bg-card px-4 py-3 text-left shadow-[0_8px_28px_rgba(0,0,0,0.09)]"
-        >
+        <span className="absolute bottom-[calc(100%+8px)] left-1/2 z-40 w-max -translate-x-1/2 rounded-2xl border border-border bg-card px-4 py-3 text-left shadow-[0_8px_28px_rgba(0,0,0,0.09)]">
           <span className="mb-2 block font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
-            {/* The label names the source, which is the reassuring part: these
-                are the shop's own hours, not ours. */}
+            {/* Naming the shop is the reassuring part: these are its own hours. */}
             Hours · Billerica
           </span>
-          {state.week.map((day) => (
-            <span
-              role="row"
-              key={day.label}
-              className={cn(
-                "flex items-baseline justify-between gap-6 py-0.5 font-mono text-[12px] tabular-nums",
-                day.today ? "font-medium text-foreground" : "text-muted-foreground",
-              )}
-            >
-              <span role="cell">{day.label}</span>
-              <span role="cell">{day.hours ?? "Closed"}</span>
-            </span>
-          ))}
+          {data.week.map((day) => {
+            const today = data.anchor
+              ? advance(data.anchor, minutes).day === day.key
+              : false;
+            return (
+              <span
+                key={day.key}
+                className={cn(
+                  "flex items-baseline justify-between gap-6 py-0.5 font-mono text-[12px] tabular-nums",
+                  today ? "font-medium text-foreground" : "text-muted-foreground",
+                )}
+              >
+                <span>{day.label}</span>
+                <span>{day.hours ?? "Closed"}</span>
+              </span>
+            );
+          })}
         </span>
       )}
     </span>
