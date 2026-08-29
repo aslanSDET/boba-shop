@@ -1,0 +1,1028 @@
+<title>Clover Field Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+:root {
+  --paper:      #FBFBFC;
+  --surface:    #FFFFFF;
+  --surface-2:  #F4F5F8;
+  --ink:        #16181D;
+  --ink-2:      #3A3F4B;
+  --muted:      #626878;
+  --rule:       #E2E4EA;
+  --rule-soft:  #EDEEF2;
+  --accent:     #3D3A8C;
+  --accent-bg:  #EEEEFA;
+  --ok:         #16665F;
+  --ok-bg:      #E4F2EF;
+  --warn:       #8A5A11;
+  --warn-bg:    #FAF0DE;
+  --crit:       #91302F;
+  --crit-bg:    #FBEAE9;
+
+  --f-display: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --f-body:    'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --f-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:     #0F1116;
+    --surface:   #161921;
+    --surface-2: #1D212B;
+    --ink:       #E7E9EF;
+    --ink-2:     #C2C7D2;
+    --muted:     #8A91A2;
+    --rule:      #292E3A;
+    --rule-soft: #21252F;
+    --accent:    #A5A0F5;
+    --accent-bg: #21213F;
+    --ok:        #55C3AC;
+    --ok-bg:     #12302C;
+    --warn:      #DCA646;
+    --warn-bg:   #33270F;
+    --crit:      #E88585;
+    --crit-bg:   #381E1E;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:     #0F1116;
+  --surface:   #161921;
+  --surface-2: #1D212B;
+  --ink:       #E7E9EF;
+  --ink-2:     #C2C7D2;
+  --muted:     #8A91A2;
+  --rule:      #292E3A;
+  --rule-soft: #21252F;
+  --accent:    #A5A0F5;
+  --accent-bg: #21213F;
+  --ok:        #55C3AC;
+  --ok-bg:     #12302C;
+  --warn:      #DCA646;
+  --warn-bg:   #33270F;
+  --crit:      #E88585;
+  --crit-bg:   #381E1E;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0 clamp(16px, 4vw, 40px) 100px;
+}
+
+.wrap { max-width: 1140px; margin: 0 auto; }
+.prose { max-width: 69ch; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  padding: clamp(48px, 8vw, 92px) 0 0;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: var(--f-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 18px;
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(38px, 6.5vw, 62px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin: 0 0 20px;
+  text-wrap: balance;
+}
+.standfirst {
+  font-size: clamp(18px, 2.2vw, 21px);
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 62ch;
+  margin: 0 0 34px;
+}
+.masthead-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 34px;
+  font-family: var(--f-display);
+  font-size: 13px;
+  color: var(--muted);
+  padding-bottom: 22px;
+}
+.masthead-meta b {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- structure ---------- */
+section { margin: 0 0 clamp(52px, 7vw, 78px); }
+
+h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(25px, 3.4vw, 33px);
+  letter-spacing: -0.018em;
+  line-height: 1.15;
+  margin: 0 0 10px;
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: -0.008em;
+  margin: 0 0 8px;
+}
+.section-note {
+  color: var(--muted);
+  font-size: 16px;
+  max-width: 66ch;
+  margin: 0 0 26px;
+}
+p { margin: 0 0 15px; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px;
+}
+
+code, .mono {
+  font-family: var(--f-mono);
+  font-size: 0.855em;
+  background: var(--surface-2);
+  padding: 0.12em 0.36em;
+  border-radius: 3px;
+  word-break: break-word;
+}
+
+/* ---------- tables ---------- */
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  background: var(--surface);
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--f-display);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+thead th {
+  background: var(--surface-2);
+  text-align: left;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  color: var(--ink-2);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface-2); }
+td.name { color: var(--ink); font-weight: 600; white-space: nowrap; }
+td.num  { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t-tight td, .t-tight th { padding-left: 13px; padding-right: 13px; }
+
+/* ---------- badges ---------- */
+.tag {
+  display: inline-block;
+  font-family: var(--f-display);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+.t-ok   { background: var(--ok-bg);   color: var(--ok); }
+.t-warn { background: var(--warn-bg); color: var(--warn); }
+.t-crit { background: var(--crit-bg); color: var(--crit); }
+.t-neu  { background: var(--surface-2); color: var(--muted); }
+.t-acc  { background: var(--accent-bg); color: var(--accent); }
+
+/* ---------- repo cards ---------- */
+.cards { display: grid; gap: 20px; }
+.card {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 22px clamp(18px, 2.6vw, 26px) 24px;
+}
+.card.lead { border-color: var(--accent); border-width: 1.5px; }
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  margin-bottom: 4px;
+}
+.card-head h3 { margin: 0; font-size: 20px; }
+.card-head .path { font-family: var(--f-mono); font-size: 13px; color: var(--accent); }
+.card-meta {
+  font-family: var(--f-display);
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+.card-body { font-size: 16.5px; }
+.card-body > p:last-child { margin-bottom: 0; }
+
+.borrow {
+  font-family: var(--f-display);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 20px 0 9px;
+}
+ul.borrow-list { margin: 0 0 4px; padding-left: 20px; }
+ul.borrow-list li { margin-bottom: 9px; }
+ul.borrow-list li::marker { color: var(--accent); }
+ul.borrow-list b { color: var(--ink); font-weight: 600; }
+
+.files {
+  margin-top: 18px;
+  padding: 11px 14px;
+  background: var(--surface-2);
+  border-radius: 5px;
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.85;
+  color: var(--muted);
+  word-break: break-word;
+}
+.files span { color: var(--ink-2); }
+
+blockquote {
+  margin: 16px 0;
+  padding: 2px 0 2px 18px;
+  border-left: 2.5px solid var(--accent);
+  color: var(--ink-2);
+  font-style: italic;
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+/* ---------- callout ---------- */
+.callout {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-radius: 0 7px 7px 0;
+  padding: 20px clamp(18px, 2.4vw, 24px);
+  margin: 26px 0;
+}
+.callout.warn { border-left-color: var(--warn); }
+.callout h3 { margin-bottom: 7px; }
+.callout p:last-child { margin-bottom: 0; }
+.callout .prose { max-width: 68ch; }
+
+/* ---------- open questions ---------- */
+ol.decisions { counter-reset: d; list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+ol.decisions li {
+  counter-increment: d;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 14px;
+  align-items: start;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  background: var(--surface);
+  padding: 16px 18px;
+}
+ol.decisions li::before {
+  content: counter(d);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-variant-numeric: tabular-nums;
+}
+ol.decisions h3 { margin-bottom: 4px; }
+ol.decisions p { margin: 0; font-size: 16px; color: var(--ink-2); }
+
+footer {
+  border-top: 1px solid var(--rule);
+  padding-top: 22px;
+  color: var(--muted);
+  font-family: var(--f-display);
+  font-size: 13.5px;
+}
+footer p { margin-bottom: 9px; }
+footer .prose { max-width: 74ch; }
+
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .card { padding: 18px 15px 20px; }
+  ol.decisions li { grid-template-columns: 1fr; gap: 9px; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Snowdaes · Clover integration · Prior art</p>
+  <h1>Clover Field Notes</h1>
+  <p class="standfirst">
+    Nine public Clover integrations, read end to end, for what they already learned the
+    expensive way. What each one is good for, and every finding worth carrying into our build.
+  </p>
+  <div class="masthead-meta">
+    <span>Surveyed <b>28 Aug 2026</b></span>
+    <span>Repos <b>9</b></span>
+    <span>Cloned <b>132 MB</b></span>
+    <span>Findings <b>28</b></span>
+  </div>
+</header>
+
+<section>
+  <h2>How to read this</h2>
+  <div class="prose">
+    <p>
+      Two standards of proof are mixed together here, so every finding is tagged with
+      which one it meets.
+    </p>
+    <p>
+      <span class="tag t-ok">Confirmed</span> means verified against Clover's own
+      documentation or measured by our own sandbox spike.
+      <span class="tag t-warn">Claimed</span> means a specific, falsifiable statement in
+      someone else's production code — usually with the scar tissue to match. Plausible,
+      and not yet verified by us.
+    </p>
+    <p>
+      Nothing from these repos has been copied into our code, and nothing should be. Almost
+      all of it is unlicensed. The clones live at
+      <code>NodeProjects/clover-reference/</code>, deliberately outside our public repo,
+      with a per-repo map in their own <code>README.md</code>.
+    </p>
+  </div>
+
+  <div class="callout">
+    <h3>The search technique matters more than the results</h3>
+    <div class="prose">
+      <p>
+        The three repos closest to our situation are invisible to GitHub repo search — not
+        one of them mentions Clover in its name or description. All three were found by
+        <b>code</b>-searching for <code>CLOVER_MERCHANT_ID</code>.
+      </p>
+      <p>
+        Search for the environment variable, not the product. Note also that “clover” is a
+        badly polluted keyword: the bootloader, Cloverly the carbon company, Naver Clova,
+        and several game mods crowd every result page. A number of hits for
+        <code>scl.clover.com</code> are card-testing fraud tooling; those were not opened.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>The nine at a glance</h2>
+  <p class="section-note">
+    Ranked by how much they are worth to us, not by stars — eight of the nine have none.
+  </p>
+  <div class="scroll">
+    <table class="t-tight">
+      <thead>
+        <tr>
+          <th>Repo</th><th>Stack</th><th>What it is</th>
+          <th>Commits</th><th>Last push</th><th>License</th><th>Value to us</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name">puneet</td><td>Next.js</td>
+          <td>Production booking app — OAuth, terminals, refunds, reconciliation</td>
+          <td class="num">1,456</td><td class="num">28 Aug 26</td><td><span class="tag t-crit">None</span></td>
+          <td><b>Highest.</b> Documents every Clover bug they shipped and reverted</td>
+        </tr>
+        <tr>
+          <td class="name">chiang-mai&#8209;ai&#8209;phone&#8209;ordering</td><td>Django</td>
+          <td>Thai restaurant taking orders by AI phone call</td>
+          <td class="num">30</td><td class="num">26 Aug 26</td><td><span class="tag t-crit">None</span></td>
+          <td>Arrived at our exact schema independently</td>
+        </tr>
+        <tr>
+          <td class="name">sanqinMVP</td><td>NestJS · Prisma</td>
+          <td>Restaurant web ordering site</td>
+          <td class="num">561</td><td class="num">28 Aug 26</td><td><span class="tag t-crit">None</span></td>
+          <td>Answers “who calculates the total?”</td>
+        </tr>
+        <tr>
+          <td class="name">Pizza62Sol</td><td>Next.js</td>
+          <td>Pizza shop ordering site</td>
+          <td class="num">86</td><td class="num">28 Aug 26</td><td><span class="tag t-crit">None</span></td>
+          <td>Closest to our stack; runs both payment paths at once</td>
+        </tr>
+        <tr>
+          <td class="name">mbates-clover</td><td>TypeScript</td>
+          <td>Client library for both Clover hosts</td>
+          <td class="num">16</td><td class="num">23 Jul 26</td><td><span class="tag t-ok">MIT</span></td>
+          <td>Only permissively licensed repo here. Read, don't adopt</td>
+        </tr>
+        <tr>
+          <td class="name">clover-online-orders</td><td>PHP · WordPress</td>
+          <td>Zaytech's commercial “Smart Online Order” plugin</td>
+          <td class="num">135</td><td class="num">17 Jun 23</td><td><span class="tag t-warn">Clover app</span></td>
+          <td>The market shape, and a feature checklist</td>
+        </tr>
+        <tr>
+          <td class="name">hosted-checkout-codelab</td><td>Vue · Nuxt</td>
+          <td>Clover's own tutorial — <b>archived 2024</b></td>
+          <td class="num">3</td><td class="num">24 May 24</td><td><span class="tag t-neu">Clover</span></td>
+          <td>States two Hosted Checkout limits in writing</td>
+        </tr>
+        <tr>
+          <td class="name">export-api-examples</td><td>Python · C#</td>
+          <td>Clover's own bulk data export (beta)</td>
+          <td class="num">31</td><td class="num">01 Oct 19</td><td><span class="tag t-neu">Clover</span></td>
+          <td>Only if marketing wants bulk order history</td>
+        </tr>
+        <tr>
+          <td class="name">clover-api-python</td><td>Python</td>
+          <td>Thin v3 wrapper, most-starred standalone client</td>
+          <td class="num">16</td><td class="num">19 Mar 21</td><td><span class="tag t-neu">—</span></td>
+          <td>Lowest. Endpoint enumeration only</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>The three that match our situation</h2>
+  <p class="section-note">
+    One independent developer, one real bricks-and-mortar business, Clover end to end.
+    This is the genre we were looking for.
+  </p>
+
+  <div class="cards">
+
+    <article class="card">
+      <div class="card-head">
+        <h3>chiang-mai-ai-phone-ordering</h3>
+        <span class="path">Django · a Thai restaurant</span>
+      </div>
+      <p class="card-meta">30 commits · pushed 26 Aug 2026 · unlicensed · found via <span class="mono">CLOVER_MERCHANT_ID</span></p>
+      <div class="card-body">
+        <p>
+          The closest match to our architecture, and they got there without ever seeing our
+          plan. Their migration added <code>clover_item_id</code>,
+          <code>clover_modifiers</code>, <code>clover_order_id</code>,
+          <code>clover_pushed</code> and <code>clover_error</code> in one go — which is
+          <code>PLAN.md</code> §6, written by a stranger. That is the most reassuring single
+          thing in this survey.
+        </p>
+
+        <p class="borrow">Borrow</p>
+        <ul class="borrow-list">
+          <li><b>Sync preserves locally-curated fields, matched by name.</b> Clover owns names, prices and modifiers; their phonetic aliases and Thai names survive a resync. We hit this the moment we add a photo, description or tag that Clover has no field for.</li>
+          <li><b>An item that vanishes from Clover is marked unavailable, not deleted</b> — to keep that curation and the order history intact.</li>
+          <li><b>A manual re-push command</b> taking a local order id, with <code>--force</code>. For a two-store shop that beats an automatic retry queue.</li>
+          <li><b>A <code>--dry-run</code> flag on the sync.</b> Ours should have one.</li>
+          <li>The push never raises to the caller: “the local order + SMS are the source of truth / backup”.</li>
+        </ul>
+
+        <div class="files">
+          <span>orders/clover.py</span><br>
+          <span>orders/management/commands/sync_menu_from_clover.py</span><br>
+          <span>orders/management/commands/push_order_to_clover.py</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <h3>sanqinMVP</h3>
+        <span class="path">NestJS + Prisma · a restaurant site</span>
+      </div>
+      <p class="card-meta">561 commits · pushed 28 Aug 2026 · unlicensed</p>
+      <div class="card-body">
+        <p>
+          We already knew Hosted Checkout has no calculation engine and silently ignores
+          <code>taxRates</code>, so we must compute the total ourselves. The open question
+          was how to do that without trusting the browser with the number. This repo answers
+          it in about sixty lines.
+        </p>
+
+        <p class="borrow">Borrow</p>
+        <ul class="borrow-list">
+          <li><b>The signed pricing token.</b> The server computes the total, then issues an HMAC-signed token binding <code>totalCents</code> + a cart fingerprint + the checkout intent id, with a 15-minute expiry. The browser carries the price and cannot alter it; the server verifies signature, fingerprint and amount before charging.</li>
+          <li><b>Recalculate, never trust, amounts that come back</b> in checkout metadata — the same conclusion our own <code>findings.md</code> reached.</li>
+          <li>The provider-adapter split, <em>if</em> we ever add a second processor. We will not soon; noted so we don't build it prematurely.</li>
+        </ul>
+
+        <div class="files">
+          <span>apps/api/src/clover/pricing-token.service.ts</span><br>
+          <span>apps/api/src/clover/checkout-metadata.ts</span><br>
+          <span>apps/api/src/clover/checkout-intents.service.ts</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <h3>Pizza62Sol</h3>
+        <span class="path">Next.js · a pizza shop</span>
+      </div>
+      <p class="card-meta">86 commits · pushed 28 Aug 2026 · unlicensed · closest to our stack</p>
+      <div class="card-body">
+        <p>
+          Small enough to read in one sitting, and the only repo that settles a question we
+          had been treating as either/or.
+        </p>
+
+        <p class="borrow">Borrow</p>
+        <ul class="borrow-list">
+          <li><b>Proof the two payment paths can coexist.</b> <code>lib/clover.ts</code> calls <em>both</em> <code>/invoicingcheckoutservice/v1/checkouts</code> (Hosted Checkout) and <code>/v1/charges</code> (the tokenising iframe). Our Hosted-Checkout-vs-iframe decision does not have to be made once and forever.</li>
+          <li>App Router route shapes for a Clover webhook, in our own framework.</li>
+          <li>That they wrote tests for the webhook and the client at all.</li>
+        </ul>
+
+        <div class="files">
+          <span>lib/clover.ts</span> · <span>app/customer/CloverCardForm.tsx</span><br>
+          <span>app/api/payments/clover/webhook/route.ts</span> · <span>tests/clover*.test.ts</span>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section>
+  <h2>The operations reference</h2>
+  <p class="section-note">Wrong domain, right hard-won knowledge.</p>
+
+  <article class="card lead">
+    <div class="card-head">
+      <h3>puneet</h3>
+      <span class="path">Next.js · a healthcare boarding facility</span>
+    </div>
+    <p class="card-meta">1,456 commits since Nov 2025 · pushed 28 Aug 2026 · unlicensed · zero stars, unknown author</p>
+    <div class="card-body">
+      <p>
+        The most valuable repo in this survey, and the one we should copy the least from.
+        The domain is wrong — pet boarding, card-present countertop terminals — and the code
+        is unlicensed. <b>Its value is that the author documented every Clover bug they
+        shipped and reverted</b>, in a debt map and in a long comment banner at the head of
+        every file.
+      </p>
+      <blockquote>
+        <p>
+          Clover's documented behaviour and its actual behaviour differ in ways that are
+          individually small and collectively expensive, and the failures are quiet — a
+          null, a wrong status code, a missing row.
+        </p>
+      </blockquote>
+      <p>
+        That is from a section titled “Fifteen defects, and all but one were found by running
+        the code.” Six of the fifteen were already committed and described as working. It is
+        the same shape as our own tax-divisor episode: inferred from the docs, wrong by a
+        factor of ten, caught only because we ran an order and read the total back.
+      </p>
+
+      <p class="borrow">Borrow — patterns, never code</p>
+      <ul class="borrow-list">
+        <li><b>“A sale that succeeded with no paper is a nuisance. A sale reported as failed because a second request failed is a double charge.”</b> Every call that is not the one moving money returns null rather than throwing, with a short timeout and no retries. This is the right shape for our order-push and ticket-fire steps.</li>
+        <li><b>A webhook delivery is a hint, never a fact.</b> Record that Clover mentioned an object id, then re-read that object from the API with the merchant's own token. Every decision comes from the read.</li>
+        <li><b>Open the intent row before calling Clover</b>, carrying the idempotency key you are about to send. A mid-charge crash is then both reconcilable and safe to retry.</li>
+        <li><b>A sweep as the backup for the webhook that never came.</b> Theirs runs every 15 minutes.</li>
+        <li><b>Reconcile the gap, not the event.</b> Ask “does our ledger account for everything Clover has reversed”, write only the shortfall, one row per reversal keyed to its own Clover id. That is what makes it safe to run twice.</li>
+        <li><b>Never report a capability as working if you cannot prove it.</b> They report <code>charge</code> as <em>untested</em> forever, because taking a payment cannot be proven without taking one.</li>
+        <li><b>An unattached-payments queue</b> — real money Clover took that the app cannot place, held for review rather than discarded. Exactly the failure our own Hosted Checkout finding implies.</li>
+      </ul>
+
+      <p class="borrow">Do not borrow</p>
+      <ul class="borrow-list">
+        <li>Their auth. They migrated Clerk → WorkOS for org-model reasons that are not ours; our Clerk decision stands.</li>
+        <li>Anything from their card-present terminal path. We are online-only.</li>
+      </ul>
+
+      <div class="files">
+        <span>docs/quality/debt-map.md</span> &nbsp;— read this first<br>
+        <span>src/lib/clover/</span> — 22 modules, 7,210 lines; the comment banners explain <em>why</em>
+      </div>
+    </div>
+  </article>
+</section>
+
+<section>
+  <h2>Library and vendor references</h2>
+  <div class="cards">
+
+    <article class="card">
+      <div class="card-head">
+        <h3>mbates-clover</h3>
+        <span class="path">TypeScript client library</span>
+      </div>
+      <p class="card-meta">16 commits · pushed 23 Jul 2026 · <b>MIT</b> — the only permissively licensed repo here</p>
+      <div class="card-body">
+        <p>
+          Covers charges, refunds and customers. <b>Not orders, inventory or line items</b> —
+          which is most of what we need. Read it; do not adopt it.
+        </p>
+        <p class="borrow">Borrow</p>
+        <ul class="borrow-list">
+          <li>The two-host split stated cleanly: <code>scl*</code> for Stripe-shaped ecommerce <code>/v1/…</code>, <code>api*</code> for platform <code>/v3/merchants/{mId}/…</code>.</li>
+          <li>A typed error hierarchy behind one <code>parseCloverError</code>.</li>
+          <li>Defaulting an <code>idempotency-key</code> header on every mutating call.</li>
+          <li>WebCrypto webhook verification, so it runs on edge runtimes rather than Node only.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <h3>clover-online-orders</h3>
+        <span class="path">Zaytech's “Smart Online Order for Clover”</span>
+      </div>
+      <p class="card-meta">135 commits · last 17 Jun 2023 · commercial plugin, “License: Clover app”</p>
+      <div class="card-body">
+        <p>
+          <b>Not Clover's, and not the mirror-owner's.</b> A personal mirror by an individual
+          developer of a commercial WordPress plugin sold in Clover's marketplace, originally
+          written in 2016. It is the closest commercial analog to what we are building.
+        </p>
+        <p class="borrow">Borrow — as a checklist, not as code</p>
+        <ul class="borrow-list">
+          <li><b>Confirmation that the middleware tier is not optional.</b> It never calls Clover. Every request goes to their own hosted API. Nobody puts Clover credentials in a browser — our Amplify Functions are the same shape as their API tier.</li>
+          <li><b>They built their own customer accounts</b> — login, signup, SMS phone verification — rather than using anything of Clover's. Direct precedent for our Clerk decision.</li>
+          <li><b>What a finished Clover storefront needs beyond a menu</b>, visible in their API surface: opening hours, opening status, blackout dates, order types, stock tracking, item stocks, order removal, merchant notification. Clover already knows all of it and we have not planned to read any of it.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <h3>hosted-checkout-codelab</h3>
+        <span class="path">Clover's own tutorial · archived 2024</span>
+      </div>
+      <p class="card-meta">Checked out on the <span class="mono">complete</span> branch, which has the finished code</p>
+      <div class="card-body">
+        <p>
+          Small, but it earns its place on two sentences in its own README — Clover stating
+          Hosted Checkout's limits in writing. See the callout below.
+        </p>
+        <p class="borrow">Borrow</p>
+        <ul class="borrow-list">
+          <li>The canonical Hosted Checkout request shape, and the success / cancel / failure redirect pages as a pattern.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <h3>export-api-examples</h3>
+        <span class="path">Clover's own bulk data export (beta)</span>
+      </div>
+      <p class="card-meta">Last touched 2019 — treat every detail as needing re-checking</p>
+      <div class="card-body">
+        <p>
+          Relevant only if the marketing engine ever wants order history in bulk rather than
+          page by page. The constraints are unusual enough to be worth knowing before you
+          design around it.
+        </p>
+        <p class="borrow">Borrow — the constraints</p>
+        <ul class="borrow-list">
+          <li>Service is <b>only up US 10:00–15:00 UTC</b>; outside that it returns 503 with the available hours. Sandbox has no time limit.</li>
+          <li>1,000 objects per file, files deleted after 24 hours, maximum 30-day range per request.</li>
+          <li>Only a few concurrent exports before it 503s — you must wait for each to finish.</li>
+          <li>Aimed at “merchants that have installed your app”, so it may require an app rather than merchant tokens. <span class="tag t-warn">Unverified</span></li>
+        </ul>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section>
+  <h2>Every finding</h2>
+  <p class="section-note">
+    Grouped by what it touches. The evidence column is the whole point — treat
+    <span class="tag t-warn">Claimed</span> rows as leads to test, not facts to build on.
+  </p>
+
+  <h3 style="margin:34px 0 12px">Webhooks</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Finding</th><th>Detail</th><th>Evidence</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">Two webhook systems, different auth</td>
+          <td>Platform/merchant sends <code>X-Clover-Auth</code>, a <b>static UUID</b> with no signature, timestamp or replay protection. Hosted Checkout sends <code>Clover-Signature: t=…,v1=…</code>, HMAC-SHA256 over <code>${t}.${rawBody}</code>. Our <code>PLAN.md</code> says “signature verification” as if there were one thing.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>Clover docs</td>
+        </tr>
+        <tr>
+          <td class="name">A delivery is a hint, never a fact</td>
+          <td>Record that Clover mentioned an object id, then re-read it from the API with the merchant's token. On the platform webhook this is not optional — possession of a static UUID is the entire proof of origin.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">Non-200 is retried forever</td>
+          <td>A status code is a scheduling instruction, not an opinion. Record unprocessable events, close them with a reason, answer 200. Reserve non-200 for “I genuinely could not record this”.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">The handshake cannot be authenticated</td>
+          <td>Clover POSTs <code>{"verificationCode": "…"}</code> before the auth header starts appearing, so the first message can never carry the secret. Their fix: keep that branch live <em>only while the secret env var is unset</em>, so the door shuts as you finish walking through it.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>Clover docs</td>
+        </tr>
+        <tr>
+          <td class="name">A retry loop can spin for weeks</td>
+          <td>Deliveries naming a superseded merchant retried every 15 minutes for 18 days — roughly 1,700 attempts — because the handler read with the <em>current</em> merchant's token, Clover cannot answer for another estate, and “unreadable” was skipped and left for next time.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">Compare secrets in constant time</td>
+          <td><code>timingSafeEqual</code> <b>throws</b> on differing lengths, so the length check must come first.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin:34px 0 12px">Money and orders</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Finding</th><th>Detail</th><th>Evidence</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">Hosted Checkout has no refunds or voids</td>
+          <td>Clover's own words: it is “a customer-facing payment interface, not a fully-featured payment system for merchants.” Every refund would happen by hand in the dashboard, and our side learns of it only by webhook or sweep.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>Clover codelab</td>
+        </tr>
+        <tr>
+          <td class="name">Hosted Checkout cannot use Clover inventory</td>
+          <td>Stated in the same README. Confirms in writing what our spike measured: no inventory link, no calculation engine, <code>taxRates</code> silently ignored.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>Clover codelab · our spike</td>
+        </tr>
+        <tr>
+          <td class="name"><code>POST /v1/orders/{id}/pay</code> may link order to payment</td>
+          <td>Ecommerce host, same <code>clv_</code> token. Would let us create the order properly — inventory-linked, Clover applying its own tax — and <em>then</em> pay it. They could not verify it; their sandbox token had expired and Clover rotates refresh tokens. <b>Our tokens can.</b></td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">A reversal is not always a refund</td>
+          <td>Calling <code>/v1/refunds</code> on a charge <b>from the same batch</b> produces a void: <code>result: "VOIDED"</code> with an <b>empty</b> <code>refunds[]</code>. Reconciling on <code>refunds[]</code> alone misses every same-day reversal and reports the money as still taken. For a boba shop, same-day reversal is the normal case.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">A refund that omits its amount takes the whole charge</td>
+          <td>Silent, and exactly the wrong direction to be wrong in.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name"><code>/v1/orders/{id}/returns</code> refunds the whole order</td>
+          <td>…while echoing your requested amount back in the response. About as quiet as a money bug gets.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">A tip makes <code>/v1/refunds</code> refuse a partial</td>
+          <td>And Clover does not expose how a refund splits across subtotal, tax and tip — the refund element carries none of its own, and the nested payment holds the <em>original's</em>.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">Money can arrive that you cannot place</td>
+          <td>Clover takes payment and creates its own order; if our side crashed in between, nothing links it to a customer. They built a review queue and a nightly sweep for it.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">Idempotency keys are honoured</td>
+          <td>On retry with the same key, Clover returns the <b>original</b> charge rather than making a second one. Write the intent row before calling.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet · mbates</td>
+        </tr>
+        <tr>
+          <td class="name">Compute server-side, sign the total</td>
+          <td>HMAC token binding <code>totalCents</code> + cart fingerprint + intent id, 15-minute TTL. The client carries the price without being able to change it.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>sanqinMVP</td>
+        </tr>
+        <tr>
+          <td class="name">Tax rate unit is hundred-thousandths of a percent</td>
+          <td>6.25% is <code>625000</code>. We inferred millionths from the docs, shipped it, and an order came back at $9.27 instead of $5.83.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>our spike</td>
+        </tr>
+        <tr>
+          <td class="name">Discounts apply before tax</td>
+          <td>Measured on a live sandbox order.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>our spike</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin:34px 0 12px">Auth, permissions and platform behaviour</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Finding</th><th>Detail</th><th>Evidence</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">Permissions cannot be introspected</td>
+          <td>Token exchange returns tokens and expiries and says <b>nothing</b> about permissions. They are ticked on the app in the developer dashboard and never reported back to the app holding the token. The only way to know is to provoke a refusal.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>puneet · our spike</td>
+        </tr>
+        <tr>
+          <td class="name">…and the refusal code depends on the auth model</td>
+          <td>On OAuth app tokens: 400 = permitted and rejected on merit, 403 = missing permission, 401 = dead token. On <b>merchant-generated tokens</b> we measured a missing permission as <b>401</b>, and saw 403 only when an <code>expand=</code> value was rejected.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>our spike</td>
+        </tr>
+        <tr>
+          <td class="name">Clover rotates refresh tokens</td>
+          <td>Two concurrent refreshes invalidate each other and take the connection offline.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">A decline is HTTP 402 with no <code>error.type</code></td>
+          <td>Naive handlers return 500 for a perfectly ordinary declined card.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">Clover rate-limits with 429</td>
+          <td>Three separate 429s were swallowed as nulls before anyone noticed.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name"><code>externalPaymentId</code> caps at 32 characters</td>
+          <td>A UUID is 36. It truncates silently. If we key Clover payments by our own order id, it cannot be a raw UUID.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">A <code>clv_</code> token is single-use</td>
+          <td>Splitting a payment across two cards means calling <code>createToken()</code> inside the loop, not once outside it.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">The browser key tokenises and cannot charge</td>
+          <td>Safe to expose — but gate the route that serves it anyway, because an open route tells anybody which businesses have a live merchant account.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">Card-field <code>mount()</code> takes a CSS selector, not a node</td>
+          <td>Passing the element fails the entire mount, with only a generic message. And React <code>useId()</code> yields <code>:r1:</code>, so a bare <code>#:r1:</code> is a selector syntax error — strip the punctuation.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">There is no first-class Clover Node SDK</td>
+          <td>Every integration surveyed hand-rolls <code>fetch</code>. Our dependency-free client is the normal answer, not a shortcut.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>all nine</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin:34px 0 12px">Printing and the kitchen</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Finding</th><th>Detail</th><th>Evidence</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">Nobody calls <code>print_event</code>. Not one of the nine.</td>
+          <td>Including three real restaurants and a commercial ordering plugin. We are the only ones trying it. The others push an <b>open order</b> and let it land in the merchant's Orders app, with a second channel as the real backstop.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>all nine</td>
+        </tr>
+        <tr>
+          <td class="name">Our own <code>print_event</code> is unproven, not broken</td>
+          <td>Route and permission are proven — it failed with “the default printing device is missing”, not “unauthorized”. Sandbox test merchants have no devices, so this only closes on the shop's real merchant.</td>
+          <td><span class="tag t-ok">Confirmed</span></td><td>our spike</td>
+        </tr>
+        <tr>
+          <td class="name"><code>POST /connect/v1/device/printers</code> lists a device's printers</td>
+          <td>Empty body. A merchant with an attached kitchen printer lists more than one; the first is the device's own roll. May answer our question <em>without needing a sale</em> — though still on the real merchant.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name">The print path is <code>/print/text</code>, not <code>/print</code></td>
+          <td><code>/v1/device/print</code> answers <code>404 {"message":"Invalid URI"}</code>. It cost a live terminal test to find, because the failure is invisible: the payment succeeds, the response says <code>receiptPrinted: false</code>, and the 404 appears only in the server log. <em>(This is the REST Pay Display API — a different route from ours.)</em></td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+        <tr>
+          <td class="name"><code>X-Clover-Device-Id</code> takes the serial</td>
+          <td>Not the device id, despite the name.</td>
+          <td><span class="tag t-warn">Claimed</span></td><td>puneet</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <h3>The rule three codebases arrived at independently</h3>
+    <div class="prose">
+      <blockquote>
+        <p>
+          A sale that succeeded with no paper is a nuisance. A sale reported as failed
+          because a second request failed is a double charge.
+        </p>
+      </blockquote>
+      <p>
+        So every call that is <em>not</em> the one moving money returns null rather than
+        throwing, with a short timeout and no retries, and the caller is expected to be able
+        to ignore the failure entirely. This is the correct shape for our order-push and
+        ticket-fire steps, and it belongs in <code>clover-ops.md</code> as a rule.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>What this changes</h2>
+  <p class="section-note">In rough order of how much they would move the design.</p>
+  <ol class="decisions">
+    <li>
+      <div>
+        <h3>Test <code>POST /v1/orders/{orderId}/pay</code> on the sandbox</h3>
+        <p>The one lead that would <em>simplify</em> the architecture rather than complicate it. If it works, we create a proper inventory-linked order and then pay it, which closes the tax-attribution gap without us owning a calculation engine. Roughly twenty minutes.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Settle Hosted Checkout versus the tokenising iframe before Phase 2b</h3>
+        <p>Clover states refunds and voids are unavailable on Hosted Checkout, and a boba shop refunds wrong orders. <code>Pizza62Sol</code> shows both paths can run side by side, so this is a decision, not a fork. Re-check against current docs first — the codelab was archived in 2024.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Printing is no longer a blocker</h3>
+        <p>The fallback — push the order, notify staff on a channel we control — is proven by three independent restaurants. Still worth asking the owner: when an online order arrives today, does paper come out, or does someone watch a screen?</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>The webhook handler must dispatch on the merchant id in the delivery</h3>
+        <p>Billerica and Lowell are two merchant accounts with two credential sets. Reading with whichever token the handler happens to hold fails silently and retries forever — for eighteen days, in the one case we can see.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Borrow the signed pricing token</h3>
+        <p>We already know we must compute the total. This is how to do it without trusting the client with the number, in about sixty lines.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Catalog sync must preserve what Clover has no field for</h3>
+        <p>Photos, descriptions, tags. And an item that vanishes from Clover gets marked unavailable, not deleted.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Put reconciliation on the roadmap, not in the surprises</h3>
+        <p>An unattached-payment queue and a periodic sweep do not need building in Phase 2, but they should not be a discovery in Phase 4.</p>
+      </div>
+    </li>
+    <li>
+      <div>
+        <h3>Read Clover's store-hours, blackout and order-type endpoints</h3>
+        <p>Before designing our own opening-hours logic. Clover already knows all of it.</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<footer>
+  <div class="prose">
+    <p>
+      Survey run 28 August 2026 against public GitHub. Clones at
+      <span class="mono">NodeProjects/clover-reference/</span> with a per-repo map in their
+      own <span class="mono">README.md</span>; the written analysis is in
+      <span class="mono">boba-shop/scripts/spike/prior-art.md</span>, and our own measured
+      results stay separate in <span class="mono">findings.md</span>.
+    </p>
+    <p>
+      Everything tagged <span class="tag t-warn">Claimed</span> is someone else's report,
+      not our measurement. Almost every repo here is unlicensed — borrow concepts, write our
+      own code.
+    </p>
+  </div>
+</footer>
+
+</div>
