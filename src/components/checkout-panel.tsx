@@ -86,9 +86,23 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const cloverRef = useRef<CloverSdk>(null);
   const mountedRef = useRef(false);
+  const pricedRef = useRef(false);
 
   // ---- 1. Price it on Clover, once ----------------------------------------
+  //
+  // `pricedRef` is not belt-and-braces — it is the whole fix. React runs effects
+  // TWICE in development Strict Mode, and a `cancelled` flag only stops the
+  // second one writing state; the fetch still goes out. Each fetch creates a
+  // real order on the merchant's account, so every checkout was leaving an
+  // orphaned OPEN order beside the paid one. Eleven such pairs on the sandbox
+  // before this was spotted, all with matching timestamps and totals.
+  //
+  // Production Strict Mode does not double-invoke, so this never reached a
+  // customer — but it would recur on any remount, and a shop's order list is
+  // not somewhere to leave litter.
   useEffect(() => {
+    if (pricedRef.current) return;
+    pricedRef.current = true;
     let cancelled = false;
     (async () => {
       try {
