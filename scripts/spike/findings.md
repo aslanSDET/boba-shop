@@ -72,6 +72,16 @@ One call created an inventory-linked order carrying a modifier and an order-leve
 
 An API-created order is not "pending payment" in any special sense. Whether that alone fires a ticket on a merchant with auto-print enabled is **still unknown**, and it matters: if it does, pushing an order before payment would print an unpaid ticket.
 
+### ~~Hosted Checkout does NOT apply the merchant tax rates~~ — CORRECTED 2026-08-29
+
+> **This heading was wrong, and so was the conclusion built on it.** `taxRates` was sent at
+> `shoppingCart` level; the documented place is **`shoppingCart.lineItems[].taxRates`**.
+> Sent per line, Clover computes the tax on its own checkout page correctly — $11.95 renders
+> as Subtotal $11.95 / Tax $0.84 / Total $12.79. See `redirect-experiment.md`.
+>
+> The original text is kept below because the *atomic order* half of it is still true and
+> several later decisions cite it.
+
 ### Hosted Checkout does NOT apply the merchant tax rates — and atomic orders DO
 
 The checkout page rendered **Tax $0.00, Total $16.75** — exactly the sum of the line items we sent. Hosted Checkout charges what you hand it, full stop. Step 03 proved the opposite for orders: an atomic order referencing inventory items applies the merchant tax rates itself and returned $5.83 on a $5.45 net cart.

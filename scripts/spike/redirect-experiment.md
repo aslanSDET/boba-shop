@@ -1,7 +1,18 @@
 # Can Clover own the payment? — the redirect experiment
 
-**Branch:** `redirectExperiment` · **Run:** 2026-08-29 · **Verdict: the thesis fails, but
-not for the reason I expected.**
+**Branch:** `redirectExperiment` · **Run:** 2026-08-29
+
+> ## ⚠ CORRECTED — the first verdict was wrong
+>
+> My first pass concluded "Hosted Checkout has no calculation engine". **That was my bug,
+> not Clover's.** I put `taxRates` on `shoppingCart`; the documented place is
+> **`shoppingCart.lineItems[].taxRates`**. Moved there, Clover computes the tax on its own
+> page, correctly, every time.
+>
+> `findings.md` carries the same wrong claim from an earlier session and is corrected too.
+> Everything below the first section is the rerun.
+
+## Verdict: the redirect works, and it is a genuine contender
 
 ## What was being tested
 
@@ -115,3 +126,85 @@ One thing worth confirming with the owner before closing this off: **how their m
 is filed today**, and whether a `$0.00` tax figure on online orders would actually cause
 her a problem. If her accountant computes it from gross sales anyway, the strongest
 objection here weakens considerably.
+
+---
+
+# Rerun, after finding the real field
+
+## The mistake
+
+`taxRates` belongs on **each line item**, not on the cart. Clover's docs say so plainly:
+
+> "Hosted Checkout requests are not linked to the merchant's Clover inventory, so any
+> default tax configuration is not applied. The tax is included on any applicable line
+> items in the request."
+
+Sent at cart level it is ignored silently — which is what produced the wrong verdict.
+Sent per line, with `{name, rate}` matching a rate the merchant already has on file, it
+works. Rates are the same scale as the Platform API: 6.25% is `625000`.
+
+An `id`-only reference is refused — `"Rate map missing tax summary rates"` — so the name
+and rate must both be sent.
+
+## What actually works
+
+| Sent | Rendered on Clover's page |
+|---|---|
+| `lineItems[].taxRates` = MA Meals 6.25% + Local 0.75% on a $11.95 line | Subtotal **$11.95** · Tax **$0.84** · Total **$12.79** |
+| Same, with the discount already applied to the price and named in the line | Subtotal **$10.75** · Tax **$0.75** · Total **$11.50** |
+| `itemRefUuid` (inventory id) + `taxRates`, no name or price sent | **Snow - Small** · $7.75 · Tax **$0.54** · Total **$8.29** |
+
+So the redirect path can do all of this:
+
+- **Clover computes the tax**, on its own page, and shows it as tax — not as a product line.
+- **Line items reference real inventory** by `itemRefUuid`, and Clover pulls the name and
+  price from the merchant's own catalog. Send neither name nor price and it still renders
+  correctly — the catalog is the source of truth, exactly as it should be.
+- **The right total is charged with a discount applied**, and the discount is *visible* in
+  the line name: `Thai Dye — Large (NEWCUSTOMER 10% off)`.
+- **Google Pay appears on the page for free.** We would not have to build wallet support,
+  domain-verify with Apple, or maintain any of it.
+- **We never touch a card.** No iframes, no SDK, no tokens, no PCI surface at all.
+
+## What is still lost
+
+**A discount is not a structured discount.** `lineItems[].discounts` is accepted with a
+`200` and silently ignored — confirmed twice, once alongside working tax rates. The two
+other shapes are refused outright: a cart-level `discounts` array, and a negative line
+item (*"Line item prices should be positive"*).
+
+So a promo has to be applied to the price before sending, with the reason in the line name.
+Clover's reporting will show a $10.75 line called "Thai Dye — Large (NEWCUSTOMER 10% off)"
+rather than a $11.95 line with a 10% discount attached to it. Legible to a human reading a
+receipt or an order; not a field anyone can total up.
+
+**Still unproven: what the paid order records.** The page shows tax correctly, but whether
+`order.taxAmount` and `payment.taxAmount` come back non-zero needs an actual payment, which
+needs a card. **This is the one remaining question, and it is the one that decides it** —
+if `taxAmount` populates on this path, the redirect loses almost nothing.
+
+## Where this leaves the decision
+
+The comparison is much closer than the first pass suggested.
+
+| | Cart + redirect | Full integration (`menuImprove`) |
+|---|---|---|
+| We touch a card | **no** | yes |
+| Tax computed by Clover | **yes** | yes |
+| Inventory-linked lines | **yes**, via `itemRefUuid` | yes |
+| Discount as a structured record | no — a line-name convention | **yes** |
+| Apple/Google Pay | **free** | ours to build |
+| Refunds | unavailable on this path per Clover's docs | via `/v1/refunds` |
+| On-call surface | menu sync only | menu, cards, tokens, order |
+
+**The redirect is now the better default for Snowdaes**, unless one of two things is true:
+the owner refunds often enough that Hosted Checkout's missing refunds hurt, or she needs
+discount usage as a number she can total rather than a label she can read.
+
+Both are questions for her, not for us. And the wallets alone — Google Pay showing up
+without us doing anything — are worth real money on a phone-heavy dessert menu.
+
+## Next test
+
+Pay one of these sessions with a sandbox card and read back `order.taxAmount` and
+`payment.taxAmount`. That single number decides the architecture.
