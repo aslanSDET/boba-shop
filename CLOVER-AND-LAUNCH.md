@@ -517,7 +517,10 @@ Bring these to one meeting. **A, B and D are blocking** — the architecture can
 5. Does your agreement restrict where else you can take online orders?
 6. Is Billerica one merchant account or two? Same legal entity?
 
-### B. How orders reach you today *(blocking — decides §3)*
+### B. How orders reach you today *(blocking — decides §3, and now the print mechanism too)*
+
+> **Weight increased 2026-08-28.** A survey of nine public Clover integrations found that **not one calls `print_event`** — they push an open order and let it land in the Orders app, with a second channel as the real backstop. So questions 7 and 8 no longer just describe the shop's day; they decide whether we need a print call at all. If paper already comes out on its own, we write less code and take less risk. Detail in [`scripts/spike/prior-art.md`](./scripts/spike/prior-art.md).
+
 7. **Walk me through what happens when an online order comes in.** Does the Station beep? Does someone have to be watching it?
 8. Does a kitchen ticket **print automatically**, or does staff press print?
 9. Is there a printer in the back, or does everything print at the counter? Any kitchen display screen?
@@ -553,7 +556,7 @@ Bring these to one meeting. **A, B and D are blocking** — the architecture can
 ### F. Operations, money & legal
 32. Every item carries two tax IDs — is that MA state meals tax plus the local option meals tax? What rates?
 33. Do you want a tip prompt on online orders? What do you use now?
-34. What's your refund policy, and who handles a refund today?
+34. What's your refund policy, and who handles a refund today? **Roughly how often — daily, weekly, rarely?** *(This now feeds a build decision. Clover states refunds and voids are unavailable on Hosted Checkout, so a shop that refunds often pushes us toward the tokenising iframe instead — see `PLAN.md` §9.)*
 35. Who owns the `snowdaes.com` domain, and who has the registrar login?
 36. Who manages the Google Business Profile?
 37. Do you have a privacy policy or terms of service anywhere today?

@@ -183,11 +183,14 @@ Harness is built and runnable: **[`scripts/spike/README.md`](./scripts/spike/REA
 - [~] `POST /v3/merchants/{mId}/print_event` — route and permission proven, but returns `400 "The default printing device is missing"`: **sandbox test merchants have no devices, so the ticket itself is unproven.** Closes only on the shop's own merchant
 - [x] **Answered: yes, Hosted Checkout creates its own order** and attaches the payment. Not a hazard — it removes the push step entirely. A locked, PAID order still accepts line-item adds and deletes, and `total` stays pinned to the payment, so we rewrite its free-form lines into inventory-linked ones
 - [x] Discount recorded as a real discount (`{"name":"SPIKE10","amount":-100}`), not a rewritten price. **Discounts apply before tax.** Still to confirm on a real merchant: that reporting shows the *rewritten* line items rather than Hosted Checkout's originals
+- [ ] **`POST /v1/orders/{orderId}/pay`** — the highest-value test left. If it links an order to a payment online, we create the order properly and *then* pay it, deleting the rewrite step and the `taxAmount` gap together. ~20 minutes; see §8.7 "What the prior-art survey changed"
+- [ ] **`POST /connect/v1/device/printers`** (empty body) — may reveal whether a printer exists without needing a sale. Still only answerable on the shop's real merchant, but cheaper than a test order
+- [ ] Confirm whether refunds/voids are genuinely unavailable on Hosted Checkout against **current** docs — Clover's own statement is from a repo archived in 2024
 
 ### Phase 2b — Auth + checkout wiring
 - [ ] Add Clerk: `<ClerkProvider>`, phone/SMS sign-in, guest-checkout fallback
 - [ ] `POST /api/checkout` — recomputes the cart server-side from the synced catalog, then opens a Clover Hosted Checkout session
-- [ ] `POST /api/webhooks/clover` — verify signature, then create the atomic order and fire `print_event`
+- [ ] `POST /api/webhooks/clover` — **note there are two Clover webhook systems and they authenticate completely differently.** Hosted Checkout sends `Clover-Signature: t=…,v1=…`, HMAC-SHA256 over `${t}.${rawBody}`, which is verifiable. The platform/merchant webhook sends `X-Clover-Auth`, a **static UUID** with no signature and no replay protection — there, possession is the whole proof, so treat the delivery as a hint and re-read the object (design rule 6). Then rewrite the order's line items and fire the ticket
 - [ ] Order confirmation page (`/orders/[id]`) reading our mirror record
 - [ ] Secrets per location (two merchant accounts, probably): `CLOVER_MERCHANT_ID_*`, `CLOVER_API_TOKEN_*`, `CLOVER_ECOMM_PRIVATE_KEY_*`. Only the Ecommerce **public** key may be `NEXT_PUBLIC_`
 
@@ -195,8 +198,8 @@ Harness is built and runnable: **[`scripts/spike/README.md`](./scripts/spike/REA
 - [ ] `npm create amplify@latest` — scaffolds `amplify/` directory in this repo
 - [ ] Define `amplify/data/resource.ts` schema (sketch below) — mirrors `src/types/boba.ts` closely, so the existing types aren't wasted work
 - [ ] `npx ampx sandbox` for a live per-developer cloud backend while iterating locally (no manual deploy step needed during development)
-- [ ] Add an Amplify Function for the Stripe webhook: verify signature, update `Order.status` via the generated data client
-- [ ] Migrate `/api/checkout` (Stripe session creation) — this can stay a Next.js route handler; it only needs Stripe's SDK, not Amplify Data
+- [ ] Add an Amplify Function for the **Clover** webhook (not Stripe — corrected 2026-08-28 against §8.7): authenticate per the two-system note in Phase 2b, re-read the object, update `Order.status` via the generated data client
+- [ ] Migrate `/api/checkout` — recomputes the cart server-side, then opens the **Clover** payment. Can stay a Next.js route handler; it needs Clover credentials, not Amplify Data
 - [ ] Order status lifecycle: `PENDING → PAID → PREPARING → READY → COMPLETED` (`CANCELLED` as an exception path)
 - [ ] Deploy frontend to S3 + CloudFront (or confirm Vercel is fine for v1 and defer this — see §9)
 
@@ -428,10 +431,13 @@ Two caveats, neither blocking:
 
 ### Design rules this locks in
 
-1. **The server is the pricing authority; Clover is the fulfilment authority.** The browser's total is display only — the server recomputes from the synced catalog before charging. Otherwise `curl` buys a Thai Dye for a penny.
+1. **The server is the pricing authority; Clover is the fulfilment authority.** The browser's total is display only — the server recomputes from the synced catalog before charging. Otherwise `curl` buys a Thai Dye for a penny. **Mechanism, borrowed 2026-08-28:** the server issues an HMAC-signed pricing token binding the total, a cart fingerprint and the checkout intent id, with a short TTL. The browser carries the price without being able to alter it, and the server verifies signature, fingerprint and amount before charging. Roughly sixty lines.
 2. **Push the discount into the Clover order, not just into our arithmetic.** If a promo is applied and Clover records full price, the shop's books disagree with the deposit every time a code is used.
-3. **Never lose a paid order.** Persist before pushing; retry with backoff; alert on `PUSH_FAILED`. A payment with no ticket is the worst state this system can reach, which is why `printEventId` is stored as proof.
-4. **Two locations, two merchant accounts, two sets of credentials.** Config is per-location, exactly like the catalogs in §8.6.
+3. **Never lose a paid order.** Persist before pushing; retry with backoff; alert on `PUSH_FAILED`. A payment with no ticket is the worst state this system can reach, which is why `printEventId` is stored as proof — though see the printing note below: the ticket may not turn out to be a `print_event` at all, and the field should be read as "evidence the kitchen was told", not as one specific API call.
+4. **Two locations, two merchant accounts, two sets of credentials.** Config is per-location, exactly like the catalogs in §8.6. **The webhook handler dispatches on the merchant id in the delivery** — never on whichever token it happens to hold. Reading the wrong estate fails silently and retries forever.
+5. **A secondary call must never fail a sale.** Added 2026-08-28; three surveyed codebases arrived at this independently. Every call that is *not* the one moving money returns null rather than throwing, with a short timeout and no retries, and the caller must be able to ignore the failure. *A sale that succeeded with no paper is a nuisance; a sale reported as failed because a second request failed is a double charge.* This governs the order rewrite and the ticket fire.
+6. **A webhook delivery is a hint, never a fact.** Record that Clover mentioned an object id, then re-read that object from the API with the merchant's own token, and make every decision from the read. Not optional on the platform webhook, where the auth header is a static UUID with no signature, no timestamp and no replay protection. Return **200** for anything we will never process — Clover retries non-200 forever.
+7. **The catalog sync preserves what Clover has no field for.** Photos, descriptions and tags are ours; names, prices and modifiers are Clover's. An item that disappears from Clover is marked **unavailable, not deleted**, so curation and order history survive.
 
 ### Measured, not assumed — Phase 2 spike results (2026-08-27/28)
 
@@ -461,17 +467,38 @@ This also dissolves a mismatch found earlier the same day: Hosted Checkout does 
 
 **Hosted Checkout defaults, observed:** tips off unless requested, reCAPTCHA present without asking, branding limited to the merchant name on a coloured bar, postal code required on the card form, sessions expire in ~30 minutes. If owning the funnel visually matters more than it does today, that is the argument for the tokenising iframe rather than Hosted Checkout.
 
-### The one thing the sandbox cannot answer
+### The one thing the sandbox cannot answer — and why it stopped being a blocker
 
-**Does the rewritten order actually print?** `POST /print_event` returns `400 "The default printing device is missing"` on a sandbox test merchant, because test merchants have no devices. The route and the permission are proven — it is a business-logic error, not an auth error — but the ticket itself is not.
+**Does the rewritten order actually print?** `POST /print_event` returns `400 "The default printing device is missing"` on a sandbox test merchant, because test merchants have no devices. The route and the permission are proven — it is a business-logic error, not an auth error — but the ticket itself is not. That, plus whether the shop's reporting shows the rewritten line items rather than Hosted Checkout's originals, closes only against the shop's own merchant with the owner present.
 
-That, plus whether the shop's reporting shows the rewritten line items rather than Hosted Checkout's originals, closes only against the shop's own merchant with the owner present. It is question B in [`CLOVER-AND-LAUNCH.md`](./CLOVER-AND-LAUNCH.md) §14, and it is the last real risk in Option B.
+**Downgraded 2026-08-28 from "the last real risk" to "an open question with a proven fallback."** A survey of nine public Clover integrations ([`scripts/spike/prior-art.md`](./scripts/spike/prior-art.md)) found that **not one of them calls `print_event`** — including three real restaurants and a commercial ordering plugin. They get an order in front of staff by pushing an **open order** and letting it land in the merchant's Orders app, with a second channel as the actual backstop; one sends an SMS and describes it in a comment as the source of truth.
+
+Two readings remain, and we cannot yet tell which is right: either `print_event` is unnecessary because an open order already prints or alerts the way Clover's own online ordering does today, or it is unreliable enough that people quietly stopped using it. Either way the fallback is cheap and proven three times over, so **printing can no longer sink Option B.** It is now a question about how good the experience is, not whether the thing works.
+
+Worth asking the owner plainly, and it is a better question than the one in §14: *when an online order arrives today, does paper come out, or does someone watch a screen?*
+
+### What the prior-art survey changed (2026-08-28)
+
+Nine public Clover integrations read end to end; full detail and evidence tags in [`scripts/spike/prior-art.md`](./scripts/spike/prior-art.md), clones at `../clover-reference/`. Four things land on this plan.
+
+**1. Hosted Checkout has no refunds or voids — and this is Clover's own statement, not an inference.** Their archived Hosted Checkout codelab says it plainly: *"Refunds and voids are not available with hosted checkout. Hosted checkout provides a customer-facing payment interface, not a fully-featured payment system for merchants."* The same README also confirms in writing what the spike measured the hard way: *"A merchant's Clover inventory cannot be used with hosted checkout."*
+
+A boba shop refunds wrong orders. On the Hosted Checkout path every refund happens by hand in the dashboard and our side learns of it only by webhook or sweep — which is precisely the reconciliation work the survey shows is expensive and easy to get subtly wrong. **This reopens Hosted Checkout vs. the tokenising iframe as a live decision**, now in §9 and blocking Phase 2b. It is not a fork: one surveyed project runs both paths behind one cart.
+
+**2. `POST /v1/orders/{orderId}/pay` may remove the rewrite step entirely.** Reported on the Ecommerce host with the same `clv_` token. If it works we create the order *properly* first — inventory-linked, Clover applying its own tax — and then pay it, instead of paying first and rewriting the order afterwards. That is strictly simpler than steps 1–4 above and it closes the `taxAmount` reporting gap without us owning a calculation engine. The project that reported it could not verify it; **our tokens can**, and it is the highest-value item left in the spike.
+
+**3. A same-batch reversal is a VOID, not a refund.** `result: "VOIDED"` with an **empty** `refunds[]` array. Reconciling on `refunds[]` alone — the obvious reading of the API — reports reversed money as still taken. For a boba shop, same-day reversal is the normal case, so this would have bitten us.
+
+**4. The webhook must dispatch on the merchant id in the delivery.** §8.6 and design rule 4 already commit us to two merchant accounts. One surveyed project's retry loop spun for eighteen days — roughly 1,700 attempts — on deliveries naming a merchant that was not the one whose token the handler was reading with. The failure is silent and self-perpetuating.
+
+**Smaller API facts now written into `prior-art.md` rather than repeated here:** a declined card is HTTP **402** with no `error.type` (naive handlers return 500); Clover rate-limits with **429**; `externalPaymentId` silently caps at **32 characters** while a UUID is 36; a `clv_` token is **single-use**; a refund that omits its amount takes the **whole charge**; and `POST /v1/orders/{id}/returns` refunds the entire order while echoing your requested amount back.
 
 ## 9. Open Decisions (resolve before Phase 2/3)
 
 - [x] ~~Backend approach: raw CDK+Lambda+DynamoDB vs. Amplify Gen 2~~ — **resolved: Amplify Gen 2**. See decision log in §4.
 - [x] ~~Frontend hosting: S3+CloudFront vs. Vercel~~ — **resolved 2026-08-27: AWS Amplify Hosting.** It *is* CloudFront, so the CDN question answers itself; it matches the Amplify Gen 2 backend already chosen, and keeps one AWS account for the franchise-handover story.
 - [x] ~~Stripe account~~ — **moot 2026-08-27.** Payments run on the shop's existing Clover merchant account (§8.7); we never hold a merchant account of our own. Revisit only for a recurring drink club.
+- [ ] **Hosted Checkout vs. the tokenising iframe — blocking Phase 2b.** Added 2026-08-28. Clover's own codelab states refunds and voids are unavailable on Hosted Checkout, and a boba shop refunds wrong orders; the iframe path (`/v1/charges` + `/v1/refunds`) has no such limit and also wins on owning the funnel visually. Against that, Hosted Checkout is less code and keeps card data further away. One surveyed project runs **both** behind one cart, so this is a decision rather than a fork. Re-check the limitation against current docs first — the source repo was archived in 2024
 - [ ] Clerk vs. rolling a lighter phone-OTP flow ourselves — Clerk is faster to ship, adds a vendor dependency
 - [ ] Tax handling: the invented 8.75% flat rate stands until Phase 2 reads the real rates from `GET /v3/merchants/{mId}/tax_rates`. Every item at both stores carries exactly two `taxIds` (119/119 and 124/124), so this is an API call, not a question for the owner — but still worth confirming with them that both rates apply to every item.
 - [ ] Domain name / branding — placeholder "Boba Shop" name throughout `src/` until this is settled
