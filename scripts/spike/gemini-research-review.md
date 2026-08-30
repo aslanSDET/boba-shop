@@ -94,7 +94,48 @@ It is a good map. It is not a substitute for having run the calls.
 
 ---
 
-# Checking the six "live site" claims, one by one
+# ⚠ CORRECTION (2026-08-30, later) — the section below was wrong
+
+**I checked those sites with `curl` and concluded there was no Clover on them. That method
+was invalid, and the conclusion was wrong.**
+
+Popmenu sites are client-rendered. `curl` sees a shell; the browser sees the app. On
+`localsonly311.com/menu` that is **107 KB versus 312 KB** — and the Clover configuration
+lives entirely in the part `curl` never receives.
+
+Re-checked by loading the pages in a real browser and reading the rendered DOM:
+
+| Site | `cloverSdkUrl` | `clover_menu_sync` |
+|---|---|---|
+| **localsonly311.com/menu** | `"https://checkout.clover.com/sdk.js"` | `true` |
+| **801chophouse.com/menus** | `"https://checkout.clover.com/sdk.js"` | `true` |
+| cleo.popmenu.com | not checked — JS execution not permitted on that domain | — |
+
+Popmenu ships it as platform configuration:
+
+```json
+menuConfig { ... authorizePaymentUrl cloudflareUrl cloverSdkUrl env ... }
+"cloverSdkUrl":"https://checkout.clover.com/sdk.js","env":"production"
+```
+
+So **the document's claim was right and my check was wrong.** Worse, it is a stronger claim
+than I gave it credit for: this is not three restaurants each wiring up Clover, it is
+**Popmenu — a platform serving thousands of US restaurants — shipping Clover's iframe SDK
+as a first-class integration**, with a `clover_menu_sync` feature flag switched on for
+these merchants.
+
+**Option B is confirmed in production on three sites**: `localsonly311.com`,
+`801chophouse.com` (both via Popmenu) and `elpatroncuisine.com` (WooCommerce, a direct
+`<script src>` — that one `curl` could see because WordPress renders server-side).
+
+**The lesson, which cost a wrong published conclusion: `curl` is not a browser.** For any
+client-rendered site, absence of a string in the fetched HTML is not absence from the page.
+Everything below was produced with that flawed method and only the *positive* findings in
+it survive — a link that IS in the HTML is still a link.
+
+---
+
+# Checking the six "live site" claims, one by one — SUPERSEDED, see correction above
 
 Verified 2026-08-30 by fetching each site and reading what it actually loads. **Five of the
 six claims do not hold as stated**, and the one that does is filed under the wrong heading.
