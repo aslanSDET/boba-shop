@@ -113,3 +113,49 @@ then nothing) but because it is unversioned and its failure is total and immedia
 One production integration and a public changelog is a thin evidence base. It points
 clearly, but it is two data points, and I would not bet the shop's Saturday on it without
 saying so.
+
+---
+
+# What the one verified site actually costs to keep running
+
+`elpatroncuisine.com` is the single site that demonstrably loads Clover's iframe SDK, so it
+is worth counting what else it is carrying. From the served HTML:
+
+```
+WordPress 6.8.8
+WooCommerce 6.8.3
+plugins:  clover-online-orders
+          woo-clover-gateway-by-zaytech
+          mailchimp-for-woocommerce
+          woo-gutenberg-products-block
+theme:    gloriafood-restaurant        <- a DIFFERENT ordering platform's theme
+```
+
+**Seven independently-updating parts**, before counting Clover's unversioned SDK. Four of
+them are plugins, which on WordPress commonly auto-update, and two of the four are the
+ordering integration itself. The theme belongs to GloriaFood — a competing online-ordering
+product — which suggests this site has been through at least one platform migration and
+kept the furniture.
+
+That is the shape of the WooCommerce maintenance complaint: not that any one piece is bad,
+but that a WordPress storefront is a set of separately-versioned things that update on
+their own schedule and occasionally disagree.
+
+**It does not weaken what that site was cited for.** The only claim drawn from it is narrow
+— `checkout.clover.com/sdk.js` runs in production on a real restaurant. That is evidence
+about *Clover's iframe*, not about WooCommerce being a good idea, and nothing about their
+stack transfers to a Next.js app.
+
+**It does sharpen the comparison, in our favour.** Counting what can change underneath each
+architecture without anyone asking:
+
+| | Parts that update independently |
+|---|---|
+| elpatroncuisine (WooCommerce) | WP core, WooCommerce, 4 plugins, theme, Clover SDK — **8** |
+| Ours (Next.js on `menuImprove`) | our own code, Clover SDK, Clover's API — **3**, and only the SDK moves without us |
+| Ours + redirect instead of iframe | our own code, Clover's API — **2** |
+
+So the honest reading of "Woo sucks" for this project is not that the iframe is risky. It
+is that **most of that site's fragility comes from the plugin ecosystem, which we do not
+have** — and that the remaining shared risk, the unversioned SDK, is the one the redirect
+would remove.
