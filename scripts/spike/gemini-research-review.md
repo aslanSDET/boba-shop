@@ -91,3 +91,59 @@ box" wallets and the "audited" proof — and it omits the unversioned-SDK risk, 
 precisely the thing a shop with no technical staff would be exposed to.
 
 It is a good map. It is not a substitute for having run the calls.
+
+---
+
+# Checking the six "live site" claims, one by one
+
+Verified 2026-08-30 by fetching each site and reading what it actually loads. **Five of the
+six claims do not hold as stated**, and the one that does is filed under the wrong heading.
+
+## The three listed as "Live Sites Using Clover Iframe SDK"
+
+| Site | Claim | What is actually served |
+|---|---|---|
+| **localsonly311.com/menu** | "Uses Popmenu to mount Clover's secure iframe" | **Squarespace + Popmenu.** `squarespace-cdn.com`, `locals-only-rochester-ny.squarespace.com`, `localsonly311.popmenu.com/s/pm.js`. **No Clover reference of any kind** — not the SDK, not an API host, not an ordering link |
+| **sweenzkitchen.com** | "Another live example using the Popmenu/Clover iframe bridge" | **Does not resolve.** `HTTP 000`, zero bytes, on repeated attempts |
+| **801chophouse.com/menus** | "Routing custom online orders into Clover POS stations" | **403 to automated requests.** Popmenu present in what was returned; no Clover reference visible. **Unverified either way** |
+
+So the flagship example of the architecture the document recommends is a Squarespace site
+with a Popmenu menu embed, and there is no evidence Clover is involved at all. (Worth
+noting how easily this misleads: a naive grep for "square" returns 218 hits on that page —
+all of them `squarespace`, none of them the payment company. I nearly recorded that as a
+finding before reading the actual URLs.)
+
+## The three listed as "Clover REST API / Plugin Bridges"
+
+| Site | Claim | What is actually served |
+|---|---|---|
+| **sophiascafepdx.com/store** | "Custom/WordPress frontend on Clover's REST API via Smart Online Order" | Zaytech's `moo-OnlineOrders` plugin **is** present — but the visible path is a link to `clover.com/online-ordering/sophias-cafe-woodburn`, with the button labelled **"Clover Online Ordering"** |
+| **southernspicela.com/store** | Same | A link to `clover.com/online-ordering/SouthernSpiceLA`. **This is the link-out pattern** |
+| **elpatroncuisine.com/store** | Same | **The only site that proves anything.** WordPress + WooCommerce, plugins `clover-online-orders` *and* `woo-clover-gateway-by-zaytech`, loading **`https://checkout.clover.com/sdk.js`** |
+
+## What this actually establishes
+
+**The iframe architecture is real and in production — but only one of six sites
+demonstrates it, and the document files it under the wrong heading.**
+`elpatroncuisine.com` is a genuine custom storefront (WooCommerce cart) taking payment
+through Clover's iframe SDK via Zaytech's gateway plugin. That is the architecture
+`geminiResearch.md` recommends, and it is good to have one confirmed instance of it.
+
+**Two of six are the link-out pattern** — a site that sends customers to
+`clover.com/online-ordering/{merchant}`. That is Option A, the one we have been treating
+as the modest fallback, and it turns out to be what two of these restaurants actually do.
+The document does not mention this pattern at all, and its own examples are evidence for
+it.
+
+**A named-example list is not evidence until someone opens the pages.** Three of six were
+either the wrong platform, offline, or unverifiable, and one was in the wrong category.
+The underlying architecture claim survives — on one site rather than three.
+
+## Revised verdict on the document
+
+Unchanged where it matters: the architecture is sound, the tax and two-step payment
+mechanics are confirmed by our own measurements, and its recommendation matches what we
+built. But **§4.3 "Audited Real-World Proof" should be treated as unaudited.** Given that,
+the confident tone elsewhere — "out of the box" wallets, "Avoid for Restaurants" — deserves
+the same scepticism applied to it, which is roughly what checking those two claims already
+showed.
