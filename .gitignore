@@ -83,3 +83,8 @@ docs/yipyy-and-clover.html
 # Written once for the PR body; it now lives on the PR.
 docs/PR-DESCRIPTION.md
 
+# Someone else's research, used as an input and reviewed in
+# scripts/spike/prior-art.md. The review is ours and is tracked; the source
+# document is not, and is not ours to redistribute in a public repo.
+geminiResearch.md
+
