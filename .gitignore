@@ -60,3 +60,26 @@ docs/snowdaes-launch-brief.html
 # (no doctype/html/head/body: the Artifact tool wraps them) and are the record
 # of work already paid for. See artifacts/README.md.
 !artifacts/
+
+# ── One-time research, kept local ────────────────────────────────────────────
+# The sandbox spike was a throwaway harness: eight numbered probes that each
+# answered one question and then stopped being useful. Nothing imports them,
+# nothing builds them, and their conclusions live in the three .md files below
+# which ARE tracked. Kept on disk because re-running one is occasionally handy;
+# out of the repo because a reviewer should not have to scroll past them.
+scripts/spike/*.mjs
+scripts/spike/lib/
+scripts/spike/README.md
+!scripts/spike/findings.md
+!scripts/spike/prior-art.md
+!scripts/spike/payment-paths.md
+
+# Generator for an artifact that is already published, plus a template only it
+# reads, plus a copy of someone else's document.
+scripts/build-brief.mjs
+docs/brief.tpl.html
+docs/yipyy-and-clover.html
+
+# Written once for the PR body; it now lives on the PR.
+docs/PR-DESCRIPTION.md
+
