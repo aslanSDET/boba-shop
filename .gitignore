@@ -88,3 +88,9 @@ docs/PR-DESCRIPTION.md
 # document is not, and is not ours to redistribute in a public repo.
 geminiResearch.md
 
+
+# Raw designlang extraction output (sweetgreen + oatly, 31 Aug 2026). 71 files
+# of someone else's design tokens — kept on disk because re-reading one is handy,
+# out of the repo because they are not ours to redistribute and the conclusions
+# are in artifacts/designlang-field-test.html.
+research/designlang/

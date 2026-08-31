@@ -495,22 +495,22 @@
             <td class="cell-tool"><span class="tool">designlang</span><span class="meta">repo: design-extract · MIT<br>npm <code>designlang</code> · MCP + CLI + CC plugin</span></td>
             <td class="cell-reach"><span class="num">3,989 ★</span><div class="track"><i style="width:100%"></i></div><span class="meta">but only 2.3k npm/mo</span></td>
             <td class="cell-pro"><ul>
-              <li>One command turns any live site into DTCG tokens — colour, type, spacing, borders</li>
-              <li>Ships as an MCP server, so Claude Code queries it directly</li>
+              <li><strong>Tested 31 Aug — colour extraction is real:</strong> correct palettes off the live DOM, with usage counts</li>
+              <li>The emitted <code>shadcn-theme.css</code> is paste-ready as-is</li>
+              <li>Ships as an MCP server and a Claude Code plugin, so the agent queries it directly</li>
               <li>Emits Tailwind v4, Figma variables, shadcn, SwiftUI, Compose</li>
-              <li>Includes a CSS health audit and WCAG remediation pass</li>
             </ul></td>
             <td class="cell-con"><ul>
-              <li>Extracts computed style, not intent — it cannot tell you <em>why</em> a site works</li>
+              <li><strong>Only the colour layer survives scrutiny.</strong> Type scale has one role and it captured an 80px headline; spacing is raw pixels; <code>visual-dna</code> contradicts the token file beside it; Tailwind ramps are synthetic</li>
+              <li>Fonts are named but proprietary — no substitutes offered</li>
+              <li>Both test runs exited 1 <em>after</em> writing every file</li>
               <li>Stars badly outrun real usage: 3,989 ★ against 2,261 npm downloads/month</li>
-              <li>Ships a 150MB Chromium unless you pass <code>--system-chrome</code></li>
-              <li>Enormous surface — 14 slash commands — and npm (12.21) trails the README (13.1)</li>
               <li>Copying a competitor’s system verbatim is a legal and brand hazard</li>
             </ul></td>
             <td class="cell-opp"><ul>
-              <li>The single best “inspiration in” primitive on this list</li>
-              <li>Extract 3–4 sites you admire, diff the tokens, keep the median — you get a direction, not a clone</li>
-              <li>Feed its output as the ground truth every other layer builds on</li>
+              <li>Treat it as a colour picker, not a design-system extractor</li>
+              <li>Extract 3–4 sites you admire, diff the <em>palettes</em>, keep the median — a direction, not a clone</li>
+              <li>Full hands-on test with receipts: <a href="https://claude.ai/code/artifact/b7e30138-314d-4e73-999c-512907c966bb">Designlang Field Test</a></li>
             </ul></td>
           </tr>
 
@@ -991,10 +991,10 @@
         <span class="pick-role">Inspiration in</span>
         <h3>designlang</h3>
         <p>
-          Point it at the three or four sites whose feel you want. It gives you DTCG tokens,
-          Tailwind config and a shadcn theme — the concrete artefact every other layer needs
-          and that “describe the vibe in a prompt” never produces. Try it with <code>npx</code>
-          before installing anything.
+          Point it at the three or four sites whose feel you want and take <em>the palette</em> —
+          tested 31 Aug, and the colour layer is the one that holds up. The shadcn theme it emits
+          is paste-ready; ignore the type, spacing and <code>visual-dna</code> files, which assert
+          more than they measured. Run it with <code>npx</code>, install nothing.
         </p>
         <code class="cmd">npx designlang https://example.com --system-chrome</code>
       </div>
