@@ -1,0 +1,424 @@
+<title>The $499 Version</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#FCFBF9; --surface:#FFFFFF; --surface2:#F4F1EC;
+  --ink:#1A1A1C; --ink2:#3D3A38; --muted:#6E6A66;
+  --rule:#E5E1DB; --rule-soft:#EFECE7;
+  --a:#3E6B8A; --a-bg:#E9F0F5;      /* Option A — keep Clover ordering */
+  --b:#C4601F; --b-bg:#FBEEE3;      /* Option B — new site takes the order */
+  --good:#3F7A4E; --good-bg:#E8F2EA;
+  --warn:#8A6410; --warn-bg:#FAF2DE;
+  --fd:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
+  --fb:'Newsreader',Georgia,serif;
+  --fm:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#141416; --surface:#1B1B1E; --surface2:#232327;
+  --ink:#EDEBE8; --ink2:#CFCBC6; --muted:#948F8A;
+  --rule:#31312F; --rule-soft:#26262A;
+  --a:#8FBBD9; --a-bg:#1B2A35; --b:#E89A5E; --b-bg:#33220F;
+  --good:#79C08C; --good-bg:#14261A; --warn:#D9B45E; --warn-bg:#2E2510;
+}}
+:root[data-theme="dark"]{
+  --paper:#141416; --surface:#1B1B1E; --surface2:#232327;
+  --ink:#EDEBE8; --ink2:#CFCBC6; --muted:#948F8A;
+  --rule:#31312F; --rule-soft:#26262A;
+  --a:#8FBBD9; --a-bg:#1B2A35; --b:#E89A5E; --b-bg:#33220F;
+  --good:#79C08C; --good-bg:#14261A; --warn:#D9B45E; --warn-bg:#2E2510;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--fb);font-size:19px;line-height:1.65;margin:0;padding:0 clamp(18px,5vw,40px) 110px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto}
+.wide{max-width:980px;margin:0 auto}
+h1{font-family:var(--fd);font-weight:800;font-size:clamp(34px,6vw,54px);line-height:1.03;letter-spacing:-.025em;margin:0 0 18px;text-wrap:balance}
+h2{font-family:var(--fd);font-weight:700;font-size:clamp(25px,3.6vw,34px);line-height:1.15;letter-spacing:-.018em;margin:0 0 12px;text-wrap:balance}
+h3{font-family:var(--fd);font-weight:700;font-size:20px;margin:0 0 8px}
+p{margin:0 0 17px}
+section{margin:0 0 clamp(52px,8vw,86px)}
+a{color:var(--b)}
+strong{font-weight:600}
+.eyebrow{font-family:var(--fm);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 0 14px}
+.standfirst{font-size:clamp(19px,2.3vw,23px);line-height:1.5;color:var(--ink2);margin:0 0 30px}
+.masthead{padding:clamp(46px,8vw,86px) 0 30px;border-bottom:2px solid var(--ink);margin-bottom:44px}
+
+/* THE SIGNATURE: every technical word gets an everyday one */
+.plain{border:1px solid var(--rule);border-left:4px solid var(--good);background:var(--good-bg);border-radius:0 12px 12px 0;padding:18px 22px;margin:24px 0}
+.plain .tag{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--good);display:block;margin-bottom:7px}
+.plain p{margin:0;font-size:18px;color:var(--ink2)}
+.plain p + p{margin-top:11px}
+
+figure{margin:28px 0}
+figure img{width:100%;display:block;border:1px solid var(--rule);border-radius:12px;background:var(--surface2)}
+figcaption{font-size:16px;color:var(--muted);margin-top:11px;line-height:1.5}
+figcaption b{color:var(--ink);font-weight:600}
+
+.cards{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:760px){.cards.two{grid-template-columns:1fr 1fr}}
+.card{border:1px solid var(--rule);border-radius:14px;background:var(--surface);padding:24px}
+.card.a{border-top:4px solid var(--a)}
+.card.b{border-top:4px solid var(--b)}
+.card h3{margin-bottom:10px}
+.card p:last-child{margin-bottom:0}
+.pill{display:inline-block;font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border-radius:20px;margin-bottom:12px}
+.pill.a{background:var(--a-bg);color:var(--a)} .pill.b{background:var(--b-bg);color:var(--b)}
+.pill.good{background:var(--good-bg);color:var(--good)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+
+.scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;background:var(--surface);margin:26px 0}
+table{border-collapse:collapse;width:100%;font-family:var(--fd);font-size:16px}
+th{background:var(--surface2);text-align:left;font-weight:600;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:14px 16px;border-bottom:1px solid var(--rule-soft);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+td.k{color:var(--ink);font-weight:600}
+.yes{color:var(--good);font-weight:600} .no{color:var(--muted)}
+
+ul{margin:0 0 17px;padding-left:22px} li{margin-bottom:10px}
+li::marker{color:var(--b)}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:26px 0;display:grid;gap:12px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:15px;align-items:start;margin:0}
+ol.steps li::before{content:counter(s);font-family:var(--fd);font-weight:700;font-size:14px;color:var(--b);background:var(--b-bg);width:30px;height:30px;display:grid;place-items:center;border-radius:50%}
+.q{border-left:3px solid var(--rule);padding-left:20px;margin:22px 0}
+.q p{margin-bottom:10px}
+.q p:last-child{margin-bottom:0}
+footer{border-top:1px solid var(--rule);padding-top:26px;margin-top:70px;color:var(--muted);font-size:16px}
+.note{background:var(--warn-bg);border:1px solid var(--rule);border-left:4px solid var(--warn);border-radius:0 12px 12px 0;padding:18px 22px;margin:24px 0}
+.note .tag{font-family:var(--fm);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--warn);display:block;margin-bottom:7px}
+.note p{margin:0;font-size:18px;color:var(--ink2)}
+
+/* ── PAGE 4 ONLY ─────────────────────────────────────────────────────────────
+   A third colour joins A-blue and B-orange: plum means Owner.com, the outside
+   company. Defined in all three theme states like the rest of the set. */
+:root{ --o:#6A5896; --o-bg:#EEEAF6; }
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --o:#B3A4DB; --o-bg:#241E36;
+}}
+:root[data-theme="dark"]{ --o:#B3A4DB; --o-bg:#241E36; }
+.card.o{border-top:4px solid var(--o)}
+.pill.o{background:var(--o-bg);color:var(--o)}
+.plain.o{border-left-color:var(--o);background:var(--o-bg)}
+.plain.o .tag{color:var(--o)}
+
+/* Where the money goes. Two rows, read left to right like a receipt. */
+.flow{display:grid;gap:14px;margin:26px 0}
+.flow-row{border:1px solid var(--rule);border-radius:14px;background:var(--surface);padding:20px 22px}
+.flow-row.o{border-left:4px solid var(--o)}
+.flow-row.b{border-left:4px solid var(--b)}
+.flow-row h3{font-size:17px;margin-bottom:14px}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:9px}
+.chip{font-family:var(--fd);font-size:14.5px;font-weight:600;color:var(--ink);
+      background:var(--surface2);border:1px solid var(--rule);border-radius:9px;padding:8px 13px}
+.chip.end.o{background:var(--o-bg);color:var(--o);border-color:transparent}
+.chip.end.b{background:var(--b-bg);color:var(--b);border-color:transparent}
+.arw{font-family:var(--fm);font-size:15px;color:var(--muted);flex:none}
+.flow-row p{font-size:16.5px;color:var(--muted);margin:13px 0 0}
+
+/* The fee stack on one $8 drink. */
+.stack{border:1px solid var(--rule);border-radius:14px;background:var(--surface);
+       padding:22px 24px;margin:26px 0;max-width:430px}
+.stack .line{display:flex;justify-content:space-between;gap:20px;padding:9px 0;
+             font-family:var(--fd);font-size:16.5px;border-bottom:1px solid var(--rule-soft)}
+.stack .line span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+.stack .line.tot{border-bottom:none;border-top:2px solid var(--ink);margin-top:6px;
+                 padding-top:13px;font-weight:700;color:var(--ink)}
+.stack .cap{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+            color:var(--muted);margin:0 0 12px}
+
+.idea{border:1px solid var(--rule);border-radius:14px;background:var(--surface);padding:22px 24px}
+.idea h3{font-size:18px;margin-bottom:7px}
+.idea p{font-size:16.5px;color:var(--ink2);margin:0}
+.ideas{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:720px){.ideas{grid-template-columns:1fr 1fr}}
+blockquote{margin:22px 0;padding:0 0 0 20px;border-left:3px solid var(--o);
+           font-style:italic;color:var(--ink2);font-size:18px}
+blockquote p:last-child{margin-bottom:0}
+blockquote cite{display:block;font-style:normal;font-family:var(--fm);font-size:11.5px;
+                letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:10px}
+</style>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Snowdaes · 4 of 4</p>
+  <h1>The $499 version</h1>
+  <p class="standfirst">Before I got too pleased with myself, I went looking to see whether
+  I'd invented something or rebuilt something. Rebuilt. A company called Owner.com sells
+  almost exactly this, to restaurants, for $499 a month. Here's what they do, what it costs,
+  and the handful of things they're better at that I'd happily copy.</p>
+</header>
+
+<section>
+  <h2>Who they are</h2>
+  <p>Owner.com builds ordering websites for independent restaurants — the same pitch as
+  Option B in the last document: <strong>stop paying DoorDash a third of every order, and get
+  your customers ordering from you directly.</strong> They've been at it for years, they're
+  funded, and they have a real support team.</p>
+
+  <p>What a shop gets for the money:</p>
+  <ul>
+    <li>A website with ordering built in</li>
+    <li>A phone app with the shop's own name and logo on it</li>
+    <li>Automatic emails and texts to past customers</li>
+    <li>A rewards programme — a punch card that lives on the phone</li>
+    <li>Suggested add-ons at checkout</li>
+    <li>Delivery drivers, arranged for you, around $7 a run</li>
+  </ul>
+
+  <p>And they plug into Clover. Their own words: <em>"Owner has a native integration with
+  Clover, and connects to Toast, Square, Lightspeed and more."</em> Orders land on the Clover
+  screen next to the walk-ins, no extra tablet.</p>
+
+  <div class="plain o">
+    <span class="tag">In plain terms</span>
+    <p>It's the difference between hiring a caterer and cooking yourself. The caterer turns
+    up with everything, does it well, and charges every month for as long as you use them.
+    They're not doing anything magic — they're doing the work you'd otherwise do, and they're
+    good at it.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What it costs</h2>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>Their two plans</th><th>Monthly</th><th>Per order</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="k">Flexible</td><td>$249</td><td>5% of the order</td></tr>
+        <tr><td class="k">Flat rate</td><td>$499</td><td>Nothing extra</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>They recommend the $499 plan once a shop is doing more than $5,000 a month online.
+  There are no contracts and no cancellation fee — you can stop any month. Pricing is quoted
+  per restaurant, with "special rates available for multi-location," which they don't publish,
+  so <strong>two shops is somewhere between $499 and $998 a month</strong> until someone asks
+  them.</p>
+
+  <p>There's one more fee, and it's the one worth noticing, because it isn't paid by
+  Snowdaes — it's added to the customer's bill. They call it a <strong>5% order support
+  fee</strong>.</p>
+
+  <div class="stack">
+    <p class="cap">One large Thai tea, on Owner.com</p>
+    <div class="line"><span>The drink</span><span>$8.00</span></div>
+    <div class="line"><span>Tax</span><span>$0.50</span></div>
+    <div class="line"><span>Their 5% support fee</span><span>$0.40</span></div>
+    <div class="line tot"><span>Customer pays</span><span>$8.90</span></div>
+  </div>
+
+  <p>Forty cents. Not a scandal — DoorDash would take far more — but it's forty cents that
+  shows up on the screen next to your name, on every single order, forever.</p>
+
+  <div class="note">
+    <span class="tag">One thing I couldn't find out</span>
+    <p>Nowhere on their site or in their contract does it say who pays the card-swipe fee on
+    an online order — the 2–3% the bank always takes. Their agreement says they send you the
+    money "less the Transaction Fees," which reads like it comes out of your side, but they
+    never spell it out. If you ever talk to them, that's the question to ask.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Where the money goes — the one real difference</h2>
+  <p>This is the part that took some digging, and it's the only difference between them and
+  me that I'd actually call important.</p>
+
+  <div class="flow">
+    <div class="flow-row o">
+      <h3>Owner.com</h3>
+      <div class="chain">
+        <span class="chip">Customer's card</span>
+        <span class="arw">→</span>
+        <span class="chip">Owner.com's bank</span>
+        <span class="arw">→</span>
+        <span class="chip end o">Snowdaes, later, minus their cut</span>
+      </div>
+      <p>Their contract: "Owner will remit to Business any such amounts less the Transaction
+      Fees and Delivery Fees owed."</p>
+    </div>
+    <div class="flow-row b">
+      <h3>What I've built</h3>
+      <div class="chain">
+        <span class="chip">Customer's card</span>
+        <span class="arw">→</span>
+        <span class="chip end b">Your Clover — same as the register</span>
+      </div>
+      <p>Same account, same deposit, same statement, same day as the drinks sold at the
+      counter.</p>
+    </div>
+  </div>
+
+  <div class="plain">
+    <span class="tag">In plain terms</span>
+    <p>Owner.com is a friend collecting money at the door of your party and handing you the
+    cash at the end of the night, minus what they're owed. It works. But for a few days, a
+    company you've never met is holding Snowdaes' money, and every month you get two sets of
+    numbers to line up.</p>
+    <p>Mine is the customer paying your own till. One deposit. Nothing to reconcile. When
+    Brian opens Clover on Monday, the online orders and the counter orders are already sitting
+    in the same list.</p>
+  </div>
+
+  <p>To be fair to them: refunds and chargebacks land on the restaurant either way — their
+  contract says so plainly, and so does Clover's.</p>
+</section>
+
+<section>
+  <h2>Side by side, honestly</h2>
+  <p>They win several of these rows. I've left them in.</p>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th></th><th>Owner.com</th><th>What's on my laptop</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="k">Monthly cost</td><td>$249–$499 per shop</td><td class="yes">Nothing — a few dollars of hosting once it's live</td></tr>
+        <tr><td class="k">Added to the customer's bill</td><td>5%</td><td class="yes">Nothing</td></tr>
+        <tr><td class="k">Where the money lands</td><td>Their bank, then yours</td><td class="yes">Your Clover, directly</td></tr>
+        <tr><td class="k">Menu kept in step with Clover</td><td class="yes">Yes</td><td class="yes">Yes — all 119 items pulled from your catalogue</td></tr>
+        <tr><td class="k">Discount codes</td><td>Not something they advertise</td><td class="yes">Working today</td></tr>
+        <tr><td class="k">Texts and emails to past customers</td><td class="yes">Built in, automatic</td><td class="no">Not built</td></tr>
+        <tr><td class="k">Rewards / punch card</td><td class="yes">Built in</td><td class="no">Not built</td></tr>
+        <tr><td class="k">Phone app with your logo</td><td class="yes">Included</td><td class="no">No</td></tr>
+        <tr><td class="k">Delivery drivers</td><td class="yes">Arranged, ~$7</td><td class="no">Pickup only</td></tr>
+        <tr><td class="k">Who you call at 9pm on a Saturday</td><td class="yes">Their support line</td><td class="no">Me, and I might be asleep</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>That last row is the honest one, and it's the reason I'm putting this document in front of
+  you rather than hoping you never find them.</p>
+</section>
+
+<section>
+  <h2>Does the money work out?</h2>
+  <p>Their argument is simple arithmetic against DoorDash, and it's a fair argument. What
+  matters is volume — a flat monthly fee is brutal on a small number of orders and cheap on a
+  large one.</p>
+
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>If online orders are…</th><th>Owner.com costs</th><th>Which is</th><th>DoorDash would be</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="k">$1,200 a month</td><td>$309 <span class="no">(flexible plan)</span></td><td>26% of it</td><td>~30%</td></tr>
+        <tr><td class="k">$5,000 a month</td><td>$499</td><td>10%</td><td>~30%</td></tr>
+        <tr><td class="k">$10,000 a month</td><td>$499</td><td class="yes">5%</td><td>~30%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>So they're a clear win over DoorDash <em>once the orders are there</em>, and an expensive
+  way to find out whether they will be. Their own customer reviews say the same thing in
+  plainer words — the most common complaint is that the monthly cost feels steep before the
+  results show up. One shop's testimonial on the other side: <em>"we've made more than $50,000
+  in sales and saved ourselves $10,000 in commission."</em></p>
+
+  <div class="note">
+    <span class="tag">Worth knowing before you'd ever sign anything</span>
+    <p>The other complaint that comes up repeatedly in their reviews is <strong>trouble with
+    the Clover connection specifically</strong> — more than with the other tills they support.
+    I can believe it. I've spent the last few weeks in Clover's plumbing and it is genuinely
+    awkward in places. A funded company with a dedicated team is fighting the same thing I am.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What I'd steal from them</h2>
+  <p>Here's the useful part. Almost everything they charge for is a good idea, and most of it
+  is a good idea <em>we could do too</em>. The one they've clearly thought hardest about is the
+  thing I haven't built at all: <strong>going back to people who already bought once.</strong></p>
+
+  <blockquote>
+    <p>Every direct order builds your customer list. More data, more connections, and more
+    chances to bring them back.</p>
+    <cite>Owner.com's own pitch</cite>
+  </blockquote>
+
+  <p>That's the whole game, and it's the part DoorDash quietly takes from you: when someone
+  orders Snowdaes on DoorDash, DoorDash gets the phone number, not Snowdaes. Order directly and
+  the phone number is yours. Which means you can do this:</p>
+
+  <div class="ideas">
+    <div class="idea">
+      <h3>"We haven't seen you in a while"</h3>
+      <p>A text to anyone who ordered once and then went quiet for a month. This is the single
+      highest-returning thing any shop does, and it costs a few cents a message.</p>
+    </div>
+    <div class="idea">
+      <h3>The second order</h3>
+      <p>The first order is the hard one to win and the second is the one that makes a regular.
+      A small code sent two weeks after someone's first ever order is aimed exactly there.</p>
+    </div>
+    <div class="idea">
+      <h3>Hot Tuesday</h3>
+      <p>Ninety degrees in Billerica and the shop is quiet at 3pm? Send twenty percent off for
+      the next two hours. Clover's own ordering page can't run a code at all — ours already can.</p>
+    </div>
+    <div class="idea">
+      <h3>School's out, Lowell</h3>
+      <p>A standing Friday 2:30 message to the Lowell list only. The two shops have different
+      crowds and there's no reason they get the same message.</p>
+    </div>
+    <div class="idea">
+      <h3>Birthday drink</h3>
+      <p>One free drink on the day, asked for at signup. Costs about $2 and it is very hard to
+      collect it without buying something for whoever came along.</p>
+    </div>
+    <div class="idea">
+      <h3>The tenth one free</h3>
+      <p>The punch card you already understand, except it can't be lost in a wallet, and it
+      counts across both shops.</p>
+    </div>
+  </div>
+
+  <div class="plain">
+    <span class="tag">In plain terms</span>
+    <p>All six need the same one thing first: <strong>a place to remember customers.</strong>
+    Right now the site is a very good waiter with no memory — it takes the order perfectly and
+    forgets you the moment you walk out.</p>
+    <p>Giving it a memory is a filing cabinet: names, phone numbers, what they ordered. It's a
+    known job, it's not exotic, and I deliberately haven't done it yet, because it's the first
+    piece that costs a little money every month and I didn't want to spend yours before you'd
+    seen anything.</p>
+  </div>
+
+  <p>Two smaller ones I'd take from them straight away, no filing cabinet needed:</p>
+  <ul>
+    <li><strong>Add-on suggestions at the till.</strong> "Add boba for 75¢?" right before
+    paying. The site already knows every topping in your Clover, so this is a small piece of
+    work rather than a new system.</li>
+    <li><strong>Best sellers at the top.</strong> The site has a POPULAR badge sitting there
+    unused, because Clover doesn't mark anything popular — we'd work it out from what actually
+    sells. Better than my guess, and better than alphabetical.</li>
+  </ul>
+
+  <p>One claim of theirs I'd treat carefully: they say their sites get "2 to 4 times more
+  orders than the average restaurant website." That's their marketing, measured by them, and
+  I've no way to check it.</p>
+</section>
+
+<section>
+  <h2>So what am I actually saying</h2>
+  <p>Not "don't use them." If a year from now Snowdaes wants the texts and the rewards and the
+  drivers all running on their own, with somebody paid to answer the phone when it breaks,
+  <strong>$499 a month is not a crazy price for that</strong> and I'd tell you to take it.</p>
+  <p>What I'm offering is a different trade. No monthly bill, nothing added to your customers'
+  tab, and the money going straight into the Clover account you already have. In exchange, the
+  marketing side doesn't exist yet, and the support line is a family member in Alabama.</p>
+  <p>I'd rather you heard that from me than found it on Google afterwards.</p>
+</section>
+
+<footer>
+  <p>Figures from Owner.com's own pricing page, POS page, and Restaurant Participation
+  Agreement, read August 2026. Their prices change; anything here is worth re-checking before
+  it matters.</p>
+</footer>
+
+</div>
