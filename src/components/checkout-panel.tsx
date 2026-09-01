@@ -70,6 +70,82 @@ const FIELDS = [
 
 type Phase = "pricing" | "ready" | "paying" | "done" | "error";
 
+/**
+ * One name for one checkout attempt, so the server can collapse a repeat into
+ * the order it already created instead of making a second one.
+ *
+ * ── WHY IT IS STORED, AND WHY IT IS PER-BROWSER ──────────────────────────────
+ *
+ * A key held only in a ref dies on unmount, so the case that actually strands
+ * an order — the request reaches Clover and the reply never comes back — would
+ * mint a fresh key on reopen and create a duplicate. sessionStorage survives
+ * that, and the reload with it.
+ *
+ * It must NOT be derived from the cart alone. Two strangers ordering one Thai
+ * Milk Tea a minute apart have identical carts; a cart-derived key would hand
+ * the second person the first person's order.
+ *
+ * Scoped to the cart contents so that changing the order starts a new attempt,
+ * and read lazily rather than during render — sessionStorage throws in some
+ * privacy modes, which is why every access is wrapped.
+ */
+type CartLine = { menuItemId: string; quantity: number; modifiers?: Record<string, string[]> };
+
+/**
+ * The storage slot for one cart.
+ *
+ * Canonical on purpose: object key order in `modifiers` follows insertion
+ * order, so the same cart rebuilt in a different sequence would otherwise
+ * produce a different string, miss the stored key, and create the duplicate
+ * this is here to prevent.
+ */
+function attemptScope(lines: CartLine[], promoCode?: string): string {
+  const canonical = lines
+    .map((l) => ({
+      i: l.menuItemId,
+      q: l.quantity,
+      m: Object.keys(l.modifiers ?? {})
+        .sort()
+        .map((g) => `${g}:${[...(l.modifiers?.[g] ?? [])].sort().join(",")}`),
+    }))
+    .sort((a, b) => (a.i + a.m.join() < b.i + b.m.join() ? -1 : 1));
+  return `snowdaes.attempt:${JSON.stringify({ canonical, promoCode: promoCode ?? null })}`;
+}
+
+function attemptKey(scope: string): string {
+  const fresh =
+    globalThis.crypto?.randomUUID?.() ??
+    `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}${Math.random()
+      .toString(36)
+      .slice(2)}`;
+  try {
+    const existing = sessionStorage.getItem(scope);
+    if (existing) return existing;
+    sessionStorage.setItem(scope, fresh);
+  } catch {
+    // Private mode, or storage disabled. An unstored key still deduplicates the
+    // double-tap and the Strict Mode double-invoke, which is most of the value.
+  }
+  return fresh;
+}
+
+/**
+ * MUST be called the moment an order is paid.
+ *
+ * The stored key means "an attempt exists and is unresolved". Leaving it behind
+ * after payment is a live bug rather than untidiness: the customer whose friend
+ * asks for the same drink rebuilds an identical cart, gets the same key back,
+ * and is handed the order they ALREADY paid for — which reports itself as
+ * `alreadyPaid` and hands over a second drink nobody was charged for.
+ */
+function clearAttempt(scope: string): void {
+  try {
+    sessionStorage.removeItem(scope);
+  } catch {
+    // Nothing was stored; nothing to clear.
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CloverSdk = any;
 
@@ -86,26 +162,40 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const cloverRef = useRef<CloverSdk>(null);
   const mountedRef = useRef(false);
+  const pricedRef = useRef(false);
+  /** The sessionStorage slot for this attempt, so payment can retire it. */
+  const scopeRef = useRef<string>("");
 
   // ---- 1. Price it on Clover, once ----------------------------------------
   useEffect(() => {
-    let cancelled = false;
+    // A ref, not a `cancelled` flag. Strict Mode invokes this twice in
+    // development, and a flag set by the first run's cleanup only suppresses
+    // the setState — the second fetch still goes out and Clover still gets a
+    // second order. Guarding the FETCH is the only version that works, and it
+    // must not also block the reply, or the panel hangs on "pricing" forever.
+    if (pricedRef.current) return;
+    pricedRef.current = true;
+
     (async () => {
       try {
+        const lines = items.map((i) => ({
+          menuItemId: i.menuItem.id,
+          quantity: i.quantity,
+          modifiers: i.modifiers,
+        }));
+
+        scopeRef.current = attemptScope(lines, promo?.code);
+
         const res = await fetch("/api/checkout", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            items: items.map((i) => ({
-              menuItemId: i.menuItem.id,
-              quantity: i.quantity,
-              modifiers: i.modifiers,
-            })),
+            items: lines,
             ...(promo ? { promoCode: promo.code } : {}),
+            idempotencyKey: attemptKey(scopeRef.current),
           }),
         });
         const body = await res.json();
-        if (cancelled) return;
         if (!res.ok) {
           setError(body.error ?? "Could not start checkout.");
           setPhase("error");
@@ -114,15 +204,10 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
         setTotals(body);
         setPhase("ready");
       } catch {
-        if (!cancelled) {
-          setError("Could not reach the shop. Check your connection.");
-          setPhase("error");
-        }
+        setError("Could not reach the shop. Check your connection.");
+        setPhase("error");
       }
     })();
-    return () => {
-      cancelled = true;
-    };
     // Priced once on open: re-pricing mid-payment would move the number under
     // somebody who is already typing a card into it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,6 +327,9 @@ export function CheckoutPanel({ onClose }: { onClose: () => void }) {
         setPhase("ready");
         return;
       }
+      // Order first: the attempt is over the instant it is paid, and leaving the
+      // key behind lets an identical next cart collect this same paid order.
+      clearAttempt(scopeRef.current);
       setPaid(body);
       setPhase("done");
       clearCart();

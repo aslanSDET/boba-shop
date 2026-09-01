@@ -9,8 +9,20 @@
  *         "quantity": 2,
  *         "modifiers": { "<modifierGroupId>": ["<optionId>", "<optionId>"] } }
  *     ],
- *     "promoCode": "NEWCUSTOMER"        // optional
+ *     "promoCode": "NEWCUSTOMER",       // optional
+ *     "idempotencyKey": "<uuid>"        // optional, but send one
  *   }
+ *
+ * `idempotencyKey` names one checkout attempt — a UUID the browser mints once
+ * and keeps in sessionStorage. Repeats bearing it get the order the first call
+ * created rather than a second one on the merchant's account: a double tap, a
+ * retry on a stalled connection, a reload after a lost reply, and React's
+ * Strict Mode double-invoke all land here.
+ *
+ * Omit it and the request is NOT deduplicated. That is deliberate. Hashing the
+ * cart instead looks equivalent and is not — two strangers ordering one Thai
+ * Milk Tea a minute apart hash the same, and the second would be handed the
+ * first one's order to pay for.
  *
  * Response 200 — every figure integer cents, read back from the created order:
  *

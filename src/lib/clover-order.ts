@@ -13,10 +13,12 @@
  * price for it to lie about — `curl` cannot buy a Thai Dye for a penny because
  * there is nowhere in the request to put a penny.
  */
+import { createHash } from "node:crypto";
 import { MENU_ITEMS } from "@/config/menu";
 import { findPromo, type Promo } from "@/config/promos";
 import type { MenuItem, ModifierGroup, ModifierOption } from "@/types/boba";
 import { merchantId, optional, platform } from "@/lib/clover";
+import { once } from "@/lib/idempotency";
 import {
   CatalogMismatchError,
   getCloverCatalog,
@@ -37,6 +39,12 @@ export interface CheckoutLineRequest {
 export interface CheckoutRequest {
   items: CheckoutLineRequest[];
   promoCode?: string | null;
+  /**
+   * A value stable for one checkout attempt, minted and stored by the browser.
+   * Without it the request is NOT deduplicated — there is deliberately no
+   * cart-derived fallback. See `createPricedOrder`.
+   */
+  idempotencyKey?: string;
 }
 
 export class CheckoutRequestError extends Error {
@@ -187,8 +195,58 @@ export interface PricedOrder {
   warnings: string[];
 }
 
+/**
+ * Ten minutes — comfortably longer than anyone spends typing a card in.
+ *
+ * The window can be generous precisely because the key is per-attempt rather
+ * than per-cart: a long TTL cannot collapse two different customers, only two
+ * submissions of the same attempt. It exists to bound memory, not to bound
+ * correctness.
+ */
+const CREATE_DEDUPE_MS = 600_000;
+
+/**
+ * Price the cart, creating at most one Clover order per checkout attempt.
+ *
+ * ── WHY THE KEY COMES FROM THE BROWSER AND NOT FROM THE CART ─────────────────
+ *
+ * Deriving it by hashing the cart is the obvious idea and it is WRONG, because
+ * a cart is not unique to a customer. "One Thai Milk Tea, no modifiers" is the
+ * most orderable thing on this menu; two strangers submitting it a minute apart
+ * would hash identically and the second would be handed the first one's order.
+ * Whoever paid first would pay for both, and the other would meet
+ * `order_already_paid`. That is a worse failure than the duplicates this exists
+ * to prevent, so there is no cart-derived fallback: a request with no key is
+ * simply not deduplicated.
+ *
+ * The browser's key is minted once per checkout attempt and kept in
+ * sessionStorage, so it survives a remount, a reload, and a reply that never
+ * arrived — which is the case that actually strands an order on the merchant.
+ *
+ * Validation runs FIRST and outside the deduplication, so a malformed body
+ * always gets its own error rather than being handed a cached success, and a
+ * rejected request never occupies a key.
+ */
 export async function createPricedOrder(body: unknown): Promise<PricedOrder> {
   const { lines, promo } = validate(body);
+
+  const supplied = (body as CheckoutRequest | null)?.idempotencyKey;
+  const key =
+    typeof supplied === "string" && supplied.trim()
+      ? // Truncated and hashed: it reaches a Map key and an HTTP header, and the
+        // browser is not a trusted source of either length or character set.
+        createHash("sha256").update(supplied.trim().slice(0, 200)).digest("hex").slice(0, 32)
+      : null;
+
+  if (!key) return buildAndPrice(lines, promo, null);
+  return once(`checkout:${key}`, CREATE_DEDUPE_MS, () => buildAndPrice(lines, promo, key));
+}
+
+async function buildAndPrice(
+  lines: ValidatedLine[],
+  promo: Promo | null,
+  idempotencyKey: string | null,
+): Promise<PricedOrder> {
   const mId = merchantId();
   const catalog: CloverCatalog = await getCloverCatalog();
   const warnings: string[] = [];
@@ -260,10 +318,16 @@ export async function createPricedOrder(body: unknown): Promise<PricedOrder> {
     orderType?.elements?.find((t) => /online|web|pickup|to.?go/i.test(t.label ?? "")) ?? orderType?.elements?.[0];
   if (online) orderCart.orderType = { id: online.id };
 
+  // The header is sent as a belt to `once()`'s braces. Clover documents
+  // Idempotency-Key on the Ecommerce host, where the pay route relies on it;
+  // whether the platform host honours it on `atomic_order` is UNVERIFIED, and
+  // an ignored header costs nothing. Do not treat it as the guarantee — the
+  // guarantee is `once()`.
   const created = await platform<{ id: string }>(`/v3/merchants/${mId}/atomic_order/orders`, {
     method: "POST",
     body: { orderCart },
     timeoutMs: 15_000,
+    ...(idempotencyKey ? { idempotencyKey } : {}),
   });
 
   const priced = await readBack(mId, created.id, promo);
