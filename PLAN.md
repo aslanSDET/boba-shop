@@ -10,6 +10,8 @@ Building a mobile-first ordering **website** (not a native app) for **Snowdaes**
 
 **Not built yet:** everything cloud (auth, payments, database, kitchen view). See §6 for the phased plan.
 
+**Before starting Phase 2/3, read [`CLOVER-AND-LAUNCH.md`](./CLOVER-AND-LAUNCH.md)** — the Clover / payments / AWS decision brief. It proposes charging through Clover rather than Stripe and pushing orders into the shop’s existing POS, and it flags that the “cheaper processing” claim in §2.2 does not hold at this shop’s ticket size. Nothing there is applied to this file yet; its §15 lists the proposed amendments, all gated on the owner questions in its §14.
+
 ## 1. Reference Benchmarks
 
 Two real sites define the target experience — one for look, one for flow. Don't blend them into a third thing; keep the split explicit when making UI decisions.
@@ -40,7 +42,7 @@ The shop this is aimed at (Snowdaes, currently) relies on third-party aggregator
 
 | Challenge (current state) | Solution (this platform) |
 |---|---|
-| High third-party fees: DoorDash/Uber Eats take 15–30% per order | Direct Stripe processing: standard card fees ($0.30 + 2.9%) |
+| High third-party fees: DoorDash/Uber Eats take 15–30% per order | Direct ordering on the shop's own Clover merchant account: no aggregator commission at all (card-not-present ~3.5% + $0.10, which they already pay today) |
 | Lost customer data: aggregators own emails/phone numbers | 100% data ownership: SMS/phone login populates an owned customer database |
 | Generic ordering UI: clunky modifier lists for shaved snow/drinks | Purpose-built modifier drawer: bottom sheets for size, ice, sweetness, multi-topping selection |
 | Outdated brand identity: basic Wix/template presence | Modern editorial look: dark-mode aesthetic, high-contrast imagery (The Alley-inspired) |
@@ -66,12 +68,19 @@ The shop this is aimed at (Snowdaes, currently) relies on third-party aggregator
          │
          ├── AppSync GraphQL API + typed client (generated from schema)
          ├── DynamoDB (one table per model: MenuItem, Order)
-         ├── Amplify Function (Lambda) ── Stripe webhook verification + order status update
-         ├── Stripe API (PCI-compliant payment processing)
-         └── Real-time subscription ──> Kitchen Display Board (/kitchen) — no polling loop
+         ├── Amplify Functions (Lambda)
+         │     ├── catalog-sync ──> Clover Inventory API (nightly)
+         │     ├── checkout-session ──> Clover Hosted Checkout
+         │     ├── clover-webhook ── signature verify, payment captured
+         │     └── order-push ──> Clover Atomic Orders + print_event
+         └── Customer status page reads our Order mirror
 ```
+                                 │
+                                 ▼
+                   [ The shop's existing Clover account ]
+                     money · order state · kitchen ticket
 
-Pure serverless: near-$0/month idle cost, scales automatically with order volume. No servers to patch or size. The only hand-written backend logic is the Stripe webhook function — everything else (menu CRUD, order CRUD, kitchen queue queries) comes from the schema.
+Pure serverless: near-$0/month idle cost, scales automatically with order volume. No servers to patch or size. **Clover remains the system of record for money, order state and fulfilment** (§8.7); our DynamoDB `Order` is a mirror kept for customer history, promo attribution and the confirmation page — not the authority.
 
 ### 2.5 Franchise Negotiation Leverage
 
@@ -101,11 +110,11 @@ Off-the-shelf over custom everywhere possible: Clerk for auth, Stripe for paymen
 ## 4. Tech Stack
 
 - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind v4 + shadcn/ui + Zustand (cart state)
-- **Hosting:** AWS S3 + CloudFront (static/edge) — or Vercel if we want zero-ops for the frontend specifically (open decision, §9)
+- **Hosting:** **AWS Amplify Hosting** — CloudFront underneath, so the CDN, TLS and edge caching come with the deploy rather than being wired by hand. Resolved 2026-08-27; Vercel dropped (see §9)
 - **Backend:** **AWS Amplify Gen 2** — schema-driven Data layer (`amplify/data/resource.ts`), auto-provisions DynamoDB + AppSync GraphQL API + typed client + real-time subscriptions. A custom Amplify Function (Lambda under the hood) handles the one piece Data can't: the Stripe webhook, which needs signature verification logic, not simple model CRUD.
 - **Database:** Amazon DynamoDB — one table per model (`MenuItem`, `Order`), provisioned by Amplify, not a hand-crafted single table. See §6 Phase 3 for the schema.
 - **Auth:** Clerk (phone/SMS sign-in) — decoupled from the backend choice; only needs to hand a `userId` to Amplify Data. (Cognito, bundled with Amplify, remains the single-vendor alternative if Clerk ever feels like an extra moving part — not needed today.)
-- **Payments:** Stripe Checkout + webhooks
+- **Payments:** **Clover Hosted Checkout + Clover Orders API** on the shop's existing merchant account (§8.7). Stripe is no longer in the critical path; it stays on the shelf for recurring billing if a paid drink club ever happens
 - **IaC:** Amplify Gen 2's own CDK-based deploy (`ampx sandbox` / `ampx pipeline-deploy`) — still fully AWS, still versioned as code, just generated from the schema instead of hand-written CDK constructs
 - **Testing:** Playwright (E2E — cart math, modifier combinations, mocked Stripe flow) — natural fit given SDET background
 
@@ -118,16 +127,19 @@ Off-the-shelf over custom everywhere possible: Clerk for auth, Stripe for paymen
 | File | Purpose |
 |---|---|
 | `src/types/boba.ts` | `ProductType`, `ModifierGroup`/`ModifierOption`, `MenuItem`, `CartItem`, `Order` |
-| `src/config/menu.ts` | Real Snowdaes menu (6 categories, 24 items) + modifier groups, pricing, validation, summaries |
+| `src/config/menu.ts` | Location picker + pricing/validation/summary helpers. **No menu data of its own since 2026-08-29** — it re-exports the generated catalogs |
+| `src/config/menu.{billerica,lowell}.generated.ts` | **The real menu, generated from Clover** by `scripts/import-menu.mjs`. Billerica 119 items / 85 modifier groups / 12 categories; Lowell 122 / 82 / 14. Do not edit — re-run the script |
+| `scripts/import-menu.mjs` | Clover catalog → typed menu data. Cents→dollars, `maxAllowed: 2147483647`→no ceiling, 12 categories→4 product types, local photos matched by name slug |
 | `src/store/useCart.ts` | Zustand cart store (add/remove/updateQuantity, subtotal/tax/total) |
-| `src/components/modifier-drawer.tsx` | Size/sugar/ice/toppings bottom sheet, qty stepper, live price |
+| `src/components/modifier-drawer.tsx` | Size/sugar/ice/toppings bottom sheet, qty stepper, live price. Reads `src/lib/modifier-shape.ts` for the "Comes with" band |
+| `src/lib/modifier-shape.ts` | Parses the structure Clover encodes in modifier *names* — "No X"/"Extra X" become one removable chip, the rest an add-on list. **`multi` groups only**: in a radio group "No Ice" is a choice, not a removal |
 | `src/components/cart-sheet.tsx` | Line items, qty controls, receipt-style totals |
 | `src/components/cart-bar-button.tsx` | The persistent order control (fixed bottom on phones, brand rail on desktop) |
 | `src/components/item-art.tsx` | Hand-built SVG stand-ins: cup, snow/ice mound, egg-puff bubble sheet |
 | `src/components/item-visual.tsx` | Picks photo vs. illustration; one tinted tile for both |
-| `src/config/item-art.ts` | Per-item colorways for the illustrations (presentational, deliberately not in `MenuItem`) |
+| `src/config/item-art.ts` | Colourways for the illustrations, keyed by item **name**. A curated map first, then a flavour keyword table (mango, taro, brown sugar…), then the per-`ProductType` fallback |
 | `src/config/shop.ts` | Shop facts: real addresses/phones, socials, about copy, **placeholder testimonials** |
-| `src/components/promo-strip.tsx` | Seasonal/featured cards; each jumps to a category or the locations block |
+| `src/components/promo-strip.tsx` | Seasonal/featured cards; each jumps to a category **by name** (ids are Clover's and change on re-import) or to the locations block |
 | `src/components/testimonials.tsx` | Review cards — all quotes are fabricated placeholders |
 | `src/components/site-footer.tsx` | Locations, phones, socials, about, legal |
 | `src/components/social-icons.tsx` | Instagram/Facebook/TikTok marks (lucide v1 dropped brand icons) |
@@ -137,6 +149,38 @@ Off-the-shelf over custom everywhere possible: Clerk for auth, Stripe for paymen
 | `src/app/globals.css`, `src/app/layout.tsx` | Design tokens, three-role type system, light theme only (see §5.1) |
 
 Verified: `tsc --noEmit` clean, `eslint` clean, `next build` clean, manual click-through in the browser across all six categories. Cart maths checked on a mixed three-product order: Hawaiian ice $5.50 + brown sugar milk tea (large, boba) $7.75 + Thai Dye $9.50 = $22.75 subtotal, $1.99 tax, $24.74 total. Max-selection enforcement confirmed (3-of-3 syrups disables the rest; add button stays disabled and names the group still needed).
+
+#### 5.0.1 Storefront pass against the real catalog (2026-08-29)
+
+The generated catalog took the storefront from 6 categories / 24 items to **11 / 93**, and the jump broke five things that the invented menu never exercised. All five are fixed; the counts below are measured against `menu.billerica.generated.ts`, not estimated.
+
+| Broke | Why the real data broke it | Fix |
+|---|---|---|
+| Tiles reading **"$0.00"** on 8 shaved-snow items | Clover keeps Thai Dye, Almond Joy, S'Mores, Birthday Cake, Rainbow Mango, Cottonfetti, Green Tea Special and Ube Bae at `basePrice: 0` and puts the whole price in a required "Snow Size" group | `startingPrice()` in `menu.ts` adds the cheapest way to satisfy every required group → **"from $9.25"**. `from` is suppressed when the cheapest required option is free, so the 13 milk teas with a paid oat-milk upgrade keep their exact price rather than being hedged |
+| **Two of three promo cards emptied the grid** | They still held ids from the hand-written menu (`"shaved-snow"`, `"asian-ice"`); category ids are now Clover's (`6J21VZ3AS6YBW`) | Promo cards name a category; `categoryIdByName()` resolves it. Same name-not-id bet as `item-art.ts` — only names survive a re-import |
+| First categories **unreachable on desktop** | 11 pills measure ~1,570px against a 1,152px `max-w-6xl` rail, and `justify-center` on an overflowing scroller puts the leading overflow past `scrollLeft: 0` | Auto-margined `w-max` track inside the scroller: centres when it fits, scrolls fully when it doesn't. Selecting a category now also scrolls its pill into view |
+| **40 identical brown boba cups** | Art is keyed by item name; 49 items have no photo and only 5 names hit the curated map, so Kiwi, Watermelon Fruit Slush and Vanilla Milkshake all drew as a milk tea | Flavour keyword table under the curated map — **34 distinct colourways across the 49**. Tapioca pearls now only appear on milk teas instead of in every fruit slush |
+| Dangling blank line under 42 item names | `description: ""` — whole categories have none (Milk Tea: 1 of 13, Milkshakes: 0 of 3) | Subtitle and the drawer's `Description` render only when there is copy; the sheet's `aria-describedby` is cleared with it |
+
+Also fixed in the drawer, from reading the shaped output of all 93 items: the "Comes with" parse was misreading three **radio** groups — "Ice Level" is `[Extra Ice, Lite Ice, No Ice]`, and treating "No Ice" as an ingredient removal left a one-pill ice level beside a chip the radio could silently overwrite. The parse is now `multi`-only, and it skips a "No X" whose plain `X` sits in the same group (`Cover` was rendering as both a chip and a duplicate pill; Bomb Mass Lychee listed Lychee Jelly twice). The add-on filter input gained an accessible name and a focus ring.
+
+#### 5.0.2 The hero masthead overflow (2026-08-29) — reported twice, never actually fixed
+
+Reported as "Snowdaes writing going over images" and then as a regression. It was neither a regression nor caused by the catalog import: **nothing has touched the hero since `3c16143` (2026-08-27)**, and the storefront pass in §5.0.1 changed only the category rail and the tiles. The masthead has been broken continuously since `656a58f` set the `h1` to a flat `12rem` from the `sm` breakpoint up.
+
+The mechanism is the 4.68em constant above. At 12rem that is **899px of unbreakable text**, and the breakpoint that applied it is 640px wide:
+
+| Viewport | What it did |
+|---|---|
+| < 640px | 4rem → 300px of text. Fine at 375px, ~20px clipped at 320px |
+| 640 – ~900px | 899px of text in a ≤900px viewport, centred, inside `overflow-hidden`. **Both ends of the word sliced off** — the "funky page overall" report |
+| ~900 – 1024px | Fits, no art yet. **Looks perfect** |
+| 1024 – ~1500px | Hero art appears at `lg`. The left shot occupies x=8–188 (`lg`) / 40–290 (`xl`); the text starts at x=62 (1024px) or x=190 (1280px). **Text over image** |
+| ≥ ~1500px | Enough room again. Looks perfect |
+
+That non-monotonic band is why it read as intermittent: whether the page looks right depends on the window width, so the same build looks fixed on a wide monitor and broken on a laptop. Nobody had fixed and re-broken it — the two reports were two different widths of the same bug. PLAN §5.1 was itself evidence: it recorded the wordmark as "4rem → **6.5rem**" (104px → 487px of text, which fits), so the code had drifted a full 2× past the settled scale and the drift was never written down.
+
+Fixed by deriving the size from the space instead: `clamp(3rem, 17vw, 9rem)`, and from `lg` `clamp(8rem, calc((100vw - 676px) / 4.75), 12rem)`, where 676px is the art's inset doubled plus a gutter and 4.75 is the 4.68em text ratio rounded up so the margin errs wide. The phone lockup is unchanged in size; the 12rem ceiling is still reached, above ~1620px, where it genuinely fits.
 
 ### 5.1 Design system (settled — do not re-derive)
 
@@ -148,8 +192,9 @@ Skinned to the real shop: Snowdaes, Billerica MA, est. 2013, "Make every day a S
 - **Layout — Starbucks menu formatting.** A centred product **grid** (2 columns on phones → 3 at `md` → 4 at `lg`, `max-w-6xl`) of white cards. Each card is a **circular** product tile with the POPULAR badge and the `+` control riding the circle rather than sitting in the text flow — that keeps every card on the same text rhythm regardless of badge or name length. Everything centre-aligned, hero included. A slim pickup/cart utility bar sits above a tall centred masthead that scrolls away; only the category rail is sticky. No desktop side rail (that was a dark-theme fix for dead space; on a white ground the space reads as breathing room).
 - **Page composition** — the reference sites are *full*, so the page is built as five bands, not one: (1) slim pickup/cart utility bar, (2) full-bleed tinted hero with the wordmark centred and real cut-out product shots flanking it on `lg`+, plus two CTAs, (3) a three-card **seasonal/featured promo strip** whose cards deep-link into a category or the locations block, (4) the sticky category rail + product grid, (5) testimonials, then the footer. Categories were padded to 24 items so grid rows actually complete — half-empty rows were most of the perceived dead space.
 - **Item customiser is responsive, and deliberately so.** Phones get a **bottom sheet** (vaul `Drawer`): it is the native iOS/Android pattern, it lands in the thumb zone, and PLAN §1 names Kung Fu Tea's bottom-sheet modifier flow as the benchmark. Desktop (`min-width: 768px`) gets a **centred modal** (`Dialog`) — *not* a right-side sheet, because the cart already owns the right edge and two different things sliding in from the same place with the same motion read as the same thing. One `useMediaQuery` hook picks the shell; the header, options and action row are shared JSX so the two variants cannot drift.
-- **Wordmark lockup** (`src/components/wordmark.tsx`) — the penguin stands in for the **"o" in Snowdaes**, rising above the x-height so it reads as climbing out of the word. The "o" underneath is a real Fraunces glyph, not a drawn ring: a CSS circle cannot match a serif's modulated stroke, and a wrong "o" is more obvious than no trick at all. The mark is sized in `em` (`w-[1.05em]`) so the whole lockup scales from the 4rem phone hero to the 6.5rem desktop hero to the 2rem footer from one component. It needs `max-w-none` — Tailwind preflight's `img { max-width: 100% }` otherwise caps it to the width of the "o" — and the hero needs top padding, because the mark is absolutely positioned and escapes the line box into the section's `overflow-hidden`.
-- **Type scale — deliberately large.** Wordmark 4rem → 6.5rem, tagline 1.5rem → 2rem, body 15–16px, item names 19–20px, option pills 15px, every interactive control ≥40px for tap targets. The first pass used a 13px-heavy scale and read cramped; do not shrink back to it.
+- **Wordmark lockup** (`src/components/wordmark.tsx`) — the penguin stands in for the **"o" in Snowdaes**, rising above the x-height so it reads as climbing out of the word. The "o" underneath is a real Fraunces glyph, not a drawn ring: a CSS circle cannot match a serif's modulated stroke, and a wrong "o" is more obvious than no trick at all. The mark is sized in `em` (`w-[0.65em]`) so the whole lockup scales from the phone hero to the ~21px footer copy from one component. It needs `max-w-none` — Tailwind preflight's `img { max-width: 100% }` otherwise caps it to the width of the "o" — and the hero needs top padding, because the mark is absolutely positioned and escapes the line box into the section's `overflow-hidden`.
+- **The hero wordmark's size is a derived number, never a picked one.** It is `whitespace-nowrap`, so its width is not a layout outcome — it is **4.68em, fixed**: "Snowdaes" measures 4.8825em of advances in Fraunces 600 (measured off the served woff2, not estimated) less 8 × 0.025em of `tracking-tight`. Any flat font-size is therefore a flat *width*, and a width that outgrows either the viewport or the flanking hero art breaks silently — the section's `overflow-hidden` clips instead of scrolling, and the `relative` header paints its text straight over the absolutely-positioned art. So the hero `h1` is sized with `clamp()` off `100vw` (`src/app/page.tsx`), with the `lg`+ expression subtracting the art's own inset so the lockup keeps ~50px of air from the left shot at every width. **Do not replace it with a fixed `sm:`/`lg:` size.** See §5.0.2.
+- **Type scale — deliberately large.** Wordmark clamps to a 12rem ceiling (see above), tagline 1.5rem → 2rem, body 16–17px, item names 20–22px, option pills 16px, every interactive control ≥44px for tap targets. The first pass used a 13px-heavy scale and read cramped; do not shrink back to it.
 - **Quality floor** — visible keyboard focus rings, `prefers-reduced-motion` respected, `env(safe-area-inset-bottom)` on the fixed cart bar, `aria-pressed` on every option pill, disabled options carry a real `disabled` attribute.
 - **Theme — light only, and that is settled.** One `:root` block, `color-scheme: light`, warm white `#faf8f5`. There is no `.dark` block and no toggle. The `dark:` utilities inside `src/components/ui/` are unreachable shadcn defaults; they stay because `ui/` is **vendored**, not owned (see below).
 - **`src/components/ui/` is vendored, not owned.** It is shadcn output, pulled and re-pulled through the shadcn MCP server, so any hand-edit there is lost on the next pull. Behaviour that must survive belongs at the call site or in `globals.css` keyed off the `data-slot` attributes shadcn emits — which is why overlay `overscroll-behavior` lives in `globals.css` rather than in `ui/drawer.tsx`. Don't "clean up" this directory.
@@ -159,20 +204,38 @@ Skinned to the real shop: Snowdaes, Billerica MA, est. 2013, "Make every day a S
 
 ## 6. Roadmap
 
-### Phase 2 — Auth + Payments (off-the-shelf integration)
+### Phase 2 — Clover sandbox spike (**do this first — it de-risks everything else**)
+
+Nothing downstream is worth building until an order created by code has been seen to print. Target: two days, throwaway script, no UI.
+
+Harness is built and runnable: **[`scripts/spike/README.md`](./scripts/spike/README.md)** has the runbook, six numbered scripts each print what they proved, and `scripts/spike/findings.md` is where the answers go. All four endpoint paths verified reachable (they return 401, not 404, unauthenticated). Only the account setup needs a human.
+
+- [x] Free global developer account; test merchant `4XKCZA8Z277R1` created
+- [x] Merchant API token generated. Note: **a missing permission returns 401, not 403** — `01-connect.mjs` prints the full matrix rather than guessing
+- [x] Ecommerce API token generated, integration type **Hosted Checkout**
+- [x] Inventory readable through the API — the RSC scrape in `scripts/fetch-clover.mjs` has a supported replacement
+- [x] `GET /v3/merchants/{mId}/tax_rates` works. **Rate unit is hundred-thousandths of a percent** — 6.25% is `625000`; `6250000` silently charges 62.5%
+- [x] Atomic order created with real inventory + modifier IDs and an order-level discount — **then superseded**: Hosted Checkout makes the order for us, so we rewrite rather than create
+- [~] `POST /v3/merchants/{mId}/print_event` — route and permission proven, but returns `400 "The default printing device is missing"`: **sandbox test merchants have no devices, so the ticket itself is unproven.** Closes only on the shop's own merchant
+- [x] **Answered: yes, Hosted Checkout creates its own order** and attaches the payment. Not a hazard — it removes the push step entirely. A locked, PAID order still accepts line-item adds and deletes, and `total` stays pinned to the payment, so we rewrite its free-form lines into inventory-linked ones
+- [x] Discount recorded as a real discount (`{"name":"SPIKE10","amount":-100}`), not a rewritten price. **Discounts apply before tax.** Still to confirm on a real merchant: that reporting shows the *rewritten* line items rather than Hosted Checkout's originals
+- [ ] **`POST /v1/orders/{orderId}/pay`** — the highest-value test left. If it links an order to a payment online, we create the order properly and *then* pay it, deleting the rewrite step and the `taxAmount` gap together. ~20 minutes; see §8.7 "What the prior-art survey changed"
+- [ ] **`POST /connect/v1/device/printers`** (empty body) — may reveal whether a printer exists without needing a sale. Still only answerable on the shop's real merchant, but cheaper than a test order
+- [ ] Confirm whether refunds/voids are genuinely unavailable on Hosted Checkout against **current** docs — Clover's own statement is from a repo archived in 2024
+
+### Phase 2b — Auth + checkout wiring
 - [ ] Add Clerk: `<ClerkProvider>`, phone/SMS sign-in, guest-checkout fallback
-- [ ] `POST /api/checkout` (Next.js route handler, local-only for now) that builds a Stripe Checkout Session from cart line items
-- [ ] Redirect to Stripe Checkout (test mode keys)
-- [ ] `POST /api/webhooks/stripe` handler for `checkout.session.completed`
-- [ ] Order confirmation page (`/orders/[id]`) showing a receipt from session data
-- [ ] `.env.local` for `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `CLERK_*` — never commit real keys (already gitignored)
+- [ ] `POST /api/checkout` — recomputes the cart server-side from the synced catalog, then opens a Clover Hosted Checkout session
+- [ ] `POST /api/webhooks/clover` — **note there are two Clover webhook systems and they authenticate completely differently.** Hosted Checkout sends `Clover-Signature: t=…,v1=…`, HMAC-SHA256 over `${t}.${rawBody}`, which is verifiable. The platform/merchant webhook sends `X-Clover-Auth`, a **static UUID** with no signature and no replay protection — there, possession is the whole proof, so treat the delivery as a hint and re-read the object (design rule 6). Then rewrite the order's line items and fire the ticket
+- [ ] Order confirmation page (`/orders/[id]`) reading our mirror record
+- [ ] Secrets per location (two merchant accounts, probably): `CLOVER_MERCHANT_ID_*`, `CLOVER_API_TOKEN_*`, `CLOVER_ECOMM_PRIVATE_KEY_*`. Only the Ecommerce **public** key may be `NEXT_PUBLIC_`
 
 ### Phase 3 — AWS Backend (move persistence off local/mock)
 - [ ] `npm create amplify@latest` — scaffolds `amplify/` directory in this repo
 - [ ] Define `amplify/data/resource.ts` schema (sketch below) — mirrors `src/types/boba.ts` closely, so the existing types aren't wasted work
 - [ ] `npx ampx sandbox` for a live per-developer cloud backend while iterating locally (no manual deploy step needed during development)
-- [ ] Add an Amplify Function for the Stripe webhook: verify signature, update `Order.status` via the generated data client
-- [ ] Migrate `/api/checkout` (Stripe session creation) — this can stay a Next.js route handler; it only needs Stripe's SDK, not Amplify Data
+- [ ] Add an Amplify Function for the **Clover** webhook (not Stripe — corrected 2026-08-28 against §8.7): authenticate per the two-system note in Phase 2b, re-read the object, update `Order.status` via the generated data client
+- [ ] Migrate `/api/checkout` — recomputes the cart server-side, then opens the **Clover** payment. Can stay a Next.js route handler; it needs Clover credentials, not Amplify Data
 - [ ] Order status lifecycle: `PENDING → PAID → PREPARING → READY → COMPLETED` (`CANCELLED` as an exception path)
 - [ ] Deploy frontend to S3 + CloudFront (or confirm Vercel is fine for v1 and defer this — see §9)
 
@@ -180,7 +243,12 @@ Skinned to the real shop: Snowdaes, Billerica MA, est. 2013, "Make every day a S
 
 ```ts
 const schema = a.schema({
+  // Mirror of Clover inventory, refreshed nightly by catalog-sync. Clover is the
+  // source of truth; nothing here is edited by us. Keyed by the Clover item ID so
+  // an order push can reference it directly.
   MenuItem: a.model({
+    cloverItemId: a.string(),        // e.g. "28XHGQDK3TNHM" — the join key
+    locationId: a.string(),          // 'billerica' | 'lowell' — two catalogs, §8.6
     categoryId: a.string(),
     productType: a.enum(['DRINK','SHAVED_SNOW','EGG_PUFF','SHAVED_ICE']),
     name: a.string(),
@@ -204,38 +272,91 @@ const schema = a.schema({
     tax: a.float(),
     tip: a.float(),
     total: a.float(),
-    status: a.enum(['PENDING','PAID','PREPARING','READY','COMPLETED','CANCELLED']),
-    stripePaymentIntentId: a.string(),
+    discountCode: a.string(),        // applied PromoCode.code, if any
+    discount: a.float(),
+    locationId: a.string(),
+    // Clover owns order state and money. These are references, not authority.
+    cloverOrderId: a.string(),
+    cloverPaymentId: a.string(),
+    printEventId: a.string(),        // proof the ticket fired
+    status: a.enum(['PENDING','PAID','PUSHED','PUSH_FAILED']),  // OUR push pipeline only —
+                                     // PREPARING/READY live in Clover, not here
   })
     .secondaryIndexes((index) => [
       index('status'),           // kitchen active queue: filter by status
       index('customerUserId'),   // user order history
     ])
-    .authorization((allow) => [allow.owner(), allow.publicApiKey().to(['create'])]),
+    .authorization((allow) => [allow.owner()]),
+    // NOTE: the browser can no longer create orders. A public API key that can
+    // create orders can create garbage orders — and worse, unpaid ones that
+    // print. Orders are created only by the clover-webhook Lambda, after a
+    // payment is verified.
+
+  Customer: a.model({
+    phone: a.string(),
+    email: a.string(),
+    marketingConsent: a.boolean(),
+    consentAt: a.datetime(),
+    sourceCampaign: a.string(),
+  }).authorization((allow) => [allow.owner()]),
+
+  Campaign: a.model({
+    name: a.string(),
+    channel: a.string(),             // email | sms | qr | instagram
+    startsAt: a.datetime(),
+    endsAt: a.datetime(),
+  }).authorization((allow) => [allow.owner()]),
+
+  PromoCode: a.model({
+    code: a.string(),
+    campaignId: a.string(),
+    kind: a.enum(['PERCENT','FIXED','FREE_ITEM']),
+    value: a.float(),
+    minSpend: a.float(),
+    maxRedemptions: a.integer(),
+    redemptionCount: a.integer(),    // guarded by a conditional write, not a read-then-write
+    singleUsePerCustomer: a.boolean(),
+    locationId: a.string(),          // a 10% code at Lowell is not a 10% code at Billerica
+    expiresAt: a.datetime(),
+  }).authorization((allow) => [allow.owner()]),
+
+  Redemption: a.model({
+    promoCodeId: a.string(),
+    customerId: a.string(),
+    orderId: a.string(),
+    discountApplied: a.float(),
+  }).authorization((allow) => [allow.owner()]),
 });
 ```
 
 This directly replaces the earlier hand-crafted single-table `PK`/`SK` design — Amplify provisions one table per model plus the secondary indexes declared above, and the generated client (`client.models.Order.observeQuery(...)`) is what the kitchen board subscribes to for real-time updates.
 
-### Phase 4 — Kitchen / Staff View
-- [ ] Password-protected `/kitchen` route (Clerk role check or a simple shared passcode for MVP)
-- [ ] Poll or subscribe to `STORE#MAIN` active-queue items
-- [ ] Tap-to-advance status: `PAID → PREPARING → READY → COMPLETED`
+### Phase 4 — ~~Kitchen / Staff View~~ — **dropped 2026-08-27**
+
+Clover's Orders app and the shop's existing printer *are* the kitchen display. Building a second screen for staff to watch during a rush is how orders get missed (§8.7). The shared-passcode idea is dropped with it — it would have been the weakest surface in the system.
+
+Replaced by: nothing to build. The only staff-facing work left is confirming with the owner that auto-print is on and that the ticket lands where they expect (§14-B of `CLOVER-AND-LAUNCH.md`).
+
+Reopen this only if the shop leaves Clover.
 
 ### Phase 5 — Testing & Hardening
 
 ✅ **UI hardening pass (done 2026-08-27)** — 13 findings from a Web Interface Guidelines audit against the live 393px render. Fixed: overlay scroll chaining (`overscroll-contain` on both sheets and their inner scrollers); focus rings moved off `--primary` (2.23:1) onto `--brand-ink` (5.02:1 measured, WCAG 1.4.11); footer `tel:` links raised from 19.5px to 44px; `touch-action: manipulation` on all controls; a close button on the mobile drawer to match Dialog/Sheet; cart and drawer steppers and social targets to 44px; `scroll-mt`/`scroll-mb` on menu cards so sticky chrome can't obscure focus (WCAG 2.4.11); `transition-all` → explicit properties; skip link to `#menu` (WCAG 2.4.1); `aria-describedby` on the disabled Checkout button; `Intl.NumberFormat` in `formatPrice`. Docs corrected — §5 and `frontend-dev.md` both claimed dark mode that does not exist.
 
+✅ **Hero masthead overflow fixed (2026-08-29)** — the `h1` wordmark was a fixed `12rem` of `whitespace-nowrap` text from a 640px breakpoint, i.e. 899px of unbreakable width; it was clipped by `overflow-hidden` below ~900px and painted over the hero art from `lg` to ~1500px. Now sized with `clamp()` off the viewport, with the art's inset subtracted at `lg`+. Full write-up in §5.0.2 — it had been broken since 2026-08-27 and was reported twice as a regression because the symptom changes with window width.
+
 Still open:
 - [ ] Playwright E2E: add-to-cart → modifier combinations → cart math → mocked Stripe redirect
 - [ ] Edge cases: $0 orders, out-of-stock items, price rounding, concurrent quantity updates
-- [ ] Mobile viewport suite (iPhone/Pixel breakpoints) — this is the primary traffic shape
+- [ ] Mobile viewport suite (iPhone/Pixel breakpoints) — this is the primary traffic shape. **Widen it past phones:** the §5.0.2 masthead bug lived entirely in the 640–1500px band and survived two reports because nothing ever rendered the page at 640, 768, 1024 or 1280 and looked. A width sweep asserting no element overflows its container, and no hero text box intersects a hero image box, would have caught it on the day it landed
+- [ ] Under `prefers-reduced-motion`, `selectCategory` in `src/app/page.tsx` still calls `scrollTo({ behavior: "smooth" })`. The `scroll-behavior: auto !important` in `globals.css` does **not** override the scripted option — the argument wins over the computed style — so the rail animates for users who asked it not to. Needs a `matchMedia` check at the call site (found during the §5.0.2 review; left out of that fix to keep the diff to the masthead)
 - [ ] Basic Lighthouse/perf pass before calling anything "launch-ready"
 
 ### Phase 6 — Real Content
-- [ ] Real menu data (replace mock `src/config/menu.ts`) — pricing TBD depending on which shop this ends up serving
-- [ ] Real drink/dessert photography (replace emoji placeholder tiles) — will need shaved snow and egg waffle item types added to the data model if Snowdaes is the eventual target (currently modeled for boba/milk tea only)
-- [ ] Copy pass on brand voice/description text
+- [x] **Real menu data** — imported 2026-08-29 from the shops' own Clover catalogs by `scripts/import-menu.mjs`; `src/config/menu.ts` holds no invented prices. Storefront renders 93 items across 11 categories (§9). The UI pass that made the storefront survive that data is in §5.0.1
+- [~] Real drink/dessert photography — **44 of 93 items have a photo, 49 do not** and fall back to the drawn SVG stand-in. Those 49 now get 34 distinct flavour colourways instead of one repeated brown cup (§5.0.1), which is a floor, not a finish: photograph the 13 milk teas, 14 fruit teas, 12 fruit slushes and 3 milkshakes and the whole lower half of the menu stops being illustrations
+- [ ] Copy pass on brand voice/description text — **42 of 93 items have `description: ""`**, whole categories among them (Milk Tea 1 of 13, Fruit Teas 2 of 14, Milkshakes 0 of 3, Egg Puffs 0 of 3). The tile and drawer no longer break on it, but the menu reads thin without it. Clover has the field; the shop simply has not filled it in, so this is a copy task, not a code one
+- [ ] Ask the owner about four data oddities the import surfaced: nothing on the menu is flagged `isPopular` (the POPULAR badge is dead code until something is), Ice Cream is modelled as four size-named items ("Kiddie - Ice Cream", "Medium- Ice Cream" — note the missing space, it is theirs), two items carry a trailing `*` in their name ("Avocado Fruit Slush *"), and "Snow Size" prices live on the modifier rather than the item
 
 ## 7. Suggested Agent/Subagent Split
 
@@ -305,16 +426,161 @@ Lowell and Billerica each run their own Clover catalog, and they are **not the s
 - **CLI profile name:** `boba-shop` (in `~/.aws/credentials`, not project-local). Use `--profile boba-shop` or `export AWS_PROFILE=boba-shop` for any AWS/Amplify command in this repo.
 - **Never redirect credential-generating AWS CLI output to a file inside this repo** (e.g. `aws iam create-access-key ... > .aws`) — this happened once already, caught before it was committed. `.gitignore` now has a belt-and-suspenders pattern for it, but the real fix is: don't do it in the first place. Access keys go straight into `~/.aws/credentials` via `aws configure --profile <name>` or `aws configure set`, never through a file that lives under the repo root.
 
+## 8.7 Clover Integration — Option B (RESOLVED 2026-08-27)
+
+**Decided: we own the storefront, Clover owns the money and the kitchen.** Full analysis in [`CLOVER-AND-LAUNCH.md`](./CLOVER-AND-LAUNCH.md); this is the record of what was chosen and what it costs us.
+
+The site does browse, cart, modifiers, accounts, promo codes and campaigns. At checkout, the card is charged on **the shop's existing Clover merchant account** via Clover Hosted Checkout, and the order is then written into Clover with the **real inventory IDs we already hold**, so the ticket prints on the same printer as today.
+
+**Why, in one line each:**
+
+- **The staff workflow does not change.** Orders arrive where they already arrive. A second screen during a rush is how orders get missed — that is why Phase 4 is dropped.
+- **One money rail.** One settlement batch, one deposit, one sales-tax number, refunds where staff already do them. Stripe would have meant two of each, permanently.
+- **Stripe was not actually cheaper.** Clover card-not-present is 3.5% + $0.10 against Stripe's 2.9% + $0.30; the lower percentage does not repay the higher fixed fee until a **$33.33** ticket. Average item is $5.83 (Billerica) and $4.87 (Lowell). §2.2 previously claimed the opposite and has been corrected.
+- **We keep the whole prize anyway.** Owning the cart, the customer list and the promo engine never depended on owning the processing. Reaffirmed 2026-08-28 after the spike: **the marketing engine and the storefront customisation are the point of the project.** The shop already has working online ordering, so nothing here makes order delivery better — what it buys is the cart, the customer list and discount codes, which Clover Online Ordering does not have at all. If that engine were ever judged not worth building, Option A (a menu site linking to `cloveronline.com`) becomes the correct answer instead. Clover Online Ordering has **no discount codes at all** — that gap is the differentiator, and it survives regardless of who charges the card.
+
+**What it costs us:** a dependency on Clover credentials we do not control, and a menu we mirror rather than own.
+
+### Access path — no App Market listing required
+
+The earlier worry that this needed a published, Clover-approved app was **wrong, and the correction is load-bearing**: it turns the biggest schedule risk into a form the owner fills in.
+
+| Credential | Where the owner gets it | Used for |
+|---|---|---|
+| **Merchant API token** | Merchant Dashboard → Settings → Business Operations → API tokens, permissions scoped per endpoint | Inventory read, atomic order create, `print_event` |
+| **Ecommerce API token** | Merchant Dashboard → Settings → Ecommerce → Ecommerce API Tokens, integration type *Hosted Checkout* | Charging the card |
+
+Clover's own OAuth FAQ: *"For single merchant integrations… you can use a merchant-generated token which allows you to access Clover APIs for that specific merchant without initiating the full OAuth flow."* Both tokens are self-serve from the owner's dashboard, behind 2FA. No developer app, no OAuth, no approval queue.
+
+Two caveats, neither blocking:
+- One Clover docs page frames merchant tokens as a **sandbox** convenience while the OAuth FAQ describes them as fine in production for exactly this case. **Confirm in writing with Clover developer relations before Phase 2b** — one email, not a six-week unknown.
+- **Only one Ecommerce API token exists per merchant account.** If the shop already uses it for something, we share or replace it. Ask before generating.
+- A *private app* was the assumed fallback and is not free either: Clover's docs are explicit that private apps still require approval before distribution. Merchant tokens avoid that entirely; keep private apps as the multi-location fallback only.
+
+### Consequences already applied to this file
+
+| Change | Where |
+|---|---|
+| Fee claim corrected — Clover is cheaper than Stripe at this ticket size | §2.2 |
+| Clover added as the system of record; our `Order` demoted to a mirror | §2.4 |
+| Payments → Clover; hosting resolved to Amplify Hosting | §4, §9 |
+| Phase 2 replaced by a **sandbox spike**: prove a coded order prints, before building anything | §6 |
+| Phase 4 `/kitchen` board **dropped**, shared passcode with it | §6 |
+| `MenuItem` keyed by `cloverItemId`; `Order` gains Clover references; `Customer`/`Campaign`/`PromoCode`/`Redemption` added; `publicApiKey().to(['create'])` removed from `Order` | §6 schema |
+| Tax becomes an API call (`/v3/merchants/{mId}/tax_rates`) rather than a question | §9 |
+
+### Design rules this locks in
+
+1. **The server is the pricing authority; Clover is the fulfilment authority.** The browser's total is display only — the server recomputes from the synced catalog before charging. Otherwise `curl` buys a Thai Dye for a penny. **Mechanism, borrowed 2026-08-28:** the server issues an HMAC-signed pricing token binding the total, a cart fingerprint and the checkout intent id, with a short TTL. The browser carries the price without being able to alter it, and the server verifies signature, fingerprint and amount before charging. Roughly sixty lines.
+2. **Push the discount into the Clover order, not just into our arithmetic.** If a promo is applied and Clover records full price, the shop's books disagree with the deposit every time a code is used.
+3. **Never lose a paid order.** Persist before pushing; retry with backoff; alert on `PUSH_FAILED`. A payment with no ticket is the worst state this system can reach, which is why `printEventId` is stored as proof — though see the printing note below: the ticket may not turn out to be a `print_event` at all, and the field should be read as "evidence the kitchen was told", not as one specific API call.
+4. **Two locations, two merchant accounts, two sets of credentials.** Config is per-location, exactly like the catalogs in §8.6. **The webhook handler dispatches on the merchant id in the delivery** — never on whichever token it happens to hold. Reading the wrong estate fails silently and retries forever.
+5. **A secondary call must never fail a sale.** Added 2026-08-28; three surveyed codebases arrived at this independently. Every call that is *not* the one moving money returns null rather than throwing, with a short timeout and no retries, and the caller must be able to ignore the failure. *A sale that succeeded with no paper is a nuisance; a sale reported as failed because a second request failed is a double charge.* This governs the order rewrite and the ticket fire.
+6. **A webhook delivery is a hint, never a fact.** Record that Clover mentioned an object id, then re-read that object from the API with the merchant's own token, and make every decision from the read. Not optional on the platform webhook, where the auth header is a static UUID with no signature, no timestamp and no replay protection. Return **200** for anything we will never process — Clover retries non-200 forever.
+7. **The catalog sync preserves what Clover has no field for.** Photos, descriptions and tags are ours; names, prices and modifiers are Clover's. An item that disappears from Clover is marked **unavailable, not deleted**, so curation and order history survive.
+
+### Measured, not assumed — Phase 2 spike results (2026-08-27/28)
+
+Run against sandbox merchant `4XKCZA8Z277R1`, seeded from the real Billerica catalog. Full detail in [`scripts/spike/findings.md`](./scripts/spike/findings.md).
+
+**The design got simpler than what is written above.** Hosted Checkout creates the order *and* attaches the payment itself. We do not push an atomic order and never needed to:
+
+1. Server prices the cart (authority) and opens a Hosted Checkout session for the tax-inclusive total.
+2. Customer pays. **Clover creates the order and the payment**, already linked, already in the merchant's order list.
+3. On the webhook, **rewrite that order's line items** into inventory-linked ones with real modifiers — a locked, PAID order accepts adds and deletes, and its `total` stays pinned to the payment throughout.
+4. Fire `print_event`.
+
+One order, one payment, one ticket, entirely inside the shop's existing account. Nothing about the staff's day changes.
+
+This also dissolves a mismatch found earlier the same day: Hosted Checkout does **not** apply the merchant tax rates (it charges exactly what it is handed) while atomic orders **do**. Creating a second order meant two totals that had to agree on every order. Rewriting one order means there is only ever one total, and it is the one that was charged.
+
+**Four measurements that change the code:**
+
+| Finding | Consequence |
+|---|---|
+| Tax rate unit is **hundred-thousandths of a percent** — 6.25% is `625000` | Setting `6250000` silently charges **62.5%**. Nothing errors. A $5.83 order became $9.27 and only a total-vs-expected check caught it |
+| **Discounts apply before tax** — `(6.45−1.00)×1.07` | The promo engine must match this ordering or every discounted order reconciles cents out |
+| `order.taxAmount` reads **0 even when tax was charged** | Reconcile against `total`, never `taxAmount` |
+| A missing permission returns **401, not 403** | 401 is not "bad token". `403` means something else entirely: `expand=` values are permission-checked individually, and one unpermitted name fails the whole call — so `catalog-sync` should prefer separate calls to a wide expand |
+
+**Credentials, confirmed self-serve.** Both come from the merchant's own dashboard behind 2FA, with no developer app and no approval: the platform API token (Settings → Business Operations → API tokens) does inventory, orders and printing; the Ecommerce API token (Settings → Ecommerce → Ecommerce API Tokens, type *Hosted Checkout*) does charging. Neither can do the other's job. Scope the production token to Inventory read, Orders read+write, Payments read, Merchant read and print write — a token that can create orders *and* print is the one credential capable of putting fake tickets in a live kitchen.
+
+**Hosted Checkout defaults, observed:** tips off unless requested, reCAPTCHA present without asking, branding limited to the merchant name on a coloured bar, postal code required on the card form, sessions expire in ~30 minutes. If owning the funnel visually matters more than it does today, that is the argument for the tokenising iframe rather than Hosted Checkout.
+
+### The one thing the sandbox cannot answer — and why it stopped being a blocker
+
+**Does the rewritten order actually print?** `POST /print_event` returns `400 "The default printing device is missing"` on a sandbox test merchant, because test merchants have no devices. The route and the permission are proven — it is a business-logic error, not an auth error — but the ticket itself is not. That, plus whether the shop's reporting shows the rewritten line items rather than Hosted Checkout's originals, closes only against the shop's own merchant with the owner present.
+
+**Downgraded 2026-08-28 from "the last real risk" to "an open question with a proven fallback."** A survey of nine public Clover integrations ([`scripts/spike/prior-art.md`](./scripts/spike/prior-art.md)) found that **not one of them calls `print_event`** — including three real restaurants and a commercial ordering plugin. They get an order in front of staff by pushing an **open order** and letting it land in the merchant's Orders app, with a second channel as the actual backstop; one sends an SMS and describes it in a comment as the source of truth.
+
+Two readings remain, and we cannot yet tell which is right: either `print_event` is unnecessary because an open order already prints or alerts the way Clover's own online ordering does today, or it is unreliable enough that people quietly stopped using it. Either way the fallback is cheap and proven three times over, so **printing can no longer sink Option B.** It is now a question about how good the experience is, not whether the thing works.
+
+Worth asking the owner plainly, and it is a better question than the one in §14: *when an online order arrives today, does paper come out, or does someone watch a screen?*
+
+### What the prior-art survey changed (2026-08-28)
+
+Nine public Clover integrations read end to end; full detail and evidence tags in [`scripts/spike/prior-art.md`](./scripts/spike/prior-art.md), clones at `../clover-reference/`. Four things land on this plan.
+
+**1. Hosted Checkout has no refunds or voids — and this is Clover's own statement, not an inference.** Their archived Hosted Checkout codelab says it plainly: *"Refunds and voids are not available with hosted checkout. Hosted checkout provides a customer-facing payment interface, not a fully-featured payment system for merchants."* The same README also confirms in writing what the spike measured the hard way: *"A merchant's Clover inventory cannot be used with hosted checkout."*
+
+A boba shop refunds wrong orders. On the Hosted Checkout path every refund happens by hand in the dashboard and our side learns of it only by webhook or sweep — which is precisely the reconciliation work the survey shows is expensive and easy to get subtly wrong. **This reopens Hosted Checkout vs. the tokenising iframe as a live decision**, now in §9 and blocking Phase 2b. It is not a fork: one surveyed project runs both paths behind one cart.
+
+**2. `POST /v1/orders/{orderId}/pay` removes the rewrite step. CONFIRMED 2026-08-28.** The endpoint exists, is **Ecommerce-host only**, and takes the Ecommerce private key. Probed with a deliberately unusable source so nothing could be charged: it resolved our order, reached the card, and refused on the card alone (`400 "Please provide a valid source for the charge."`). Both platform-host variants answer `405 POST not allowed`. The project that reported it could not verify it; we did — see [`scripts/spike/findings.md`](./scripts/spike/findings.md) and `scripts/spike/07-order-pay.mjs`.
+
+**This inverts the flow above.** Instead of Hosted Checkout creating a bare order that we rewrite afterwards, we build the order first — inventory-linked, with Clover applying its own tax — and then pay it. The probe order proved the tax half too: two items at $6.45 came to **$13.81**, which is $12.90 x 1.07, Clover applying MA 6.25% + local 0.75% unprompted. One order, correct from birth, and the `taxAmount: $0.00` reporting gap closes for free. **Last step before this is settled:** a real payment through `/pay`, to confirm it attaches and leaves the order PAID with its line items intact. That needs a card token, so it is a human step.
+
+**3. A same-batch reversal is a VOID, not a refund.** `result: "VOIDED"` with an **empty** `refunds[]` array. Reconciling on `refunds[]` alone — the obvious reading of the API — reports reversed money as still taken. For a boba shop, same-day reversal is the normal case, so this would have bitten us.
+
+**4. The webhook must dispatch on the merchant id in the delivery.** §8.6 and design rule 4 already commit us to two merchant accounts. One surveyed project's retry loop spun for eighteen days — roughly 1,700 attempts — on deliveries naming a merchant that was not the one whose token the handler was reading with. The failure is silent and self-perpetuating.
+
+**Smaller API facts now written into `prior-art.md` rather than repeated here:** a declined card is HTTP **402** with no `error.type` (naive handlers return 500); Clover rate-limits with **429**; `externalPaymentId` silently caps at **32 characters** while a UUID is 36; a `clv_` token is **single-use**; a refund that omits its amount takes the **whole charge**; and `POST /v1/orders/{id}/returns` refunds the entire order while echoing your requested amount back.
+
+### Why this stays small — the Yipyy comparison (2026-08-29)
+
+Recorded because the scope will feel like it is growing again, and this is the
+answer. `../clover-reference/puneet` is the most complete Clover integration we
+found — **7,210 lines across 22 modules and 68 files**. Ours is **1,114 lines
+across 4 modules and 10 files**, and it has taken real money end to end.
+
+Their own orientation doc (`puneet/artifact/yipyy-and-clover.html`) is unusually
+honest about where the weight comes from. Every reason is something Snowdaes
+does not have:
+
+| Why Yipyy is big | Snowdaes | Modules it deletes |
+|---|---|---|
+| **Multi-tenant** — one deployment, many pet businesses, isolated by row-level security. Forces OAuth, signed state, per-facility token storage and rotation | Two stores **we control**. Merchant-generated tokens, no OAuth, no consent handshake | `oauth`, `connection`, `capabilities`, `merchant` |
+| **They are a Clover reseller** — they bring Clover *new merchants*: legal name, business structure, owning principals, documents, underwriting. That is why a booking app contains an underwriting pipeline | Snowdaes **already has a Clover account** | the whole `merchant_applications` pipeline |
+| **Physical terminals** — countertop readers, and a card-present refund must go back through the same device, a separate path entirely | **Online only** | `devices`, `terminal`, their `print` path |
+| **They estimate payouts** — Clover publishes no settlement endpoint to an OAuth app, so they net their own records and label the figure an estimate on every screen | The owner opens **their own Clover dashboard** | `payouts` |
+| **They are the system of record** for a business's entire operation | **Clover is the system of record.** The order lives there; we are a nicer way to place it | `reconcile`, `sweep`, `reversal`, `vault`, `receipt`×3 |
+
+Four of their twenty-two are ours: `config`, `request`, `orders`, `charge`.
+
+**The complexity is real. It is just not ours.** It is the cost of being a
+multi-tenant reseller with hardware. We are one shop with a website.
+
+Two things will genuinely add weight later, and neither is large:
+
+- **Refunds**, if the owner refunds often — owner questions 5–6 in
+  [`docs/OWNER-ASKS.md`](./docs/OWNER-ASKS.md). Until then they refund in their
+  dashboard exactly as they do today.
+- **One webhook**, so a payment still lands if the customer's phone dies between
+  paying and the confirmation screen. One route handler, when we need it.
+
+If a proposal cannot be traced to one of those two, it is Yipyy's problem being
+imported into our codebase, and the answer is no.
+
 ## 9. Open Decisions (resolve before Phase 2/3)
 
 - [x] ~~Backend approach: raw CDK+Lambda+DynamoDB vs. Amplify Gen 2~~ — **resolved: Amplify Gen 2**. See decision log in §4.
-- [ ] Frontend hosting: S3+CloudFront (matches the AWS-native plan) vs. Vercel (zero-ops, faster to ship) — pick one before wiring CI/CD
-- [ ] Stripe account: personal test account now, migrate to business account when a real shop is attached
+- [x] ~~Frontend hosting: S3+CloudFront vs. Vercel~~ — **resolved 2026-08-27: AWS Amplify Hosting.** It *is* CloudFront, so the CDN question answers itself; it matches the Amplify Gen 2 backend already chosen, and keeps one AWS account for the franchise-handover story.
+- [x] ~~Stripe account~~ — **moot 2026-08-27.** Payments run on the shop's existing Clover merchant account (§8.7); we never hold a merchant account of our own. Revisit only for a recurring drink club.
+- [ ] **Hosted Checkout vs. the tokenising iframe — blocking Phase 2b.** Added 2026-08-28. Clover's own codelab states refunds and voids are unavailable on Hosted Checkout, and a boba shop refunds wrong orders; the iframe path (`/v1/charges` + `/v1/refunds`) has no such limit and also wins on owning the funnel visually. Against that, Hosted Checkout is less code and keeps card data further away. One surveyed project runs **both** behind one cart, so this is a decision rather than a fork. Re-check the limitation against current docs first — the source repo was archived in 2024
 - [ ] Clerk vs. rolling a lighter phone-OTP flow ourselves — Clerk is faster to ship, adds a vendor dependency
-- [ ] Tax handling: flat rate (current mock uses 8.75%) vs. Stripe Tax — revisit once a real store address/jurisdiction is known
+- [ ] Tax handling: the invented 8.75% flat rate stands until Phase 2 reads the real rates from `GET /v3/merchants/{mId}/tax_rates`. Every item at both stores carries exactly two `taxIds` (119/119 and 124/124), so this is an API call, not a question for the owner — but still worth confirming with them that both rates apply to every item.
 - [ ] Domain name / branding — placeholder "Boba Shop" name throughout `src/` until this is settled
 - [x] ~~Confirm target shop~~ — **Snowdaes.** UI, brand, copy, categories and assets are all Snowdaes now; the §8 model expansion is done. Gathered from snowdaes.com 2026-08-26: six categories (Milk Teas, Shaved Snow, Egg Puffs, Specialty Drinks, Asian Ice, Hawaiian Ice), two locations (Lowell original, Billerica new), est. 2013, tagline "Make every day a Snowdae". Their current site has **no menu and no online ordering at all** — a homepage, an about page, socials, and a Google Form. That absence is the concrete gap this project closes and the sharpest line in the §2.5 pitch.
-- [x] ~~**Real menu pricing** — the shop publishes none~~ — **source found 2026-08-27.** Both shops run Clover online ordering (`snowdaes-north-billerica.cloveronline.com`, `snowdaes-lowell.cloveronline.com`) and publish the full priced catalog, embedded in the page as an RSC payload. Extraction is prototyped. The prices in `src/config/menu.ts` are **still invented** — importing them is the Phase 6 menu rebuild, and it is much larger than a price list: 119/124 items against 24 coded, 85/82 modifier groups against 11. See the rebuild plan for the modelling decision it hinges on.
+- [x] ~~**Real menu pricing** — the shop publishes none~~ — **imported 2026-08-29.** `scripts/import-menu.mjs` generates both catalogs from `assets/clover/*.json`; `src/config/menu.ts` no longer carries invented prices. The storefront shows **93 items across 11 categories** (119 imported, 26 counter add-ons filtered at presentation — see the note in `menu.ts`). Verified against Clover: Thai Dye + Large snow size = $11.95. Original note follows. **Source found 2026-08-27.** Both shops run Clover online ordering (`snowdaes-north-billerica.cloveronline.com`, `snowdaes-lowell.cloveronline.com`) and publish the full priced catalog, embedded in the page as an RSC payload. Extraction is prototyped. The prices in `src/config/menu.ts` are **still invented** — importing them is the Phase 6 menu rebuild, and it is much larger than a price list: 119/124 items against 24 coded, 85/82 modifier groups against 11. See the rebuild plan for the modelling decision it hinges on.
 - [ ] **Asset licensing** — product photos and the penguin mark in `public/` were pulled from the shop’s own site as placeholders. Get shop-supplied originals (or written sign-off) before public launch.
 - [ ] **Testimonials are fabricated** — the three reviews in `src/config/shop.ts` are invented placeholders written for layout, attributed to people who do not exist. Replace with genuine, permissioned reviews or delete the section before this is shown to the franchisor or the public. They are flagged in the file with a block comment.
 - [x] ~~**Opening hours** — the shop publishes none~~ — **published on Clover, found 2026-08-27.** Billerica 12:00–7:30 PM; Lowell 12:00–9:00 PM Mon–Thu and Sun, 12:00–10:00 PM Fri–Sat. Still omitted from the UI until someone confirms they are current — but they no longer have to be invented, and the §8.6 chooser needs them to show open/closed. Note the two differ, so hours are per-location.

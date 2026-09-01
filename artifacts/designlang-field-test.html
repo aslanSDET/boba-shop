@@ -1,0 +1,528 @@
+<title>Designlang Field Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --paper:      #F5F6FA;
+    --surface:    #FFFFFF;
+    --surface-2:  #EEF0F7;
+    --ink:        #13161E;
+    --ink-2:      #4B5266;
+    --ink-3:      #767E93;
+    --rule:       #DCE0EC;
+    --rule-soft:  #E9ECF4;
+    --accent:     #2740D8;
+    --accent-bg:  #E6EAFB;
+    --amber:      #A0620A;
+    --rose:       #A81F46;
+    --rose-bg:    #FBE9EE;
+    --green:      #1B6E4C;
+    --green-bg:   #E4F2EB;
+    --shadow: 0 1px 2px rgba(19, 22, 30, .05), 0 8px 24px -16px rgba(19, 22, 30, .22);
+
+    --display: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E1016; --surface: #161922; --surface-2: #1D212C;
+      --ink: #E9EBF3; --ink-2: #A2AABF; --ink-3: #7C849A;
+      --rule: #292F3D; --rule-soft: #21262F;
+      --accent: #92A2FF; --accent-bg: #1B2140;
+      --amber: #DFA243; --rose: #F0839F; --rose-bg: #351A24;
+      --green: #52C293; --green-bg: #12291F;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #0E1016; --surface: #161922; --surface-2: #1D212C;
+    --ink: #E9EBF3; --ink-2: #A2AABF; --ink-3: #7C849A;
+    --rule: #292F3D; --rule-soft: #21262F;
+    --accent: #92A2FF; --accent-bg: #1B2140;
+    --amber: #DFA243; --rose: #F0839F; --rose-bg: #351A24;
+    --green: #52C293; --green-bg: #12291F;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px 96px; }
+
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    padding: 64px 0 30px;
+    border-bottom: 2px solid var(--ink);
+    display: flex; flex-direction: column; gap: 18px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex; flex-wrap: wrap; gap: 8px 18px;
+  }
+
+  h1 {
+    font-family: var(--display); font-weight: 600;
+    font-size: clamp(2.3rem, 5.6vw, 3.4rem);
+    line-height: 1.05; letter-spacing: -.02em; margin: 0;
+    text-wrap: balance;
+  }
+  h1 em { font-style: italic; font-weight: 400; color: var(--accent); }
+
+  .standfirst {
+    font-size: 1.08rem; color: var(--ink-2); max-width: 62ch; margin: 0;
+  }
+
+  /* ---------- run record ---------- */
+
+  .runbar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1px; background: var(--rule);
+    border: 1px solid var(--rule); margin-top: 30px;
+  }
+  .stat { background: var(--surface); padding: 14px 16px; }
+  .stat .k {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .11em;
+    text-transform: uppercase; color: var(--ink-3); display: block;
+  }
+  .stat .v {
+    font-family: var(--mono); font-size: 1.15rem; font-weight: 600;
+    font-variant-numeric: tabular-nums; display: block; margin-top: 3px;
+  }
+  .stat .v.bad { color: var(--rose); }
+
+  section { margin-top: 62px; }
+
+  h2 {
+    font-family: var(--display); font-weight: 600; font-size: 1.6rem;
+    letter-spacing: -.015em; margin: 0 0 6px; text-wrap: balance;
+  }
+  .note { color: var(--ink-2); max-width: 66ch; margin: 0 0 24px; font-size: .95rem; }
+
+  /* ---------- palettes ---------- */
+
+  .site { margin-bottom: 34px; }
+
+  .site-head {
+    display: flex; align-items: baseline; gap: 12px;
+    flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .site-head h3 {
+    font-family: var(--display); font-size: 1.25rem; font-weight: 600;
+    margin: 0; letter-spacing: -.01em;
+  }
+  .site-head .url {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  }
+
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: 1px; background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .sw { background: var(--surface); display: flex; flex-direction: column; }
+  .chip { height: 76px; border-bottom: 1px solid var(--rule); }
+  .sw-meta { padding: 9px 11px 11px; display: flex; flex-direction: column; gap: 1px; }
+  .sw-role {
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .sw-hex {
+    font-family: var(--mono); font-size: .78rem; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .sw-use {
+    font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .sw-use.flag { color: var(--rose); font-weight: 600; }
+
+  /* ---------- verdict split ---------- */
+
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; }
+
+  .col {
+    border: 1px solid var(--rule); background: var(--surface);
+    padding: 20px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .col.keep { border-top: 3px solid var(--green); }
+  .col.drop { border-top: 3px solid var(--rose); }
+
+  .col-label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  .col.keep .col-label { color: var(--green); }
+  .col.drop .col-label { color: var(--rose); }
+
+  .col h3 { margin: 0; font-family: var(--display); font-size: 1.2rem; font-weight: 600; }
+  .col ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .col li { padding-left: 15px; position: relative; font-size: .9rem; color: var(--ink-2); }
+  .col li::before { position: absolute; left: 0; font-family: var(--mono); font-size: .8em; line-height: 1.75; }
+  .col.keep li::before { content: "✓"; color: var(--green); }
+  .col.drop li::before { content: "✕"; color: var(--rose); }
+
+  /* ---------- receipts ---------- */
+
+  .receipt {
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .receipt > summary {
+    padding: 14px 18px;
+    cursor: pointer;
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    font-weight: 600; font-size: .95rem;
+    list-style: none;
+  }
+  .receipt > summary::-webkit-details-marker { display: none; }
+  .receipt > summary::before {
+    content: "▸"; color: var(--accent); font-size: .8em;
+    transition: transform .15s ease; display: inline-block;
+  }
+  .receipt[open] > summary::before { transform: rotate(90deg); }
+  .receipt > summary .file {
+    font-family: var(--mono); font-size: 10.5px; color: var(--ink-3);
+    font-weight: 400; margin-left: auto;
+  }
+  .receipt-body {
+    padding: 0 18px 18px 18px;
+    display: flex; flex-direction: column; gap: 12px;
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 14px;
+  }
+  .receipt-body p { margin: 0; font-size: .9rem; color: var(--ink-2); }
+
+  pre {
+    margin: 0; overflow-x: auto;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    padding: 12px 14px;
+    font-family: var(--mono); font-size: .76rem; line-height: 1.65;
+    color: var(--ink);
+  }
+  pre .hl { color: var(--rose); font-weight: 600; }
+  pre .ok { color: var(--green); font-weight: 600; }
+  pre .cm { color: var(--ink-3); }
+
+  .why {
+    background: var(--rose-bg);
+    border-left: 3px solid var(--rose);
+    padding: 10px 14px; font-size: .88rem;
+  }
+  .why strong { color: var(--rose); }
+
+  code {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--surface-2); padding: 1px 4px;
+    border: 1px solid var(--rule-soft);
+  }
+
+  .files {
+    font-family: var(--mono); font-size: .78rem; color: var(--ink-2);
+    background: var(--surface-2); border: 1px solid var(--rule);
+    padding: 12px 14px; overflow-x: auto; white-space: nowrap;
+  }
+
+  footer {
+    margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: .78rem; color: var(--ink-3); line-height: 1.7;
+  }
+
+  @media (max-width: 620px) {
+    .masthead { padding-top: 44px; }
+    .wrap { padding: 0 16px 64px; }
+    .receipt > summary .file { margin-left: 0; width: 100%; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Field test</span>
+      <span>31 August 2026</span>
+      <span>designlang 12.21.0</span>
+    </div>
+    <h1>The colours are real.<br>The <em>analysis</em> is not.</h1>
+    <p class="standfirst">
+      I pointed designlang at two food brands with opposite design languages and read every file
+      it produced. Palette extraction is genuinely good and directly usable. Four of the five
+      analysis layers assert conclusions their own numbers contradict — with the receipts below.
+    </p>
+  </header>
+
+  <div class="runbar">
+    <div class="stat"><span class="k">Sites</span><span class="v">2</span></div>
+    <div class="stat"><span class="k">Files out</span><span class="v">71</span></div>
+    <div class="stat"><span class="k">On disk</span><span class="v">592K</span></div>
+    <div class="stat"><span class="k">Runtime</span><span class="v">~40s ea.</span></div>
+    <div class="stat"><span class="k">Exit code</span><span class="v bad">1 · 1</span></div>
+  </div>
+
+  <section>
+    <h2>What it got right</h2>
+    <p class="note">
+      Both palettes are read off the live DOM with usage counts attached, so you learn not just
+      which colours exist but which ones carry the page. These swatches are the actual extracted
+      values — no retouching.
+    </p>
+
+    <div class="site">
+      <div class="site-head">
+        <h3>sweetgreen</h3>
+        <span class="url">www.sweetgreen.com · 16 unique colours</span>
+      </div>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#00473c"></div><div class="sw-meta"><span class="sw-role">primary</span><span class="sw-hex">#00473c</span><span class="sw-use">used 36×</span></div></div>
+        <div class="sw"><div class="chip" style="background:#e6ff55"></div><div class="sw-meta"><span class="sw-role">secondary</span><span class="sw-hex">#e6ff55</span><span class="sw-use">used 7×</span></div></div>
+        <div class="sw"><div class="chip" style="background:#f4f3e7"></div><div class="sw-meta"><span class="sw-role">accent / bg</span><span class="sw-hex">#f4f3e7</span><span class="sw-use">used 51×</span></div></div>
+        <div class="sw"><div class="chip" style="background:#0e150e"></div><div class="sw-meta"><span class="sw-role">neutral</span><span class="sw-hex">#0e150e</span><span class="sw-use">—</span></div></div>
+        <div class="sw"><div class="chip" style="background:#d8e5d6"></div><div class="sw-meta"><span class="sw-role">neutral</span><span class="sw-hex">#d8e5d6</span><span class="sw-use">—</span></div></div>
+        <div class="sw"><div class="chip" style="background:#696969"></div><div class="sw-meta"><span class="sw-role">neutral</span><span class="sw-hex">#696969</span><span class="sw-use">—</span></div></div>
+      </div>
+    </div>
+
+    <div class="site">
+      <div class="site-head">
+        <h3>Oatly</h3>
+        <span class="url">www.oatly.com · 11 unique colours</span>
+      </div>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#f8c8d8"></div><div class="sw-meta"><span class="sw-role">primary</span><span class="sw-hex">#f8c8d8</span><span class="sw-use flag">used 4×</span></div></div>
+        <div class="sw"><div class="chip" style="background:#fdcf85"></div><div class="sw-meta"><span class="sw-role">secondary</span><span class="sw-hex">#fdcf85</span><span class="sw-use flag">used 7×</span></div></div>
+        <div class="sw"><div class="chip" style="background:#98c5d3"></div><div class="sw-meta"><span class="sw-role">accent</span><span class="sw-hex">#98c5d3</span><span class="sw-use flag">used 1×</span></div></div>
+        <div class="sw"><div class="chip" style="background:#ffffff"></div><div class="sw-meta"><span class="sw-role">background</span><span class="sw-hex">#ffffff</span><span class="sw-use">—</span></div></div>
+        <div class="sw"><div class="chip" style="background:#222222"></div><div class="sw-meta"><span class="sw-role">neutral</span><span class="sw-hex">#222222</span><span class="sw-use">—</span></div></div>
+        <div class="sw"><div class="chip" style="background:#c6c6c6"></div><div class="sw-meta"><span class="sw-role">neutral</span><span class="sw-hex">#c6c6c6</span><span class="sw-use">—</span></div></div>
+      </div>
+    </div>
+
+    <p class="note" style="margin-top:18px;margin-bottom:0">
+      Both are correct against the real brands. The shadcn block it emits alongside them is
+      paste-ready as-is. Note the flagged Oatly counts, though — they are the subject of receipt 1.
+    </p>
+  </section>
+
+  <section>
+    <h2>The receipts</h2>
+    <p class="note">
+      Every claim below is checkable against the files in <code>research/designlang/</code>.
+      Expand any row to see the raw output.
+    </p>
+
+    <details class="receipt">
+      <summary>1 · Semantic roles ignore the usage counts in the same file<span class="file">oatly-com-DESIGN.md</span></summary>
+      <div class="receipt-body">
+        <pre>| role      | hex       | usage |
+| primary   | `#f8c8d8` |   <span class="hl">4</span>   |
+| secondary | `#fdcf85` |   <span class="hl">7</span>   |
+| accent    | `#98c5d3` |   <span class="hl">1</span>   |</pre>
+        <div class="why">
+          <strong>The problem:</strong> “primary” appears less often than “secondary”, and “accent”
+          was promoted to a semantic role on a single occurrence. The tool reports the counts that
+          disprove its own role assignment, in the same table.
+        </div>
+      </div>
+    </details>
+
+    <details class="receipt">
+      <summary>2 · <code>visual-dna</code> contradicts <code>design-tokens</code> from the same run<span class="file">sweetgreen · both files</span></summary>
+      <div class="receipt-body">
+        <pre><span class="cm">// sweetgreen-com-visual-dna.json</span>
+"materialLanguage": {
+  "label": "material-you", "confidence": 0.45,
+  "signals": [{ "detail": "pill shapes + <span class="hl">soft shadows</span>" }],
+  "metrics": {
+    "shadowProfile": "<span class="hl">soft</span>",
+    "avgShadowBlur": <span class="hl">0</span>,
+    "maxShadowBlur": <span class="hl">0</span>
+  }
+}
+
+<span class="cm">// sweetgreen-com-design-tokens.json — same run, same page</span>
+"shadow": {
+  "sh0": { "$value": "rgba(0,0,0,0.4) 0px 0px <span class="ok">3px</span> 0px" },
+  "sh1": { "$value": "rgb(199,197,199) -3px -3px <span class="ok">5px</span> -2px" }
+}</pre>
+        <div class="why">
+          <strong>The problem:</strong> the classifier justifies “material-you” with soft shadows
+          while its own blur metrics read zero — and the token extractor, on the same page, found
+          real 3px and 5px shadows. <code>"soft"</code> is a default string, not a measurement.
+        </div>
+      </div>
+    </details>
+
+    <details class="receipt">
+      <summary>3 · A classification shipped at confidence zero with no evidence<span class="file">oatly-com-visual-dna.json</span></summary>
+      <div class="receipt-body">
+        <pre>"materialLanguage": {
+  "label": "<span class="hl">flat</span>",
+  "confidence": <span class="hl">0</span>,
+  "signals": <span class="hl">[]</span>,
+  "metrics": { "avgRadius": <span class="hl">2538</span>, "maxRadius": <span class="hl">9999</span>, "hasPill": true }
+}</pre>
+        <div class="why">
+          <strong>The problem:</strong> a label with zero confidence and an empty signals array is
+          not a finding, but it is emitted in the same shape as a real one — and downstream files
+          quote it as fact. Separately, <code>avgRadius: 2538</code> comes from averaging in the
+          <code>9999px</code> pill idiom, which makes the mean meaningless.
+        </div>
+      </div>
+    </details>
+
+    <details class="receipt">
+      <summary>4 · The type scale has one role, and it is wrong<span class="file">*-design-tokens.json</span></summary>
+      <div class="receipt-body">
+        <pre><span class="cm">// sweetgreen — "semantic.typography"</span>
+"body": { "$value": {
+  "fontFamily": "SweetSansText",
+  "fontSize":   "<span class="hl">80px</span>",
+  "lineHeight": "<span class="hl">68px</span>",
+  "fontWeight": "400"
+}}
+
+<span class="cm">// oatly</span>
+"body": { "$value": {
+  "fontFamily": "Margo Pro Regular",
+  "fontSize":   "<span class="hl">32px</span>",
+  "fontWeight": "<span class="hl">700</span>"
+}}</pre>
+        <div class="why">
+          <strong>The problem:</strong> 80px with a 68px line-height is a hero headline, not body
+          text. Both sites got their most prominent type mislabelled as <code>body</code>, and there
+          is exactly one typography role — so there is no scale at all.
+        </div>
+      </div>
+    </details>
+
+    <details class="receipt">
+      <summary>5 · Fonts are named but unusable<span class="file">primitive.fontFamily</span></summary>
+      <div class="receipt-body">
+        <pre>sweetgreen → <span class="hl">SweetSansText</span>, <span class="hl">SweetSans</span>, <span class="hl">Grenette</span>, Times
+oatly      → <span class="hl">Margo Pro Regular</span>, <span class="hl">Margo Pro Bold</span>, oatly-icons</pre>
+        <div class="why">
+          <strong>The problem:</strong> every one is a licensed custom face. The tool reports the
+          name and offers no substitute, no classification, and no metric you could match against.
+          The typography half of “inspiration in” arrives dead.
+        </div>
+      </div>
+    </details>
+
+    <details class="receipt">
+      <summary>6 · Spacing is measurements, not a scale<span class="file">primitive.spacing</span></summary>
+      <div class="receipt-body">
+        <pre>sweetgreen → [<span class="hl">1, 23, 28, 35, 40, 48, 54, 60, 70, 98</span>]
+oatly      → [<span class="hl">1, 15, 24, 30, 40, 44, ...</span>]</pre>
+        <div class="why">
+          <strong>The problem:</strong> 23px and 35px are observations, not system values. No 4pt
+          or 8pt grid is inferred, so you cannot build against this — you would be reproducing one
+          page's rounding errors.
+        </div>
+      </div>
+    </details>
+
+    <details class="receipt">
+      <summary>7 · Tailwind ramps are 10 parts invention to 1 part measurement<span class="file">oatly-com-tailwind-v4.css</span></summary>
+      <div class="receipt-body">
+        <pre>--color-primary:     <span class="ok">#f8c8d8</span>   <span class="cm">/* measured — Oatly's soft pink */</span>
+--color-primary-500: <span class="hl">hsl(340 77% 50%)</span>  <span class="cm">/* invented — hot pink */</span>
+--color-primary-900: <span class="hl">hsl(340 77% 16%)</span>  <span class="cm">/* invented — maroon */</span></pre>
+        <div class="why">
+          <strong>The problem:</strong> the 50–950 ramp holds hue and saturation fixed and walks
+          lightness, so every step but one is a colour Oatly has never used. Perceptually it is not
+          even an even ramp. Take <code>--color-primary</code>; discard the rest.
+        </div>
+      </div>
+    </details>
+
+    <details class="receipt">
+      <summary>8 · Both runs exit non-zero after succeeding<span class="file">stderr</span></summary>
+      <div class="receipt-body">
+        <pre>✓ ...-form-states.json (302B) — Forms + States
+<span class="hl">✖ Extraction failed</span>
+
+  The "string" argument must be of type string or an
+  instance of Buffer or ArrayBuffer. Received <span class="hl">undefined</span></pre>
+        <div class="why">
+          <strong>The problem:</strong> the crash lands after every emitter has finished, so the
+          output is complete and the failure is cosmetic — but a tool that returns 1 on success
+          cannot be scripted or put behind a CI gate without wrapping it.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>The split</h2>
+    <div class="split">
+      <div class="col keep">
+        <span class="col-label">Worth using</span>
+        <h3>Colour, and only colour</h3>
+        <ul>
+          <li>Palette read off the live DOM, correct on both brands</li>
+          <li>Usage counts tell you which colours actually carry the page</li>
+          <li><code>*-shadcn-theme.css</code> is paste-ready into <code>globals.css</code></li>
+          <li>Neutrals are separated from brand colours, which most extractors miss</li>
+          <li><code>--radius</code> is a single measured value and is believable</li>
+        </ul>
+      </div>
+      <div class="col drop">
+        <span class="col-label">Ignore</span>
+        <h3>Every layer above colour</h3>
+        <ul>
+          <li>Type scale — one role, and it captured a headline</li>
+          <li>Font families — proprietary, no substitutes offered</li>
+          <li>Spacing — raw pixels, no grid inferred</li>
+          <li><code>visual-dna</code> — contradicts the token file beside it</li>
+          <li><code>voice.json</code> — “verbs” include <em>your</em>, <em>salads</em>, <em>sides</em></li>
+          <li>Tailwind colour ramps — synthetic around one real value</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What this changes</h2>
+    <p class="note">
+      In the landscape survey I called designlang “the single best inspiration-in primitive” and
+      the concrete artefact every other layer builds on. Hands-on, that is too generous. It is a
+      very good colour picker with six unreliable features stacked on top, and the unreliable ones
+      are not marked as such in the output — which is worse than not shipping them, because a
+      coding agent reading <code>DESIGN.md</code> will quote <code>material-you</code> and
+      <code>body: 80px</code> straight into your CSS.
+    </p>
+    <div class="files">research/designlang/ · 71 files · gitignored, kept on disk · re-run: npx designlang &lt;url&gt; --system-chrome</div>
+  </section>
+
+  <footer>
+    Run 31 August 2026 against designlang 12.21.0 on Node 20.18.0, system Chrome.<br>
+    Every quoted value is copied verbatim from the run output. Companion to the
+    design-agent landscape survey.
+  </footer>
+
+</div>

@@ -1,0 +1,1079 @@
+<title>Design Agent Landscape</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --paper:      #F5F6FA;
+    --surface:    #FFFFFF;
+    --surface-2:  #EEF0F7;
+    --ink:        #13161E;
+    --ink-2:      #4B5266;
+    --ink-3:      #767E93;
+    --rule:       #DCE0EC;
+    --rule-soft:  #E9ECF4;
+    --accent:     #2740D8;
+    --accent-bg:  #E6EAFB;
+    --amber:      #A0620A;
+    --rose:       #A81F46;
+    --green:      #1B6E4C;
+    --bar:        #A9B4E8;
+
+    --shadow: 0 1px 2px rgba(19, 22, 30, .05), 0 8px 24px -16px rgba(19, 22, 30, .22);
+
+    --display: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #0E1016;
+      --surface:    #161922;
+      --surface-2:  #1D212C;
+      --ink:        #E9EBF3;
+      --ink-2:      #A2AABF;
+      --ink-3:      #7C849A;
+      --rule:       #292F3D;
+      --rule-soft:  #21262F;
+      --accent:     #92A2FF;
+      --accent-bg:  #1B2140;
+      --amber:      #DFA243;
+      --rose:       #F0839F;
+      --green:      #52C293;
+      --bar:        #4C5A9E;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #0E1016;
+    --surface:    #161922;
+    --surface-2:  #1D212C;
+    --ink:        #E9EBF3;
+    --ink-2:      #A2AABF;
+    --ink-3:      #7C849A;
+    --rule:       #292F3D;
+    --rule-soft:  #21262F;
+    --accent:     #92A2FF;
+    --accent-bg:  #1B2140;
+    --amber:      #DFA243;
+    --rose:       #F0839F;
+    --green:      #52C293;
+    --bar:        #4C5A9E;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 64px 0 32px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(2.6rem, 6.5vw, 4.1rem);
+    line-height: 1.02;
+    letter-spacing: -.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+
+  .standfirst {
+    font-size: 1.12rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  /* ---------- the stack diagram ---------- */
+
+  .layers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin: 40px 0 0;
+  }
+
+  .layer {
+    background: var(--surface);
+    padding: 18px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .layer-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    color: var(--accent);
+  }
+
+  .layer h3 {
+    font-family: var(--body);
+    font-size: .95rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -.005em;
+  }
+
+  .layer p {
+    margin: 0;
+    font-size: .85rem;
+    line-height: 1.5;
+    color: var(--ink-2);
+  }
+
+  /* ---------- sections ---------- */
+
+  section { margin-top: 68px; }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.75rem;
+    letter-spacing: -.015em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+
+  .section-note {
+    color: var(--ink-2);
+    max-width: 68ch;
+    margin: 0 0 24px;
+    font-size: .95rem;
+  }
+
+  /* ---------- the table ---------- */
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1000px;
+    font-size: .855rem;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--surface-2);
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 14px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--rule-soft);
+    line-height: 1.5;
+  }
+
+  tbody tr:hover td { background: var(--accent-bg); }
+
+  tr.band th {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 8px 14px;
+    border: none;
+  }
+  tr.band th span { color: var(--bar); font-weight: 400; letter-spacing: .04em; text-transform: none; }
+
+  .tool {
+    font-weight: 600;
+    font-size: .92rem;
+    display: block;
+    letter-spacing: -.005em;
+  }
+
+  .meta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    display: block;
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+
+  .cell-tool { min-width: 165px; }
+  .cell-reach { min-width: 128px; }
+  .cell-pro, .cell-con, .cell-opp { min-width: 210px; }
+
+  .num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: .82rem;
+    font-weight: 500;
+    display: block;
+  }
+
+  .track {
+    height: 3px;
+    background: var(--rule);
+    margin-top: 6px;
+    max-width: 108px;
+  }
+  .track > i { display: block; height: 3px; background: var(--bar); }
+
+  td ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  td li { padding-left: 13px; position: relative; }
+  td li::before {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-family: var(--mono);
+    font-size: .8em;
+    line-height: 1.85;
+  }
+  .cell-pro li::before  { content: "+"; color: var(--green); }
+  .cell-con li::before  { content: "−"; color: var(--rose); }
+  .cell-opp li::before  { content: "→"; color: var(--accent); font-size: .7em; }
+
+  .cell-opp { background: color-mix(in srgb, var(--accent-bg) 45%, transparent); }
+
+  /* ---------- legend ---------- */
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    margin-top: 14px;
+    font-size: .8rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+  }
+
+  /* ---------- verdict ---------- */
+
+  .verdict {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+
+  .pick {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent);
+    padding: 20px 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    box-shadow: var(--shadow);
+  }
+
+  .pick-role {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .pick h3 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+
+  .pick p { margin: 0; font-size: .9rem; color: var(--ink-2); }
+
+  code.cmd {
+    font-family: var(--mono);
+    font-size: .78rem;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    padding: 7px 9px;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  /* ---------- gaps ---------- */
+
+  .gaps {
+    border-top: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0 36px;
+  }
+  .gap {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .gap h3 {
+    margin: 0;
+    font-size: .95rem;
+    font-weight: 600;
+  }
+  .gap p { margin: 0; font-size: .875rem; color: var(--ink-2); }
+  .gap .tagline {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+
+  footer {
+    margin-top: 72px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: .8rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 620px) {
+    .masthead { padding-top: 44px; }
+    .wrap { padding: 0 16px 64px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>Tooling survey</span>
+      <span>31 August 2026</span>
+      <span>24 tools · 5 layers</span>
+    </div>
+    <h1>There is no one agent.<br>There is a <em>stack</em>.</h1>
+    <p class="standfirst">
+      Nothing on the market is a single “Figma-style agent that takes inspiration in and beautiful
+      components out.” What exists is five separable layers, each with a clear category leader.
+      Wire three of them together and you get the thing you were looking for — and you keep the
+      pieces you can swap.
+    </p>
+  </header>
+
+  <div class="layers">
+    <div class="layer">
+      <span class="layer-num">Layer 1</span>
+      <h3>Inspiration intake</h3>
+      <p>Turn a URL, screenshot, or moodboard into tokens and a written taste profile the agent can read.</p>
+    </div>
+    <div class="layer">
+      <span class="layer-num">Layer 2</span>
+      <h3>Judgment</h3>
+      <p>Skills that stop the model reaching for its highest-probability defaults. No canvas, just instructions.</p>
+    </div>
+    <div class="layer">
+      <span class="layer-num">Layer 3</span>
+      <h3>Canvas</h3>
+      <p>A visual surface you can point at, drag, and iterate on — Figma or a Figma-shaped substitute.</p>
+    </div>
+    <div class="layer">
+      <span class="layer-num">Layer 4</span>
+      <h3>Bridge</h3>
+      <p>MCP servers and plugins that move fidelity between the canvas and your real repo, both directions.</p>
+    </div>
+    <div class="layer">
+      <span class="layer-num">Layer 5</span>
+      <h3>Component supply</h3>
+      <p>Registries the agent pulls finished, accessible components from instead of inventing them.</p>
+    </div>
+  </div>
+
+  <section>
+    <h2>The comparison</h2>
+    <p class="section-note">
+      Sorted by layer, then by reach within the layer. “Reach” is the strongest public popularity
+      signal available for each tool — they are not comparable across metric types, so the bar is
+      scaled within a metric, not across the whole table.
+    </p>
+
+    <div class="scroller">
+      <table>
+        <colgroup>
+          <col style="width:16%"><col style="width:12%"><col style="width:24%">
+          <col style="width:24%"><col style="width:24%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">Tool</th>
+            <th scope="col">Reach</th>
+            <th scope="col">Pros</th>
+            <th scope="col">Cons</th>
+            <th scope="col">Opportunity</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr class="band"><th colspan="5" scope="colgroup">Layer 1 — Inspiration intake <span>· references in, tokens out</span></th></tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">designlang</span><span class="meta">repo: design-extract · MIT<br>npm <code>designlang</code> · MCP + CLI + CC plugin</span></td>
+            <td class="cell-reach"><span class="num">3,989 ★</span><div class="track"><i style="width:100%"></i></div><span class="meta">but only 2.3k npm/mo</span></td>
+            <td class="cell-pro"><ul>
+              <li><strong>Tested 31 Aug — colour extraction is real:</strong> correct palettes off the live DOM, with usage counts</li>
+              <li>The emitted <code>shadcn-theme.css</code> is paste-ready as-is</li>
+              <li>Ships as an MCP server and a Claude Code plugin, so the agent queries it directly</li>
+              <li>Emits Tailwind v4, Figma variables, shadcn, SwiftUI, Compose</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li><strong>Only the colour layer survives scrutiny.</strong> Type scale has one role and it captured an 80px headline; spacing is raw pixels; <code>visual-dna</code> contradicts the token file beside it; Tailwind ramps are synthetic</li>
+              <li>Fonts are named but proprietary — no substitutes offered</li>
+              <li>Both test runs exited 1 <em>after</em> writing every file</li>
+              <li>Stars badly outrun real usage: 3,989 ★ against 2,261 npm downloads/month</li>
+              <li>Copying a competitor’s system verbatim is a legal and brand hazard</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Treat it as a colour picker, not a design-system extractor</li>
+              <li>Extract 3–4 sites you admire, diff the <em>palettes</em>, keep the median — a direction, not a clone</li>
+              <li>Full hands-on test with receipts: <a href="https://claude.ai/code/artifact/b7e30138-314d-4e73-999c-512907c966bb">Designlang Field Test</a></li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">dembrandt</span><span class="meta">OSS · one-command CLI</span></td>
+            <td class="cell-reach"><span class="num">3,281 ★</span><div class="track"><i style="width:82%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Faster and simpler than design-extract for the 80% case</li>
+              <li>Grabs the logo alongside colour and type</li>
+              <li>Near-zero setup, good for triage across many references</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>No MCP surface — you pipe files in by hand</li>
+              <li>Thinner emitter list; no accessibility layer</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Use it as the fast scan, design-extract as the deep pull</li>
+              <li>Cheap enough to run over a whole moodboard in one pass</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">hue</span><span class="meta">Agent skill · MIT</span></td>
+            <td class="cell-reach"><span class="num">815 ★</span><div class="track"><i style="width:20%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Learns one brand once, then every UI the agent builds matches it</li>
+              <li>Works in Claude Code and Codex without a server</li>
+              <li>Install-once ergonomics — no per-prompt reminding</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Small project; bus factor and maintenance risk</li>
+              <li>Single-brand by design — awkward if you juggle clients</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The right shape for a shop with one fixed identity</li>
+              <li>Pair with Layer 1 output: extract the tokens, let hue enforce them</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">tastemaker</span><span class="meta">Claude skill · reference images</span></td>
+            <td class="cell-reach"><span class="num">276 ★</span><div class="track"><i style="width:7%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Closest thing to literally “takes inspirations in” — grounds output in real reference images</li>
+              <li>Keeps a persistent per-developer taste profile that sharpens over time</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Young and thinly adopted; expect rough edges</li>
+              <li>Quality depends entirely on the references you feed it</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The persistent-profile idea is the most under-copied pattern in this whole survey</li>
+              <li>Worth reading even if you do not adopt it — the profile format is easy to fork</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Mobbin + Refero</span><span class="meta">Commercial · reference corpora</span></td>
+            <td class="cell-reach"><span class="num">Category std.</span><div class="track"><i style="width:70%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Curated real-product screens, not stock inspiration</li>
+              <li>Refero is explicitly built to be queried as an agent research corpus</li>
+              <li>Solves the input problem the OSS tools assume you already solved</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Subscription, and neither is an agent — they are libraries</li>
+              <li>Manual curation step sits outside your automated loop</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Collect in Mobbin, systematise in Refero, extract with Layer 1, enforce with Layer 2</li>
+              <li>Free substitute: hand-pick 5 sites and run design-extract over them</li>
+            </ul></td>
+          </tr>
+
+          <tr class="band"><th colspan="5" scope="colgroup">Layer 2 — Judgment skills <span>· no canvas, just better defaults</span></th></tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Taste Skill</span><span class="meta">Leonxlnx · MIT · 14 skills</span></td>
+            <td class="cell-reach"><span class="num">82,795 ★</span><div class="track"><i style="width:100%"></i></div><span class="meta">3.2M installs claimed</span></td>
+            <td class="cell-pro"><ul>
+              <li>By a wide margin the most popular design skill in existence</li>
+              <li>A suite, not a monolith: minimalist, brutalist, high-end, redesign-existing variants</li>
+              <li>Portable across Claude Code, Cursor, Codex, Gemini CLI, v0, Lovable, Windsurf</li>
+              <li>Install in one line, no server, no key</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Popularity means its look is now <em>everywhere</em> — the anti-slop skill is becoming its own slop</li>
+              <li>Opinionated toward dark, motion-heavy, “premium” aesthetics; fights a warm retail brand</li>
+              <li>No awareness of your codebase or existing tokens</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Take the <em>structure</em> — its checklists and variant system — and re-point it at your own palette</li>
+              <li>Best used as a critic pass over finished UI, not as the generator</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Frontend Design</span><span class="meta">Anthropic · official plugin</span></td>
+            <td class="cell-reach"><span class="num">~277k installs</span><div class="track"><i style="width:88%"></i></div><span class="meta">#1 in official directory</span></td>
+            <td class="cell-pro"><ul>
+              <li>First-party, maintained, zero-risk to install</li>
+              <li>Tuned against Claude’s specific failure modes, not generic LLM ones</li>
+              <li>Already available in this project as the <code>frontend-design</code> skill</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Deliberately conservative — raises the floor, does not raise the ceiling</li>
+              <li>No inspiration intake at all; it is judgment only</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The correct baseline. Free, already installed, no reason not to run it</li>
+              <li>Stack a Layer 1 token file on top and it stops producing generic output</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Superdesign</span><span class="meta">OSS + hosted · skill & agent</span></td>
+            <td class="cell-reach"><span class="num">6,902 ★</span><div class="track"><i style="width:47%"></i></div><span class="meta">skill repo: 491 ★</span></td>
+            <td class="cell-pro"><ul>
+              <li>Both an IDE design agent and a portable skill — pick your depth</li>
+              <li>Generates several variants to choose between rather than one answer</li>
+              <li>Works across 70+ coding agents</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Two products under one name; the docs blur which is which</li>
+              <li>Best features drift toward the hosted side over time</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Variant-generation is the feature to steal — three options beats one opinion</li>
+              <li>Reasonable middle ground if Taste Skill feels too loud and Anthropic’s too quiet</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">ux-ui-agent-skills</span><span class="meta">Skill pack · 138 systems</span></td>
+            <td class="cell-reach"><span class="num">826 ★</span><div class="track"><i style="width:12%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>DTCG tokens, 42 components, WCAG 2.2 checks in one pack</li>
+              <li>Framework-neutral output</li>
+              <li>Accessibility is built in rather than bolted on</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Broad rather than deep — a lot of surface for one maintainer</li>
+              <li>138 bundled design systems is more menu than guidance</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Cherry-pick the WCAG 2.2 sub-skill; it is the strongest piece and stands alone</li>
+            </ul></td>
+          </tr>
+
+          <tr class="band"><th colspan="5" scope="colgroup">Layer 3 — Canvas &amp; design agents <span>· a surface you can point at</span></th></tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Figma Design Agent</span><span class="meta">Native · paid plans</span></td>
+            <td class="cell-reach"><span class="num">Incumbent</span><div class="track"><i style="width:100%"></i></div><span class="meta">72% of designers use genAI</span></td>
+            <td class="cell-pro"><ul>
+              <li>Designs on the real canvas using <em>your</em> components, variables and tokens</li>
+              <li>Nothing else has this much design-system awareness</li>
+              <li>Output lands where your designers already work — no handoff step</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Credit-metered: ~3,000/mo on a Full seat, then $0.03 each. 10k extra ≈ $3,600/yr</li>
+              <li>Requires a Full seat ($16–20/editor/mo); Collab and Dev seats get bumped automatically when they edit</li>
+              <li>Assumes you already have a design system worth generating against</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Only worth it if a designer already lives in Figma daily</li>
+              <li>For a solo dev the credit maths never clears — use Layer 4 to read Figma instead of paying to generate in it</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Claude Design + <code>/design</code></span><span class="meta">Anthropic Labs · Apr 2026 · research preview</span></td>
+            <td class="cell-reach"><span class="num">First-party</span><div class="track"><i style="width:80%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Multi-artboard canvas with click-to-select, inline text edit, undo/redo and model-generated tweak sliders</li>
+              <li>Explicit handoff bundle into Claude Code for implementation</li>
+              <li>No new subscription — runs inside the Claude you already pay for</li>
+              <li>Available right here as the <code>design</code> skill</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Research preview; save behaviour varies by account</li>
+              <li>Not a design-system tool — it does not know your components the way Figma does</li>
+              <li>Artboards are HTML, so “export to Figma” is not a first-class path</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Strongest fit for your situation: you have no designer and no Figma file to protect</li>
+              <li>Draft three artboards, pick one, implement — the loop Figma charges credits for, at no marginal cost</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Penpot</span><span class="meta">OSS · MPL-2.0 · self-hostable</span></td>
+            <td class="cell-reach"><span class="num">59,425 ★</span><div class="track"><i style="width:100%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>The only credible open-source Figma replacement, and it is genuinely good</li>
+              <li>Self-hostable — no seat pricing, no vendor lock</li>
+              <li>Standards-based files (real SVG/CSS) rather than a proprietary blob</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>AI agent story is far behind Figma’s</li>
+              <li>Plugin and MCP ecosystem is a fraction of the size</li>
+              <li>You are the one running the server</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The escape hatch if Figma’s credit pricing becomes untenable</li>
+              <li>Its open file format is much easier to point an agent at than Figma’s API</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Onlook</span><span class="meta">OSS · Apache-2.0 · YC W25</span></td>
+            <td class="cell-reach"><span class="num">26,609 ★</span><div class="track"><i style="width:45%"></i></div><span class="meta">2,086 forks</span></td>
+            <td class="cell-pro"><ul>
+              <li>Bi-directional: drag on the canvas, the React source changes; edit code, the canvas updates</li>
+              <li>Edits your actual repo — not a hosted clone you later port</li>
+              <li>Local-first, MIT-adjacent licence, no lock-in</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>React/Next only</li>
+              <li>Struggles on codebases with heavy abstraction between markup and rendered output</li>
+              <li>Design <em>editor</em>, not a design <em>generator</em> — it will not invent a direction for you</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Perfect fit for a Next.js + Tailwind shop that wants nudge-level visual control</li>
+              <li>The “last 10%” tool: let the agent build, then push pixels by hand without opening the CSS</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">open-codesign</span><span class="meta">OSS · MIT · BYOK</span></td>
+            <td class="cell-reach"><span class="num">7,864 ★</span><div class="track"><i style="width:13%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Open Claude Design alternative — prompt to prototype, slides or PDF</li>
+              <li>Multi-model and local-first; import your existing API key</li>
+              <li>No preview-status risk; the code is yours</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Chasing a first-party product it will always trail</li>
+              <li>You pay per token directly, with no bundled allowance</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Worth watching if <code>/design</code> stays gated or the preview lapses</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Magic Patterns</span><span class="meta">Commercial · YC</span></td>
+            <td class="cell-reach"><span class="num">Screenshot-first</span><div class="track"><i style="width:55%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Paste a screenshot or mockup, get React + Tailwind — the clearest inspiration-in workflow of any hosted tool</li>
+              <li>Ingests your brand tokens and component library so output is on-brand, not generic</li>
+              <li>Behaves like a design tool; reviewers find it faster than v0 or Lovable for iteration</li>
+              <li>Exports to both Figma and React</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Aimed at teams iterating on an existing product, not greenfield</li>
+              <li>Another subscription, and another place your design truth lives</li>
+              <li>Prototyping tool — you still port the result into the repo</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The closest single product to the brief as you stated it</li>
+              <li>Trial it for one screen before committing — the screenshot loop either clicks immediately or does not</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Google Stitch</span><span class="meta">Google Labs · free</span></td>
+            <td class="cell-reach"><span class="num">Free tier</span><div class="track"><i style="width:60%"></i></div><span class="meta">~350 gens/mo</span></td>
+            <td class="cell-pro"><ul>
+              <li>Genuinely free, no paid tier as of mid-2026</li>
+              <li>One-click Figma export that preserves layers and components</li>
+              <li>Emits HTML/CSS, Tailwind, React, Vue, Flutter, SwiftUI</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Output reads as AI-generated; reviewers consistently flag low contrast and missing ARIA</li>
+              <li>Hard daily credit cap with no way to buy more</li>
+              <li>Labs experiment — could be discontinued</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Free concept generator: produce 10 directions, keep none of the code, take the one layout that works</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">v0 / Lovable</span><span class="meta">Commercial · full-app builders</span></td>
+            <td class="cell-reach"><span class="num">~$500M ARR</span><div class="track"><i style="width:100%"></i></div><span class="meta">Lovable; ~8M users</span></td>
+            <td class="cell-pro"><ul>
+              <li>v0 produces the cleanest shadcn-styled React on the market</li>
+              <li>Lovable ships whole apps — backend, auth, deploy included</li>
+              <li>Enormous adoption means enormous prompt and pattern knowledge in the wild</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Both generate <em>apps</em>, not design material — wrong altitude for components and graphics</li>
+              <li>Lovable’s output wants to live on Lovable</li>
+              <li>v0 has no backend and does not replace your existing build</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Use v0 to source individual components, not pages</li>
+              <li>Skip Lovable entirely if you already have a working Next.js app — it solves a problem you do not have</li>
+            </ul></td>
+          </tr>
+
+          <tr class="band"><th colspan="5" scope="colgroup">Layer 4 — Figma ↔ code bridges <span>· MCP servers and plugins</span></th></tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Figma official MCP</span><span class="meta">First-party · remote + desktop</span></td>
+            <td class="cell-reach"><span class="num">Official</span><div class="track"><i style="width:100%"></i></div><span class="meta">claude-plugins-official</span></td>
+            <td class="cell-pro"><ul>
+              <li>Reads components, variables, layout, FigJam and Make resources</li>
+              <li>Writes <em>back</em> to the canvas — turns production code into editable Figma layers</li>
+              <li>Code Connect keeps generated code aligned to your real components</li>
+              <li>Ships with Agent Skills for common workflows</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Needs a paid Figma seat and burns credits</li>
+              <li>Remote server has the features; desktop is enterprise-shaped</li>
+              <li>Useless if you have no Figma file to begin with</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The right bridge the moment a designer joins</li>
+              <li>Install: <code>claude plugin install figma@claude-plugins-official</code></li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Figma-Context-MCP</span><span class="meta">GLips · MIT · <code>figma-developer-mcp</code></span></td>
+            <td class="cell-reach"><span class="num">15,744 ★</span><div class="track"><i style="width:100%"></i></div><span class="meta">336k npm/mo</span></td>
+            <td class="cell-pro"><ul>
+              <li>The de-facto community standard, and the download numbers back it</li>
+              <li>Simplifies the Figma API response before it reaches the model — measurably better accuracy per token</li>
+              <li>Free, MIT, no plugin install on the Figma side</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Read-only — it cannot write to the canvas</li>
+              <li>Bound by Figma REST API rate limits</li>
+              <li>Needs a Figma access token</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The cheapest possible Figma bridge; start here before paying for the official one</li>
+              <li>Its context-reduction trick is worth copying into any tool you build</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">cursor-talk-to-figma-mcp</span><span class="meta">Grab · MIT</span></td>
+            <td class="cell-reach"><span class="num">6,989 ★</span><div class="track"><i style="width:44%"></i></div><span class="meta">774 forks</span></td>
+            <td class="cell-pro"><ul>
+              <li>Read <em>and</em> modify designs programmatically</li>
+              <li>Backed by a real engineering org, not a weekend project</li>
+              <li>Works with Claude Code, Cursor and Codex alike</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Requires a Figma plugin running in the app — a live socket, not a stateless server</li>
+              <li>Write access to a shared file is a real blast radius</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The free write path, if you need one and cannot justify a Figma seat upgrade</li>
+              <li>The <code>arinspunk</code> fork (653 ★) adds safe parallel sub-agent execution</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">figma-console-mcp</span><span class="meta">southleft · MIT</span></td>
+            <td class="cell-reach"><span class="num">2,224 ★</span><div class="track"><i style="width:14%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Positions the design system as an API — extraction, creation and debugging</li>
+              <li>14 WCAG design checks and design-system health audits built in</li>
+              <li>Covers FigJam and Slides, not just Design</li>
+              <li>Actively maintained</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Broadest surface here, which means the most to learn</li>
+              <li>Audit features only pay off once a system exists to audit</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>The accessibility scanning is the differentiator — nothing else in Layer 4 has it</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Builder.io Fusion</span><span class="meta">Commercial · ~$19–40/user/mo</span></td>
+            <td class="cell-reach"><span class="num">3,681 ★</span><div class="track"><i style="width:23%"></i></div><span class="meta">figma-html repo</span></td>
+            <td class="cell-pro"><ul>
+              <li>Semantic component mapping — matches Figma elements to components that already exist in your repo</li>
+              <li>Turns Slack threads and Jira tickets into branches and PRs</li>
+              <li>Bundles a visual CMS, which can replace a separate headless CMS</li>
+              <li>Its open <code>figma-html</code> tool converts any website into editable Figma, free</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Most expensive option in the category</li>
+              <li>Credit-metered on top of per-seat pricing</li>
+              <li>Enterprise-shaped; overkill below a team of five</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Take <code>figma-html</code> alone — free, and it solves “get this site into Figma” outright</li>
+              <li>Only consider Fusion proper if the CMS line item is already in your budget</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">Anima / Locofy</span><span class="meta">Commercial · Figma plugins</span></td>
+            <td class="cell-reach"><span class="num">$33–500/mo</span><div class="track"><i style="width:35%"></i></div></td>
+            <td class="cell-pro"><ul>
+              <li>Mature, well-understood Figma-to-code plugins with years of tuning</li>
+              <li>Anima Playground takes prompts, URLs, Figma files <em>and</em> visual references</li>
+              <li>Locofy is the strongest of the set for mobile-first and multi-framework work</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Token-metered pricing that gets expensive fast ($0.40/token pay-as-you-go on Locofy)</li>
+              <li>Anima’s free tier is 5 generations; enterprise starts at $500/mo</li>
+              <li>Generated code has historically needed heavy cleanup</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Largely superseded by MCP bridges for anyone already using a coding agent</li>
+              <li>Still the answer if your input is a finished Figma file and your output is a one-off static page</li>
+            </ul></td>
+          </tr>
+
+          <tr class="band"><th colspan="5" scope="colgroup">Layer 5 — Component supply <span>· stop inventing what exists</span></th></tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">shadcn registry MCP</span><span class="meta">MIT · already wired here</span></td>
+            <td class="cell-reach"><span class="num">122,646 ★</span><div class="track"><i style="width:100%"></i></div><span class="meta">10,054 forks</span></td>
+            <td class="cell-pro"><ul>
+              <li>Search, view and install components from registries without leaving the agent</li>
+              <li>Accessible by construction — Radix underneath</li>
+              <li>Open code: you own the component after install, no dependency</li>
+              <li>Already connected in this project</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>The default shadcn look is itself now an AI-slop signature</li>
+              <li>Components, not compositions — it will not lay out a page</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Highest-leverage move available: install the primitive, then restyle with Layer 1 tokens</li>
+              <li>Retheming shadcn is far cheaper than generating components from scratch</li>
+            </ul></td>
+          </tr>
+
+          <tr>
+            <td class="cell-tool"><span class="tool">21st.dev Magic MCP</span><span class="meta">MIT-ish · <code>@21st-dev/magic</code></span></td>
+            <td class="cell-reach"><span class="num">5,761 ★</span><div class="track"><i style="width:22%"></i></div><span class="meta">156k npm/mo</span></td>
+            <td class="cell-pro"><ul>
+              <li>10,000+ React/Tailwind components searchable from inside the editor</li>
+              <li>Generates new UI and lets you publish your own back to the registry</li>
+              <li>Real download volume, not just stars</li>
+            </ul></td>
+            <td class="cell-con"><ul>
+              <li>Quality across a 10k community registry is uneven</li>
+              <li>Requires an API key; the good tier is paid</li>
+              <li>Rebranded to “21st MCP” mid-flight — docs and configs are inconsistent</li>
+            </ul></td>
+            <td class="cell-opp"><ul>
+              <li>Best used for the pieces shadcn deliberately does not ship: heroes, pricing tables, marketing sections</li>
+            </ul></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span>★ = GitHub stars, read 31 Aug 2026</span>
+      <span>npm/mo = downloads, last 30 days</span>
+      <span>Install counts are vendor-stated</span>
+      <span>Bars scale within a metric, not across the table</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>What I would actually wire up</h2>
+    <p class="section-note">
+      One tool from each of three layers, chosen for a solo developer on Next.js with no designer
+      and no Figma file to protect. Total added cost: nothing.
+    </p>
+
+    <div class="verdict">
+      <div class="pick">
+        <span class="pick-role">Inspiration in</span>
+        <h3>designlang</h3>
+        <p>
+          Point it at the three or four sites whose feel you want and take <em>the palette</em> —
+          tested 31 Aug, and the colour layer is the one that holds up. The shadcn theme it emits
+          is paste-ready; ignore the type, spacing and <code>visual-dna</code> files, which assert
+          more than they measured. Run it with <code>npx</code>, install nothing.
+        </p>
+        <code class="cmd">npx designlang https://example.com --system-chrome</code>
+      </div>
+
+      <div class="pick">
+        <span class="pick-role">Canvas</span>
+        <h3>Claude Design</h3>
+        <p>
+          Already installed here as the <code>design</code> skill. Draft several artboards, pick
+          one, hand it to Claude Code. It is the Figma loop without the seat, the credits, or a
+          second place your design truth has to live.
+        </p>
+        <code class="cmd">/design three homepage directions</code>
+      </div>
+
+      <div class="pick">
+        <span class="pick-role">Components out</span>
+        <h3>shadcn MCP + Frontend Design</h3>
+        <p>
+          Pull accessible primitives from the registry rather than generating them, restyle with
+          your extracted tokens, and let Anthropic’s own design skill catch the defaults. Both are
+          already connected to this project.
+        </p>
+        <code class="cmd">already active — no install needed</code>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Gaps nobody has filled</h2>
+    <p class="section-note">
+      Every tool above solves one edge of the brief. These are the seams between them — where the
+      opportunity is, if you or anyone else wanted to build rather than buy.
+    </p>
+
+    <div class="gaps">
+      <div class="gap">
+        <span class="tagline">Unsolved</span>
+        <h3>Taste that persists</h3>
+        <p>
+          Only <code>tastemaker</code> attempts a durable per-developer taste profile, at 276 stars.
+          Everything else re-derives your aesthetic from scratch on every prompt. This is the most
+          obvious missing primitive in the whole stack.
+        </p>
+      </div>
+      <div class="gap">
+        <span class="tagline">Unsolved</span>
+        <h3>Inspiration → judgment handoff</h3>
+        <p>
+          Layer 1 emits tokens. Layer 2 reads prose. Nobody has standardised the format between
+          them, so today you paste a JSON file into a skill and hope. A convention here would make
+          the whole stack composable.
+        </p>
+      </div>
+      <div class="gap">
+        <span class="tagline">Ironic</span>
+        <h3>The anti-slop tools converged</h3>
+        <p>
+          Taste Skill has 82k stars and 3.2M claimed installs. Its house style — dark ground, one
+          acid accent, heavy motion — is now itself a recognisable signature. Popularity is not
+          differentiation, and in this category it is the opposite.
+        </p>
+      </div>
+      <div class="gap">
+        <span class="tagline">Structural</span>
+        <h3>Nothing rounds the trip</h3>
+        <p>
+          Reference → tokens → canvas → components → back to reference. Figma’s official MCP is
+          the only bridge that writes in both directions, and it costs a seat plus credits. The
+          free path is still one-way.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Compiled 31 August 2026 · star counts and npm figures read directly from the GitHub and npm
+    APIs on that date · pricing, install counts and ARR figures are vendor-stated or press-reported
+    and were not independently verified.
+  </footer>
+
+</div>

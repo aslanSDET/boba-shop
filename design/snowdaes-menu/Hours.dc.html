@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=DM+Sans:wght@400;500;700&family=Geist+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #faf8f5; font-family: "DM Sans", system-ui, sans-serif; color: #1a1512; -webkit-font-smoothing: antialiased; }
+    a { color: #b4530a; text-decoration: none; }
+    a:hover { color: #8f4108; }
+    * { box-sizing: border-box; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; padding: 0; color: inherit; }
+    @keyframes sd-pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .45; transform: scale(.82);} }
+  </style>
+</helmet>
+
+<div style="width: 940px; padding: 30px 30px 34px; background: #faf8f5">
+
+  <div style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 22px">
+    <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #6f6259">Open hours · four treatments</span>
+    <h2 style="font-family: Fraunces, Georgia, serif; font-size: 27px; font-weight: 600; margin: 0; letter-spacing: -0.02em">Seven rows is the lazy answer</h2>
+    <p style="margin: 0; font-size: 14px; color: #6f6259; max-width: 68ch; line-height: 1.5">Nobody opens a dessert shop's website to read a timetable. They want one of two answers: <em>can I go now</em>, or <em>when can I go</em>. Each option below answers those in less room than the table does.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start">
+
+    <!-- ── A · what Owner.com shipped ─────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: baseline; gap: 7px">
+        <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.12em; color: #a8574f">A · TODAY</span>
+      </div>
+      <div style="background: #ffffff; border: 1px solid #e9e1d7; border-radius: 16px; padding: 14px 15px">
+        <div style="display: flex; flex-direction: column; gap: 0">
+          <sc-for list="{{full}}" as="d" hint-placeholder-count="7">
+            <div style="{{d.row}}">
+              <span style="font-size: 12px">{{d.day}}</span>
+              <span style="font-size: 12px; font-variant-numeric: tabular-nums">{{d.hours}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="font-size: 11.5px; color: #6f6259; line-height: 1.5">
+        <strong style="color: #a8574f">392px of screen</strong> to say one thing. No live status — the visitor does the arithmetic. Doesn't scale to two shops.
+      </div>
+    </div>
+
+    <!-- ── B · the ribbon ─────────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.12em; color: #b4530a">B · RIBBON ✦</span>
+      <div style="background: #ffffff; border: 1px solid #e9e1d7; border-radius: 16px; padding: 14px 15px; display: flex; flex-direction: column; gap: 11px">
+        <div style="display: flex; align-items: center; gap: 7px">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #4f9d3a; animation: sd-pulse 2.4s ease-in-out infinite; flex-shrink: 0"></span>
+          <span style="font-size: 14px; font-weight: 700; letter-spacing: -0.01em">Open now</span>
+          <span style="font-size: 13px; color: #6f6259">· closes 9 PM</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px">
+          <sc-for list="{{ribbon}}" as="d" hint-placeholder-count="7">
+            <div style="{{d.cell}}">
+              <span style="display: block; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 9.5px; text-transform: uppercase">{{d.day}}</span>
+              <span style="display: block; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; margin-top: 2px; font-variant-numeric: tabular-nums">{{d.close}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <span style="font-size: 11.5px; color: #6f6259">Every day from 12:00 PM</span>
+      </div>
+      <div style="font-size: 11.5px; color: #6f6259; line-height: 1.5">
+        <strong style="color: #1a1512">72px.</strong> Live status first, whole week still visible, today ringed. Opens from 12 every day, so only the close time varies — the ribbon shows just that.
+      </div>
+    </div>
+
+    <!-- ── C · the sentence ───────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.12em; color: #6f6259">C · SENTENCE</span>
+      <div style="background: #ffffff; border: 1px solid #e9e1d7; border-radius: 16px; padding: 14px 15px; display: flex; flex-direction: column; gap: 9px">
+        <div style="display: flex; align-items: center; gap: 7px">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #4f9d3a; animation: sd-pulse 2.4s ease-in-out infinite; flex-shrink: 0"></span>
+          <span style="font-family: Fraunces, Georgia, serif; font-size: 19px; font-weight: 600; letter-spacing: -0.015em">Open till 9</span>
+        </div>
+        <span style="font-size: 12.5px; color: #6f6259; line-height: 1.45">Tomorrow 12–9. Late Fri &amp; Sat till 10.</span>
+        <button style="align-self: flex-start; font-size: 12px; font-weight: 500; color: #b4530a; border-bottom: 1px solid #e5c9a4; padding-bottom: 1px">All hours</button>
+      </div>
+      <div style="font-size: 11.5px; color: #6f6259; line-height: 1.5">
+        <strong style="color: #1a1512">Smallest and warmest.</strong> Reads like a person talking. Hides the full week behind a tap — fine on mobile, thin if someone is planning Saturday.
+      </div>
+    </div>
+
+    <!-- ── D · the clock bar ──────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.12em; color: #6f6259">D · CLOCK BAR</span>
+      <div style="background: #ffffff; border: 1px solid #e9e1d7; border-radius: 16px; padding: 14px 15px; display: flex; flex-direction: column; gap: 11px">
+        <div style="display: flex; align-items: center; gap: 7px">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #4f9d3a; animation: sd-pulse 2.4s ease-in-out infinite; flex-shrink: 0"></span>
+          <span style="font-size: 14px; font-weight: 700">3 hrs left today</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px">
+          <div style="position: relative; height: 8px; border-radius: 999px; background: #f3eee7; overflow: hidden">
+            <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 67%; background: #f5901e; border-radius: 999px"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; color: #6f6259; font-variant-numeric: tabular-nums">
+            <span>12 PM</span><span>NOW 6:02</span><span>9 PM</span>
+          </div>
+        </div>
+        <span style="font-size: 11.5px; color: #6f6259">Kitchen stops egg puffs 15 min before close</span>
+      </div>
+      <div style="font-size: 11.5px; color: #6f6259; line-height: 1.5">
+        <strong style="color: #1a1512">Most urgent.</strong> Turns hours into a reason to leave now. Risky: it can read as pressure, and it says nothing about tomorrow.
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top: 24px; padding: 14px 16px; background: #fdf1e2; border: 1px solid #f0d9b8; border-radius: 14px; display: flex; gap: 10px; align-items: flex-start">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#b4530a" stroke-width="2" stroke-linecap="round" style="width: 17px; height: 17px; flex-shrink: 0; margin-top: 1px">
+      <circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16.5v.01"></path>
+    </svg>
+    <span style="font-size: 12.5px; line-height: 1.5; color: #7c4a12">
+      <strong>B is in Main.</strong> It is the only one that answers both questions at once, and the only one that survives having two shops — Lowell and Billerica each get their own ribbon from their own Clover feed, and a closed day greys out rather than disappearing. C is the better footer treatment. D is worth trying on the cart screen, where urgency is already the point.
+    </span>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const TODAY = 3;
+
+    const full = days.map((d, i) => {
+      const late = (i === 5 || i === 6);
+      const on = i === TODAY;
+      return {
+        day: d,
+        hours: late ? '12:00 PM – 10:00 PM' : '12:00 PM – 9:00 PM',
+        row: 'display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 5px 0; border-bottom: 1px solid #f3eee7; ' +
+          (on ? 'font-weight: 700; color: #1a1512;' : 'color: #6f6259;')
+      };
+    });
+
+    const ribbon = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d, i) => {
+      const late = (i === 5 || i === 6);
+      const on = i === TODAY;
+      const base = 'text-align: center; padding: 6px 2px 7px; border-radius: 8px; ';
+      return {
+        day: d,
+        close: late ? '10' : '9',
+        cell: on ? base + 'background: #f5901e; color: #1a1512; font-weight: 700;'
+                 : base + 'background: #f3eee7; color: #6f6259;'
+      };
+    });
+
+    return { full: full, ribbon: ribbon };
+  }
+}
+</script>
+</body>
+</html>

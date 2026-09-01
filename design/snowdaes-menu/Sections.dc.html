@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=DM+Sans:wght@400;500;700&family=Geist+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #faf8f5; font-family: "DM Sans", system-ui, sans-serif; color: #1a1512; -webkit-font-smoothing: antialiased; }
+    a { color: #b4530a; text-decoration: none; }
+    a:hover { color: #8f4108; }
+    * { box-sizing: border-box; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; padding: 0; color: inherit; }
+    .lbl { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase; color: #6f6259; }
+    .cap { font-size: 12px; color: #6f6259; line-height: 1.5; }
+  </style>
+</helmet>
+
+<div style="width: 1300px; padding: 30px 30px 34px; background: #faf8f5">
+
+  <div style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 24px">
+    <span class="lbl">Page blocks · six ways to say something</span>
+    <h2 style="font-family: Fraunces, Georgia, serif; font-size: 27px; font-weight: 600; margin: 0; letter-spacing: -0.02em">A menu page that is only a menu is a PDF</h2>
+    <p style="margin: 0; font-size: 14px; color: #6f6259; max-width: 76ch; line-height: 1.5">Your <code style="font-family: 'Geist Mono', monospace; font-size: 12px; background: #f3eee7; padding: 1px 5px; border-radius: 4px">HeroStoryCard</code> shape — photo, frosted card riding over it, one CTA — is block A, in Snowdaes colours instead of Owner's green. The other five are the same idea at different weights, so the page can change rhythm as you scroll instead of repeating one card six times.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; align-items: start">
+
+    <!-- ── A · hero story card ─────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="lbl" style="color: #b4530a">A · HERO STORY CARD ✦</span>
+      <div style="position: relative; border-radius: 34px; overflow: hidden; background: #f3eee7; border: 1px solid rgba(26,21,18,.06); box-shadow: 0 12px 34px -18px rgba(26,21,18,.5)">
+        <div style="position: relative; width: 100%; aspect-ratio: 4 / 5">
+          <img src="flatlay.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(26,21,18,.22), transparent 42%)"></div>
+        </div>
+        <div style="position: absolute; bottom: 12px; left: 12px; right: 12px; border-radius: 26px; background: rgba(250,248,245,.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.6); box-shadow: 0 6px 18px -8px rgba(26,21,18,.35); padding: 20px">
+          <h3 style="font-family: Fraunces, Georgia, serif; font-size: 24px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; margin: 0; text-wrap: balance">Six toppings. No upcharge for indecision.</h3>
+          <p style="margin: 10px 0 0; font-size: 13.5px; line-height: 1.55; color: #6f6259">Pick your snow, then pile on six of the twenty-six toppings at the counter.</p>
+        </div>
+      </div>
+      <p class="cap"><strong style="color: #1a1512">Your shape, retoned.</strong> 4:5 photo, frosted card overlapping the bottom, radius 34/26px off your <code style="font-family: 'Geist Mono', monospace; font-size: 11px">--radius</code> scale. One per page, at the top — it stops being special the second it repeats.</p>
+    </div>
+
+    <!-- ── B · split card ──────────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="lbl">B · SPLIT</span>
+      <div style="display: flex; background: #ffffff; border: 1px solid #e9e1d7; border-radius: 26px; overflow: hidden">
+        <div style="width: 140px; flex-shrink: 0; background: #f3eee7">
+          <img src="puffle.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+        </div>
+        <div style="padding: 17px 17px 18px; display: flex; flex-direction: column; gap: 7px; justify-content: center">
+          <span class="lbl" style="color: #b4530a">Made to order</span>
+          <h3 style="font-family: Fraunces, Georgia, serif; font-size: 19px; font-weight: 600; margin: 0; letter-spacing: -0.02em; line-height: 1.15">Puffles come out of the iron hot</h3>
+          <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #6f6259">Six minutes, never sooner. Worth the wait.</p>
+        </div>
+      </div>
+      <div style="display: flex; background: #ffffff; border: 1px solid #e9e1d7; border-radius: 26px; overflow: hidden">
+        <div style="padding: 17px 17px 18px; display: flex; flex-direction: column; gap: 7px; justify-content: center">
+          <span class="lbl" style="color: #b4530a">Since 2013</span>
+          <h3 style="font-family: Fraunces, Georgia, serif; font-size: 19px; font-weight: 600; margin: 0; letter-spacing: -0.02em; line-height: 1.15">Two shops, one family</h3>
+          <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #6f6259">Lowell opened first. Billerica followed.</p>
+        </div>
+        <div style="width: 140px; flex-shrink: 0; background: #f3eee7">
+          <img src="loc-lowell.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+        </div>
+      </div>
+      <p class="cap"><strong style="color: #1a1512">The workhorse.</strong> Alternating sides keeps a long scroll from feeling like a list. Cheap vertically — about a third of block A — so you can afford several.</p>
+    </div>
+
+    <!-- ── C · dark statement ──────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="lbl">C · DARK STATEMENT</span>
+      <div style="border-radius: 30px; background: #1a1512; padding: 24px 22px 26px; display: flex; flex-direction: column; gap: 10px">
+        <span class="lbl" style="color: #f5901e">Stay a while</span>
+        <h3 style="font-family: Fraunces, Georgia, serif; font-size: 23px; font-weight: 600; color: #faf8f5; margin: 0; letter-spacing: -0.02em; line-height: 1.15; text-wrap: balance">The board games are free and the tables are yours</h3>
+        <p style="margin: 0; font-size: 13.5px; line-height: 1.55; color: #b9aa9c">Most people order, sit down, and stay past the second round. That is the point.</p>
+      </div>
+      <div style="border-radius: 30px; background: #f5901e; padding: 24px 22px 26px; display: flex; flex-direction: column; gap: 9px">
+        <span class="lbl" style="color: #7c4a12">Bagged &amp; ready</span>
+        <h3 style="font-family: Fraunces, Georgia, serif; font-size: 23px; font-weight: 600; color: #1a1512; margin: 0; letter-spacing: -0.02em; line-height: 1.15">Egg puffs to go, $5</h3>
+        <p style="margin: 0; font-size: 13.5px; line-height: 1.5; color: #7c4a12">Original, pandan, or chocolate. Grab one on the way out.</p>
+      </div>
+      <p class="cap"><strong style="color: #1a1512">No photo needed.</strong> A full-bleed colour block resets the eye between photo-heavy sections. The orange one only works with dark text — it's 2.23:1 against the page, which is why your CSS reserves it for fills.</p>
+    </div>
+
+    <!-- ── D · quote ───────────────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="lbl">D · QUOTE</span>
+      <div style="background: #ffffff; border: 1px solid #e9e1d7; border-radius: 26px; padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 13px">
+        <svg viewBox="0 0 24 24" fill="#f5901e" style="width: 24px; height: 24px">
+          <path d="M9.5 5C6.5 6.6 4.7 9.3 4.7 12.6c0 3.2 1.9 5.4 4.5 5.4 2.2 0 3.8-1.6 3.8-3.7 0-2-1.4-3.5-3.3-3.5-.4 0-.8 0-1.1.2.5-1.7 1.9-3.2 3.7-4.2L9.5 5Zm9.3 0c-3 1.6-4.8 4.3-4.8 7.6 0 3.2 1.9 5.4 4.5 5.4 2.2 0 3.8-1.6 3.8-3.7 0-2-1.4-3.5-3.3-3.5-.4 0-.8 0-1.1.2.5-1.7 1.9-3.2 3.7-4.2L18.8 5Z"></path>
+        </svg>
+        <p style="margin: 0; font-family: Fraunces, Georgia, serif; font-size: 17.5px; font-weight: 400; line-height: 1.4; letter-spacing: -0.01em">Six toppings on the Asian Ice and they let me pick every one of them. Nowhere else near here does that.</p>
+        <div style="display: flex; align-items: baseline; gap: 7px; padding-top: 3px; border-top: 1px solid #f3eee7">
+          <span style="font-size: 12.5px; font-weight: 700; margin-top: 11px">Priya S.</span>
+          <span style="font-size: 12.5px; color: #6f6259; margin-top: 11px">· Billerica, MA</span>
+        </div>
+      </div>
+      <p class="cap"><strong style="color: #a8574f">Blocked.</strong> This is real layout with a placeholder quote — <code style="font-family: 'Geist Mono', monospace; font-size: 11px">src/config/shop.ts</code> flags all three testimonials as invented, per PLAN §9. Needs genuine permissioned reviews or it does not ship.</p>
+    </div>
+
+    <!-- ── E · pair-with row ───────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="lbl">E · PAIR WITH</span>
+      <div style="background: #ffffff; border: 1px solid #e9e1d7; border-radius: 26px; padding: 17px 17px 18px; display: flex; flex-direction: column; gap: 13px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+          <h3 style="font-family: Fraunces, Georgia, serif; font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.02em">Goes well with snow</h3>
+          <a href="#" style="font-size: 12px; font-weight: 500">See all →</a>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px">
+          <sc-for list="{{pairs}}" as="p" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="width: 100%; aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden; background: #f3eee7">
+                <img src="{{p.img}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+              </div>
+              <span style="font-size: 12px; font-weight: 500; line-height: 1.25">{{p.name}}</span>
+              <span style="font-size: 12px; color: #6f6259; font-variant-numeric: tabular-nums; margin-top: -4px">{{p.price}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <p class="cap"><strong style="color: #1a1512">The one that earns money.</strong> Drop it under the item grid or in the cart. Prices here follow the chosen shop like everything else.</p>
+    </div>
+
+    <!-- ── F · the other shop ──────────────────────────────────── -->
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span class="lbl">F · THE OTHER SHOP</span>
+      <div style="background: #ffffff; border: 1px solid #e9e1d7; border-radius: 26px; overflow: hidden">
+        <div style="position: relative; height: 116px; background: #f3eee7">
+          <img src="loc-billerica.jpg" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+          <span style="position: absolute; top: 10px; right: 10px; background: #f5901e; color: #1a1512; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px">Newest shop</span>
+        </div>
+        <div style="padding: 15px 17px 17px; display: flex; flex-direction: column; gap: 8px">
+          <h3 style="font-family: Fraunces, Georgia, serif; font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.02em">Closer to North Billerica?</h3>
+          <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #6f6259">99 Chelmsford Rd · open till 9 tonight · 119 items</p>
+          <button style="align-self: flex-start; margin-top: 3px; padding: 9px 15px; border-radius: 12px; background: #1a1512; color: #faf8f5; font-size: 12.5px; font-weight: 700">Switch to that menu</button>
+        </div>
+      </div>
+      <p class="cap"><strong style="color: #1a1512">Footer block.</strong> Once the doorway sends someone into one shop, this is how the other one stays discoverable without ever muddling the menu they're reading.</p>
+    </div>
+
+  </div>
+
+  <div style="margin-top: 24px; padding: 15px 17px; background: #fdf1e2; border: 1px solid #f0d9b8; border-radius: 14px; display: flex; gap: 10px; align-items: flex-start">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#b4530a" stroke-width="2" stroke-linecap="round" style="width: 17px; height: 17px; flex-shrink: 0; margin-top: 1px">
+      <circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16.5v.01"></path>
+    </svg>
+    <span style="font-size: 12.5px; line-height: 1.55; color: #7c4a12">
+      <strong>What changed from your snippet.</strong> Same anatomy — 4:5 image, overlapping frosted card, full-width CTA below. The green <code style="font-family: 'Geist Mono', monospace; font-size: 11px">#7CB342</code> is Owner's, not yours, so the CTA is <code style="font-family: 'Geist Mono', monospace; font-size: 11px">#f5901e</code> with dark text; <code style="font-family: 'Geist Mono', monospace; font-size: 11px">stone-*</code> greys became your warm <code style="font-family: 'Geist Mono', monospace; font-size: 11px">#f3eee7 / #6f6259</code>; and the heading is Fraunces rather than the default sans, so it matches the wordmark.
+      <span style="display: block; margin-top: 6px">Owner's copy — “Sweet Treats And Games” — describes any dessert shop. A and C say something only Snowdaes can say. Both are drafts; you know the voice better than I do.</span>
+    </span>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      pairs: [
+        { name: 'Original Puffle', price: '$4.75', img: 'puffle.jpg' },
+        { name: 'Egg Puffs, bagged', price: '$4.75', img: 'eggpuffs.jpg' },
+        { name: 'Bomb Mass Lychee', price: '$8.00', img: 'lychee.jpg' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

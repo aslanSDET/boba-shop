@@ -2,10 +2,11 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Plus, ShoppingBag } from "lucide-react";
-import { MENU_CATEGORIES, MENU_ITEMS } from "@/config/menu";
+import { categoryIdByName, MENU_CATEGORIES, MENU_ITEMS, startingPrice } from "@/config/menu";
 import { SHOP } from "@/config/shop";
 import { Testimonials } from "@/components/testimonials";
 import { SiteFooter } from "@/components/site-footer";
+import { OpenBadge } from "@/components/open-badge";
 import { PromoStrip } from "@/components/promo-strip";
 import { Wordmark } from "@/components/wordmark";
 import { HeroArt } from "@/components/hero-art";
@@ -18,6 +19,27 @@ import { useCart } from "@/store/useCart";
 import { cn } from "@/lib/utils";
 import type { MenuItem } from "@/types/boba";
 
+/**
+ * Eight shaved-snow items are `basePrice: 0` — Clover keeps their price in a
+ * required "Snow Size" group — so a tile printing `basePrice` says "$0.00" and
+ * the whole card reads as broken. `startingPrice` folds in the cheapest way to
+ * satisfy the required groups; "from" only appears when that floor is genuinely
+ * above the base, which is those eight items and nothing else.
+ */
+function ItemPrice({ item }: { item: MenuItem }) {
+  const { amount, from } = startingPrice(item);
+  return (
+    <>
+      {from && (
+        <span className="mr-1.5 font-sans text-[13px] font-normal text-muted-foreground">
+          from
+        </span>
+      )}
+      {formatPrice(amount)}
+    </>
+  );
+}
+
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState(MENU_CATEGORIES[0].id);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
@@ -26,6 +48,7 @@ export default function Home() {
 
   const itemCount = useCart((s) => s.totalItemCount());
   const railRef = useRef<HTMLElement>(null);
+  const railScrollerRef = useRef<HTMLDivElement>(null);
 
   const itemsForCategory = useMemo(
     () => MENU_ITEMS.filter((item) => item.categoryId === activeCategory),
@@ -36,6 +59,18 @@ export default function Home() {
     setActiveCategory(id);
     // Otherwise a shorter category can leave you scrolled past its last item.
     railRef.current?.scrollIntoView({ block: "start" });
+    // Eleven categories do not fit a 375px rail, so the one that just became
+    // active is usually off-screen when the jump came from a promo card. Set
+    // `scrollLeft` directly rather than calling `scrollIntoView` on the pill:
+    // that would also scroll the page vertically and fight the line above.
+    const scroller = railScrollerRef.current;
+    const pill = scroller?.querySelector<HTMLElement>(`[data-category="${CSS.escape(id)}"]`);
+    if (scroller && pill) {
+      scroller.scrollTo({
+        left: pill.offsetLeft - (scroller.clientWidth - pill.offsetWidth) / 2,
+        behavior: "smooth",
+      });
+    }
   }
 
   function handlePromo(target: string) {
@@ -43,7 +78,12 @@ export default function Home() {
       document.getElementById("locations")?.scrollIntoView({ block: "center" });
       return;
     }
-    selectCategory(target);
+    // Promo cards name a category, because category ids are Clover's and change
+    // on a re-import. Before this resolved by name they still held ids from the
+    // hand-written menu ("shaved-snow"), so two of the three cards selected a
+    // category that no longer exists and emptied the grid.
+    const id = categoryIdByName(target);
+    if (id) selectCategory(id);
   }
 
   function openDrawerFor(item: MenuItem) {
@@ -98,12 +138,20 @@ export default function Home() {
             than a free-floating cut-out, so it needs more area to read as a
             product. Sourced from the AVIF (456x550) instead of the 400x480 PNG
             because at 250px on a 2x screen the PNG has no resolution to spare. */}
+        {/* The only DISC in the composition — egg puffs are a full-frame
+            photograph and the other three are cut-outs that float and bleed.
+            A solid circle carries far more visual weight than a transparent
+            cut-out of the same width, so matching the cut-outs' 220/260px made
+            it the loudest thing in a hero whose subject is the wordmark. It is
+            now clearly the smallest, and it bleeds off the top-left corner so
+            it belongs to the same family instead of sitting on the page like
+            an avatar. */}
         <HeroArt
           src="/eggpuffs.avif"
           width={456}
           height={550}
           sizes="(min-width: 1280px) 250px, 180px"
-          className="pointer-events-none absolute -top-4 left-2 hidden size-[180px] rounded-full object-cover lg:block xl:top-0 xl:left-10 xl:size-[250px]"
+          className="pointer-events-none absolute -top-6 -left-8 hidden size-[150px] rounded-full object-cover lg:block xl:-top-4 xl:-left-6 xl:size-[200px]"
         />
         <HeroArt
           src="/menu/mangonada.png"
@@ -127,9 +175,27 @@ export default function Home() {
           className="pointer-events-none absolute -right-10 -bottom-8 hidden h-auto w-[220px] rotate-[7deg] lg:block xl:-right-4 xl:w-[260px]"
         />
         <header className="relative mx-auto flex w-full max-w-2xl flex-col items-center px-5 pt-14 pb-12 text-center sm:px-8 sm:pt-20">
-          <h1 className="whitespace-nowrap text-[4rem] leading-[0.9] sm:text-[12rem]">
-            {/* 4rem on a phone, 12rem from sm; the mark is 0.65em of that */}
-            <Wordmark priority sizes="(min-width: 640px) 128px, 48px" />
+          {/* "Snowdaes" is set `whitespace-nowrap`, so its width is not a
+              layout result but a fixed multiple of the font-size: 4.68em in
+              Fraunces 600 with `tracking-tight` (4.8825em of advances, less
+              8 x 0.025em of negative tracking). A flat 192px from the `sm`
+              breakpoint up was therefore 899px of unbreakable text at a
+              640px viewport, which is why it both got guillotined by the
+              section's `overflow-hidden` below ~900px and ran under the
+              corner art above `lg`. The size has to be derived from the
+              space available, not picked.
+
+              Below `lg` the only constraint is the viewport, so 17vw (capped
+              at 9rem) keeps the phone lockup the size it already was.
+
+              From `lg` the art appears and becomes the binding constraint:
+              the left shot reaches x=188 at `lg` and x=290 at `xl`, so the
+              half-width has to stay clear of 290px. `(100vw - 676px) / 4.75`
+              solves that with ~50px of air, and the 4.75 divisor is the
+              4.68em text ratio rounded up so the margin errs wide. */}
+          <h1 className="text-[length:clamp(3rem,17vw,9rem)] leading-[0.9] whitespace-nowrap lg:text-[length:clamp(8rem,calc((100vw-676px)/4.75),12rem)]">
+            {/* The mark is 0.65em: up to ~94px below lg, ~125px at the 12rem cap */}
+            <Wordmark priority sizes="(min-width: 1024px) 125px, 95px" />
           </h1>
           <p className="mt-4 font-display text-2xl leading-snug text-brand-ink italic sm:mt-5 sm:text-[2rem]">
             {SHOP.tagline}
@@ -162,10 +228,11 @@ export default function Home() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-            <span className="flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-2">
-              <span className="size-2 rounded-full bg-[#4f9d3a]" />
-              Open now
-            </span>
+            {/* Real, from the shop's Clover hours. Renders nothing when we
+                cannot find out — see OpenBadge. */}
+            <OpenBadge />
+            {/* Still hardcoded, and correctly so: Clover returns no prep time,
+                and this is the figure the owner puts on their own listing. */}
             <span className="rounded-full border border-border bg-card px-3.5 py-2">
               Ready in {SHOP.wait}
             </span>
@@ -181,27 +248,39 @@ export default function Home() {
           aria-label="Menu categories"
           className="sticky top-0 z-30 border-y border-border bg-background/88 backdrop-blur-md"
         >
-          <div className="no-scrollbar mx-auto flex max-w-6xl gap-2.5 overflow-x-auto px-5 py-3.5 sm:justify-center sm:px-8">
-            {MENU_CATEGORIES.map((category) => {
-              const active = category.id === activeCategory;
-              return (
-                <button
-                  key={category.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => selectCategory(category.id)}
-                  className={cn(
-                    "shrink-0 rounded-full px-5 py-3 text-base font-medium whitespace-nowrap transition-colors",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-card text-muted-foreground hover:border-primary hover:text-foreground",
-                  )}
-                >
-                  {category.name}
-                </button>
-              );
-            })}
+          {/* `justify-center` on the scroller itself is a trap once the rail
+              overflows — it pushes the first pills into the unreachable
+              start-overflow, and eleven categories overflow even at max-w-6xl.
+              An auto-margined `w-max` track centres when it fits and stays
+              fully scrollable when it doesn't. Padding lives on the track so
+              both ends survive the scroll. */}
+          <div
+            ref={railScrollerRef}
+            className="no-scrollbar overflow-x-auto overscroll-x-contain py-3.5"
+          >
+            <div className="mx-auto flex w-max gap-2.5 px-5 sm:px-8">
+              {MENU_CATEGORIES.map((category) => {
+                const active = category.id === activeCategory;
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    data-category={category.id}
+                    aria-pressed={active}
+                    onClick={() => selectCategory(category.id)}
+                    className={cn(
+                      "shrink-0 rounded-full px-5 py-3 text-base font-medium whitespace-nowrap transition-colors",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
+                      active
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-card text-muted-foreground hover:border-primary hover:text-foreground",
+                    )}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </nav>
 
@@ -248,11 +327,17 @@ export default function Home() {
                     <span className="mt-4 block font-display text-xl leading-snug font-semibold text-balance sm:text-[22px]">
                       {item.name}
                     </span>
-                    <span className="mt-1.5 line-clamp-2 text-[15px] leading-relaxed text-muted-foreground">
-                      {item.description}
-                    </span>
+                    {/* 42 of 93 items have `description: ""` in Clover. An
+                        always-rendered subtitle leaves those cards carrying a
+                        dangling empty line, so the element only exists when
+                        there is copy for it. */}
+                    {item.description && (
+                      <span className="mt-1.5 line-clamp-2 text-[15px] leading-relaxed text-muted-foreground">
+                        {item.description}
+                      </span>
+                    )}
                     <span className="mt-auto pt-3 font-mono text-base font-medium tabular-nums">
-                      {formatPrice(item.basePrice)}
+                      <ItemPrice item={item} />
                     </span>
                   </button>
                 </li>

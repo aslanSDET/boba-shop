@@ -1,0 +1,25 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 1790, "title": "Doorway → menu · tap a shop", "is_interactive": true },
+    { "file": "Sections.dc.html", "x": 520, "y": 0, "w": 1300, "h": 1010 },
+    { "file": "Locations.dc.html", "x": 520, "y": 1150, "w": 940, "h": 700 },
+    { "file": "Hours.dc.html", "x": 1560, "y": 1150, "w": 940, "h": 650 }
+  ],
+  "annotations": [
+    {
+      "id": "start-here",
+      "x": 0,
+      "y": -170,
+      "w": 390,
+      "text": "START HERE — the doorway comes first.\nPick a shop; the page opens behind it.\nThe shop name beside the wordmark reopens it."
+    },
+    {
+      "id": "open-questions",
+      "x": 1900,
+      "y": 0,
+      "w": 560,
+      "text": "STILL YOURS TO DECIDE\n\n1. Geolocation — should the doorway ask permission and put the nearer shop first?\n\n2. A filled cart when someone switches shops — drop it, or re-price it?\n\nBoth are on the Locations board. Neither is designed."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

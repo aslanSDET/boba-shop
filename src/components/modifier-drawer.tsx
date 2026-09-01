@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Minus, Plus, X } from "lucide-react";
+import { ChevronDown, Minus, Plus, Search, X } from "lucide-react";
 import {
   Drawer,
   DrawerClose,
@@ -24,12 +24,18 @@ import { ItemVisual } from "@/components/item-visual";
 import {
   calculateCartItemPrice,
   defaultSelection,
+  startingPrice,
   unmetGroups,
 } from "@/config/menu";
 import { formatPrice } from "@/lib/format";
 import { useCart } from "@/store/useCart";
 import type { MenuItem, ModifierGroup, SelectedModifiers } from "@/types/boba";
 import { cn } from "@/lib/utils";
+import {
+  FILTERABLE,
+  shapeItemGroups,
+  type ShapedGroup,
+} from "@/lib/modifier-shape";
 
 interface ModifierDrawerProps {
   item: MenuItem | null;
@@ -37,12 +43,73 @@ interface ModifierDrawerProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** "Required", "Pick up to 3", "2 of 6 chosen" — whatever the group needs said. */
+/** "Required", "2 of 6", "3 added" — whatever the group needs said. */
 function groupHint(group: ModifierGroup, chosen: number): string {
   if (group.kind === "single") return group.min > 0 ? "Required" : "Optional";
   if (group.max !== undefined) return `${chosen} of ${group.max}`;
   if (group.min > 0) return chosen > 0 ? `${chosen} added` : "Required";
   return chosen > 0 ? `${chosen} added` : "Optional";
+}
+
+/**
+ * An ingredient the drink comes with. Reads as present by default; tapping
+ * removes it — which in Clover's model means SELECTING the "No X" option, so
+ * the visual state is the inverse of the selection. A customer thinks "take the
+ * pebbles off", never "add No Pebbles", and the control should match the
+ * thought rather than the data.
+ */
+function IncludedChip({
+  label,
+  removed,
+  extraActive,
+  extraDelta,
+  onToggle,
+  onExtra,
+}: {
+  label: string;
+  removed: boolean;
+  extraActive: boolean;
+  extraDelta?: number;
+  onToggle: () => void;
+  onExtra?: () => void;
+}) {
+  return (
+    <span className="inline-flex items-stretch overflow-hidden rounded-full border border-border">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={!removed}
+        className={cn(
+          "px-4 py-3 text-base transition-colors",
+          "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-ink",
+          removed
+            ? "text-muted-foreground line-through decoration-from-font"
+            : "bg-card font-medium text-foreground",
+        )}
+      >
+        {label}
+      </button>
+      {onExtra && (
+        <button
+          type="button"
+          onClick={onExtra}
+          aria-pressed={extraActive}
+          disabled={removed}
+          aria-label={`Extra ${label}`}
+          className={cn(
+            "border-l border-border px-3 text-[13px] font-mono tabular-nums transition-colors",
+            "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-ink",
+            extraActive
+              ? "bg-primary font-medium text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground",
+            removed && "cursor-not-allowed opacity-35",
+          )}
+        >
+          Extra{extraDelta ? ` +${formatPrice(extraDelta)}` : ""}
+        </button>
+      )}
+    </span>
+  );
 }
 
 function OptionPill({
@@ -83,6 +150,9 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
     item ? defaultSelection(item) : {},
   );
   const [quantity, setQuantity] = useState(1);
+  /** Group ids the customer has opened, and the filter text inside each. */
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
+  const [filters, setFilters] = useState<Record<string, string>>({});
   // Bottom sheet sits in the thumb zone on a phone; on a desktop the customiser
   // becomes a centred modal so it does not mimic the cart, which owns the right edge.
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -93,9 +163,16 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
     [item, selection],
   );
 
+  const shaped = useMemo(
+    () => (item ? shapeItemGroups(item.modifierGroups) : []),
+    [item],
+  );
+
   function reset() {
     setSelection(item ? defaultSelection(item) : {});
     setQuantity(1);
+    setOpened({});
+    setFilters({});
   }
 
   function toggle(group: ModifierGroup, optionId: string) {
@@ -118,6 +195,18 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
   const Title = isDesktop ? DialogTitle : DrawerTitle;
   const Description = isDesktop ? DialogDescription : DrawerDescription;
 
+  const start = startingPrice(item);
+  /**
+   * Radix warns when a dialog advertises a description that is not on the
+   * page, and 42 items have no description to render. Passing the attribute
+   * as an explicit `undefined` is the documented way to say "there is no
+   * description", which is why this is a spread: passing `undefined` in the
+   * other branch would also clear the id Radix sets for itself.
+   */
+  const describedBy: { "aria-describedby"?: undefined } = item.description
+    ? {}
+    : { "aria-describedby": undefined };
+
   const heading = (
     <div className="flex items-start gap-4">
       <ItemVisual item={item} className="size-[104px] rounded-full" px={208} sizes="104px" />
@@ -125,12 +214,23 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
         <Title className="font-display text-[26px] leading-tight font-semibold">
           {item.name}
         </Title>
-        <Description className="mt-2 text-base leading-relaxed">
-          {item.description}
-        </Description>
+        {/* 42 of 93 items carry `description: ""`. Rendering the element anyway
+            left a blank line under the name and pointed the sheet's
+            `aria-describedby` at an empty node, so it is dropped entirely and
+            the describedby link is cleared with it below. */}
+        {item.description && (
+          <Description className="mt-2 text-base leading-relaxed">
+            {item.description}
+          </Description>
+        )}
         <p className="mt-2.5 font-mono text-[15px] tabular-nums">
-          {formatPrice(item.basePrice)}
-          <span className="ml-1.5 text-muted-foreground">base</span>
+          {/* "$0.00 base" on the eight snow items whose price lives in the
+              required Snow Size group. `startingPrice` reads that group. */}
+          {start.from && (
+            <span className="mr-1.5 font-sans text-muted-foreground">from</span>
+          )}
+          {formatPrice(start.amount)}
+          {!start.from && <span className="ml-1.5 text-muted-foreground">base</span>}
         </p>
       </div>
     </div>
@@ -138,13 +238,20 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
 
   const options = (
     <div className="flex flex-col gap-4 overflow-y-auto overscroll-contain px-5 pb-5">
-      {item.modifierGroups.map((group) => {
+      {shaped.map((sg: ShapedGroup) => {
+        const group = sg.group;
         const chosen = selection[group.id] ?? [];
         const atMax =
           group.kind === "multi" &&
           group.max !== undefined &&
           chosen.length >= group.max;
         const needsChoice = unmet.includes(group);
+        const isOpen = opened[group.id] ?? !sg.startClosed;
+        const filter = (filters[group.id] ?? "").trim().toLowerCase();
+        const visibleAdds = filter
+          ? sg.adds.filter((o) => o.name.toLowerCase().includes(filter))
+          : sg.adds;
+        const addsChosen = sg.adds.filter((o) => chosen.includes(o.id)).length;
 
         return (
           <section key={group.id} className="border-t border-border pt-4">
@@ -161,26 +268,112 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
                 {groupHint(group, chosen.length)}
               </span>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {group.options.map((option) => {
-                const active = chosen.includes(option.id);
-                return (
-                  <OptionPill
-                    key={option.id}
-                    active={active}
-                    disabled={atMax && !active}
-                    onClick={() => toggle(group, option.id)}
-                  >
-                    {option.shortName ?? option.name}
-                    {option.priceDelta > 0 && (
-                      <span className="ml-2 font-mono text-[12px] tabular-nums opacity-70">
-                        +{formatPrice(option.priceDelta)}
-                      </span>
-                    )}
-                  </OptionPill>
-                );
-              })}
-            </div>
+
+            {sg.included.length > 0 && (
+              <>
+                <p className="mt-3 text-[13px] text-muted-foreground">Comes with</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {sg.included.map((inc) => (
+                    <IncludedChip
+                      key={inc.remove.id}
+                      label={inc.label}
+                      removed={chosen.includes(inc.remove.id)}
+                      extraActive={!!inc.extra && chosen.includes(inc.extra.id)}
+                      extraDelta={inc.extra?.priceDelta}
+                      onToggle={() => {
+                        // Removing an ingredient must drop "Extra" with it, or
+                        // the order says "no almonds" and "extra almonds" at
+                        // once and the customer is charged for the extra.
+                        if (inc.extra && !chosen.includes(inc.remove.id)) {
+                          setSelection((prev) => ({
+                            ...prev,
+                            [group.id]: [
+                              ...(prev[group.id] ?? []).filter(
+                                (id) => id !== inc.extra!.id,
+                              ),
+                              inc.remove.id,
+                            ],
+                          }));
+                          return;
+                        }
+                        toggle(group, inc.remove.id);
+                      }}
+                      onExtra={
+                        inc.extra ? () => toggle(group, inc.extra!.id) : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {sg.adds.length > 0 && sg.startClosed && !isOpen && (
+              <button
+                type="button"
+                onClick={() => setOpened((o) => ({ ...o, [group.id]: true }))}
+                className="mt-3 flex w-full items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3 text-left text-base transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
+              >
+                <span>
+                  {addsChosen > 0
+                    ? `${addsChosen} added`
+                    : `Add ${group.label.toLowerCase().replace(/ \(optional\)\d*$/, "")}`}
+                  <span className="ml-2 text-muted-foreground">{sg.adds.length}</span>
+                </span>
+                <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+              </button>
+            )}
+
+            {sg.adds.length > 0 && isOpen && (
+              <>
+                {sg.adds.length > FILTERABLE && (
+                  /* The icon is the only thing next to the field, and lucide
+                     hides it from assistive tech, so the input would otherwise
+                     be an unnamed control. The ring moves to the wrapper
+                     because the input's own outline is suppressed. */
+                  <label className="mt-3 flex items-center gap-2 rounded-2xl border border-border px-4 py-2.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-ink">
+                    <Search className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="sr-only">Search {group.label}</span>
+                    <input
+                      type="search"
+                      value={filters[group.id] ?? ""}
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, [group.id]: e.target.value }))
+                      }
+                      autoComplete="off"
+                      spellCheck={false}
+                      enterKeyHint="search"
+                      placeholder={`Search ${sg.adds.length} options…`}
+                      className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground"
+                    />
+                  </label>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {visibleAdds.map((option) => {
+                    const active = chosen.includes(option.id);
+                    return (
+                      <OptionPill
+                        key={option.id}
+                        active={active}
+                        disabled={atMax && !active}
+                        onClick={() => toggle(group, option.id)}
+                      >
+                        {option.shortName ?? option.name}
+                        {option.priceDelta > 0 && (
+                          <span className="ml-2 font-mono text-[12px] tabular-nums opacity-70">
+                            +{formatPrice(option.priceDelta)}
+                          </span>
+                        )}
+                      </OptionPill>
+                    );
+                  })}
+                  {visibleAdds.length === 0 && (
+                    <p className="py-2 text-[15px] text-muted-foreground">
+                      Nothing matches “{filters[group.id]}”.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
           </section>
         );
       })}
@@ -225,9 +418,15 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
         <span>
           {unmet.length > 0 ? `Choose ${unmet[0].label.toLowerCase()}` : "Add to order"}
         </span>
-        <span className="font-mono tabular-nums">
-          {formatPrice(unitPrice * quantity)}
-        </span>
+        {/* While a required group is unmet the running total can still be
+            $0.00 — the snow items keep their whole price in "Snow Size". A
+            disabled button reading "$0.00" looks like the bug it is describing,
+            so the price appears once there is one. */}
+        {unitPrice > 0 && (
+          <span className="font-mono tabular-nums">
+            {formatPrice(unitPrice * quantity)}
+          </span>
+        )}
       </button>
     </div>
   );
@@ -235,7 +434,10 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+        <DialogContent
+          {...describedBy}
+          className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl"
+        >
           <DialogHeader className="px-5 pt-6 pb-4 text-left">{heading}</DialogHeader>
           {options}
           <DialogFooter className="mx-0 mt-auto mb-0 w-full rounded-none border-t border-border bg-card px-5 py-4 sm:flex-row sm:justify-stretch">
@@ -248,7 +450,7 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-xl">
+      <DrawerContent {...describedBy} className="mx-auto max-w-xl">
         {/* Dialog and Sheet both ship a close X; the drawer had only the drag
             handle, leaving a gesture as the only discoverable way out. */}
         <DrawerClose className="absolute top-3 right-4 z-10 grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">

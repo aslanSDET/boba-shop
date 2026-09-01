@@ -1,0 +1,275 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=DM+Sans:wght@400;500;700&family=Geist+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; background: #faf8f5; font-family: "DM Sans", system-ui, -apple-system, sans-serif; color: #1a1512; -webkit-font-smoothing: antialiased; }
+    a { color: #b4530a; text-decoration: none; }
+    a:hover { color: #8f4108; }
+    * { box-sizing: border-box; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; padding: 0; color: inherit; text-align: left; }
+    .sd-scroll::-webkit-scrollbar { display: none; }
+    .sd-scroll { scrollbar-width: none; }
+    @keyframes sd-pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .45; transform: scale(.82);} }
+    @keyframes sd-rise { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: none;} }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+</helmet>
+
+<!-- ══ DOORWAY ══════════════════════════════════════════════════════ -->
+<sc-if value="{{atDoor}}" hint-placeholder-val="{{true}}">
+<div style="width: 390px; min-height: 1760px; background: #1a1512; padding: 54px 20px 40px; display: flex; flex-direction: column; align-items: center; gap: 26px">
+
+  <svg viewBox="0 0 200 200" style="width: 124px; height: 124px" aria-label="Snowdaes">
+    <defs>
+      <path id="dw-top" d="M 100,100 m -76,0 a 76,76 0 1,1 152,0" fill="none"></path>
+      <path id="dw-bot" d="M 100,100 m -70,0 a 70,70 0 1,0 140,0" fill="none"></path>
+    </defs>
+    <circle cx="100" cy="100" r="96" fill="#f5901e"></circle>
+    <circle cx="100" cy="100" r="88" fill="none" stroke="#1a1512" stroke-width="2.5"></circle>
+    <circle cx="100" cy="100" r="62" fill="#faf8f5"></circle>
+    <text font-family="'DM Sans', sans-serif" font-size="15" font-weight="700" fill="#1a1512" letter-spacing="2.6">
+      <textPath href="#dw-top" startOffset="50%" text-anchor="middle">PUFFLES · BOBA TEA</textPath>
+    </text>
+    <text font-family="'DM Sans', sans-serif" font-size="13" font-weight="700" fill="#1a1512" letter-spacing="2.4">
+      <textPath href="#dw-bot" startOffset="50%" text-anchor="middle">SHAVED SNOW</textPath>
+    </text>
+    <image href="penguin.png" x="66" y="44" width="68" height="68"></image>
+    <text x="100" y="132" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-size="27" font-weight="600" fill="#1a1512">Snowdaes</text>
+  </svg>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center">
+    <h1 style="font-family: Fraunces, Georgia, serif; font-size: 27px; font-weight: 600; color: #faf8f5; margin: 0; letter-spacing: -0.02em; line-height: 1.15; text-wrap: balance">Which shop are you<br>ordering from?</h1>
+    <p style="margin: 0; font-size: 13.5px; color: #b9aa9c; line-height: 1.5; max-width: 30ch">Each shop makes its own menu, so prices and flavors differ a little.</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px; width: 100%">
+    <sc-for list="{{doors}}" as="d" hint-placeholder-count="2">
+      <button onClick="{{d.pick}}" style="display: block; width: 100%; background: #faf8f5; border-radius: 26px; overflow: hidden; box-shadow: 0 6px 22px rgba(0,0,0,.28)">
+        <div style="position: relative; height: 132px; background: #f3eee7">
+          <img src="{{d.img}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+          <sc-if value="{{d.isNew}}" hint-placeholder-val="{{false}}">
+            <span style="position: absolute; top: 10px; right: 10px; background: #f5901e; color: #1a1512; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 9.5px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px">Newest shop</span>
+          </sc-if>
+        </div>
+        <div style="padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 7px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+            <span style="font-family: Fraunces, Georgia, serif; font-size: 20px; font-weight: 600; letter-spacing: -0.015em">{{d.name}}</span>
+            <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; color: #6f6259; font-variant-numeric: tabular-nums">{{d.miles}}</span>
+          </div>
+          <span style="font-size: 13px; color: #6f6259; line-height: 1.35">{{d.street}}</span>
+          <div style="display: flex; align-items: center; gap: 7px; padding-top: 3px; border-top: 1px solid #e9e1d7; margin-top: 2px">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #4f9d3a; animation: sd-pulse 2.4s ease-in-out infinite; flex-shrink: 0; margin-top: 7px"></span>
+            <span style="font-size: 12.5px; font-weight: 700; margin-top: 7px">Open now</span>
+            <span style="font-size: 12.5px; color: #6f6259; margin-top: 7px">· closes {{d.closes}}</span>
+            <span style="margin-left: auto; margin-top: 7px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; color: #6f6259">{{d.itemCount}} items</span>
+          </div>
+        </div>
+      </button>
+    </sc-for>
+  </div>
+
+  <span style="font-size: 12px; color: #7d7168; text-align: center; line-height: 1.5; max-width: 34ch">You can switch any time — the shop you pick is remembered.</span>
+</div>
+</sc-if>
+
+<!-- ══ THE PAGE ═════════════════════════════════════════════════════ -->
+<sc-if value="{{inShop}}" hint-placeholder-val="{{false}}">
+<div style="width: 390px; background: #faf8f5; padding-bottom: 30px; animation: sd-rise .28s ease-out">
+
+  <!-- header: wordmark + the shop you're in -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px 12px; background: #faf8f5; border-bottom: 1px solid #e9e1d7">
+    <span style="font-family: Fraunces, Georgia, serif; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; display: inline-flex; align-items: baseline; line-height: .9">
+      Sn<span style="position: relative; display: inline-block">o<img src="penguin.png" alt="" style="position: absolute; left: 50%; bottom: 0.1em; width: 0.65em; height: auto; max-width: none; transform: translateX(-50%); pointer-events: none"></span>wdaes
+    </span>
+    <button onClick="{{backToDoor}}" style="display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid #e9e1d7; border-radius: 999px; padding: 6px 11px 6px 10px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#b4530a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; flex-shrink: 0">
+        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="2.6"></circle>
+      </svg>
+      <span style="font-size: 12px; font-weight: 700">{{loc.short}}</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#6f6259" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 11px; height: 11px; flex-shrink: 0">
+        <path d="m6 9 6 6 6-6"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── HERO STORY CARD ─────────────────────────────────────────── -->
+  <div style="padding: 14px 16px 0">
+    <div style="position: relative; border-radius: 34px; overflow: hidden; background: #f3eee7; border: 1px solid rgba(26,21,18,.06); box-shadow: 0 12px 34px -18px rgba(26,21,18,.5)">
+      <div style="position: relative; width: 100%; aspect-ratio: 4 / 5; background: #f3eee7">
+        <img src="flatlay.jpg" alt="Snowdaes shaved snow with six toppings" style="width: 100%; height: 100%; object-fit: cover; object-position: center; display: block">
+        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(26,21,18,.22), transparent 42%); pointer-events: none"></div>
+      </div>
+      <div style="position: absolute; bottom: 12px; left: 12px; right: 12px; border-radius: 26px; background: rgba(250,248,245,.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.6); box-shadow: 0 6px 18px -8px rgba(26,21,18,.35); padding: 20px">
+        <h2 style="font-family: Fraunces, Georgia, serif; font-size: 25px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; margin: 0; text-wrap: balance">Six toppings. No upcharge for indecision.</h2>
+        <p style="margin: 10px 0 0; font-size: 13.5px; line-height: 1.55; color: #6f6259">Pick your snow, then pile on six of the twenty-six toppings at the counter. Egg puffs come out of the iron while you wait.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- primary CTA -->
+  <div style="padding: 14px 16px 0">
+    <button style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 17px 22px; border-radius: 18px; background: #f5901e; color: #1a1512; font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; box-shadow: 0 6px 16px -8px rgba(245,144,30,.85)">
+      Start an order · {{loc.short}}
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1a1512" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px">
+        <path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── HOURS RIBBON ────────────────────────────────────────────── -->
+  <div style="padding: 12px 16px 0">
+    <div style="background: #ffffff; border: 1px solid #e9e1d7; border-radius: 18px; padding: 14px 15px; display: flex; flex-direction: column; gap: 11px">
+      <div style="display: flex; align-items: center; gap: 8px">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: #4f9d3a; animation: sd-pulse 2.4s ease-in-out infinite; flex-shrink: 0"></span>
+        <span style="font-size: 14px; font-weight: 700; letter-spacing: -0.01em">Open now</span>
+        <span style="font-size: 14px; color: #6f6259">· closes {{loc.closes}}</span>
+        <a href="#" style="margin-left: auto; font-size: 12px; font-weight: 500">Directions →</a>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px">
+        <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+          <div style="{{d.cell}}">
+            <span style="display: block; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; text-transform: uppercase">{{d.day}}</span>
+            <span style="display: block; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; font-weight: 500; margin-top: 3px; font-variant-numeric: tabular-nums">{{d.close}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <span style="font-size: 12px; color: #6f6259">Every day from 12:00 PM · {{loc.street}}</span>
+    </div>
+  </div>
+
+  <!-- ── CATEGORY RAIL ───────────────────────────────────────────── -->
+  <div class="sd-scroll" style="display: flex; gap: 7px; overflow-x: auto; padding: 20px 16px 4px">
+    <sc-for list="{{cats}}" as="c" hint-placeholder-count="5">
+      <button onClick="{{c.pick}}" style="{{c.style}}">{{c.name}}</button>
+    </sc-for>
+  </div>
+
+  <!-- ── ITEM GRID ───────────────────────────────────────────────── -->
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 14px 16px 0">
+    <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+      <div style="display: flex; flex-direction: column; background: #ffffff; border: 1px solid #e9e1d7; border-radius: 18px; overflow: hidden">
+        <div style="position: relative; height: 108px; background: #f3eee7">
+          <img src="{{it.img}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+          <sc-if value="{{it.only}}" hint-placeholder-val="{{false}}">
+            <span style="position: absolute; top: 8px; left: 8px; background: #1a1512; color: #faf8f5; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px">Only here</span>
+          </sc-if>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; padding: 11px 12px 12px; flex-grow: 1">
+          <span style="font-family: Fraunces, Georgia, serif; font-size: 15px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em">{{it.name}}</span>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-top: auto">
+            <span style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums">
+              <sc-if value="{{it.from}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; font-weight: 400; color: #6f6259; margin-right: 3px">from</span></sc-if>{{it.price}}
+            </span>
+            <span style="display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: #f5901e">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#1a1512" stroke-width="2.5" stroke-linecap="round" style="width: 15px; height: 15px">
+                <path d="M12 5v14"></path><path d="M5 12h14"></path>
+              </svg>
+            </span>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- ── BOARD GAMES STORY CARD ──────────────────────────────────── -->
+  <div style="padding: 20px 16px 0">
+    <div style="position: relative; border-radius: 30px; overflow: hidden; background: #1a1512; padding: 22px 20px 24px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-family: 'Geist Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #f5901e">Stay a while</span>
+      <h3 style="font-family: Fraunces, Georgia, serif; font-size: 22px; font-weight: 600; color: #faf8f5; margin: 0; letter-spacing: -0.02em; line-height: 1.15; text-wrap: balance">The board games are free and the tables are yours</h3>
+      <p style="margin: 0; font-size: 13.5px; line-height: 1.55; color: #b9aa9c">Most people order, sit down, and stay past the second round. That is the point.</p>
+    </div>
+  </div>
+
+</div>
+</sc-if>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#f5901e","options":["#f5901e","#b4530a","#3f8fa3","#6f9e4a"]},"startAtDoor":{"editor":"boolean","default":true}}'>
+class Component extends DCLogic {
+  data() {
+    return {
+      lowell: {
+        id: 'lowell', name: 'Lowell', short: 'Lowell',
+        street: '1075 Westford Street', miles: '2.4 mi',
+        itemCount: 122, closes: '9:00 PM', isNew: false, img: 'loc-lowell.jpg',
+        prices: { snow: '$6.00', puffle: '$4.75', tea: '$5.75', lychee: '$8.00' },
+        only: 'lychee'
+      },
+      billerica: {
+        id: 'billerica', name: 'North Billerica', short: 'N. Billerica',
+        street: '99 Chelmsford Rd', miles: '5.1 mi',
+        itemCount: 119, closes: '9:00 PM', isNew: true, img: 'loc-billerica.jpg',
+        prices: { snow: '$6.25', puffle: '$5.00', tea: '$6.45', lychee: '$8.65' },
+        only: null
+      }
+    };
+  }
+
+  renderVals() {
+    const accent = this.props.accent || '#f5901e';
+    const st = this.state || {};
+    const DATA = this.data();
+
+    const startAtDoor = this.props.startAtDoor !== false;
+    const picked = st.picked !== undefined ? st.picked : (startAtDoor ? null : 'lowell');
+    const loc = picked ? DATA[picked] : DATA.lowell;
+
+    const doors = ['lowell', 'billerica'].map((id) => {
+      const d = DATA[id];
+      return {
+        name: d.name, street: d.street, miles: d.miles, closes: d.closes,
+        itemCount: d.itemCount, isNew: d.isNew, img: d.img,
+        pick: () => this.setState({ picked: id })
+      };
+    });
+
+    const TODAY = 3;
+    const week = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day, i) => {
+      const late = (i === 5 || i === 6);
+      const base = 'text-align: center; padding: 7px 2px 8px; border-radius: 9px; ';
+      return {
+        day: day,
+        close: late ? '10' : '9',
+        cell: (i === TODAY)
+          ? base + 'background: ' + accent + '; color: #1a1512; font-weight: 700;'
+          : base + 'background: #f3eee7; color: #6f6259;'
+      };
+    });
+
+    const activeCat = st.cat || 'Shaved Snow';
+    const cats = ['Shaved Snow', 'Puffles', 'Milk Tea', 'Specialty', 'Egg Puffs', 'Fruit Slush'].map((name) => {
+      const on = name === activeCat;
+      return {
+        name: name,
+        pick: () => this.setState({ cat: name }),
+        style: 'flex-shrink: 0; white-space: nowrap; padding: 8px 15px; border-radius: 999px; font-size: 13px; font-weight: 500; letter-spacing: -0.005em; ' +
+          (on ? 'background: #1a1512; color: #faf8f5;' : 'background: #ffffff; color: #6f6259; border: 1px solid #e9e1d7;')
+      };
+    });
+
+    const p = loc.prices;
+    const items = [
+      { name: 'Snow — Kiddie', price: p.snow, img: 'snow.jpg', from: true, only: false },
+      { name: 'Original Puffle', price: p.puffle, img: 'puffle.jpg', from: false, only: false },
+      { name: 'Thai Milk Tea', price: p.tea, img: 'eggpuffs.jpg', from: false, only: false },
+      { name: 'Bomb Mass Lychee', price: p.lychee, img: 'lychee.jpg', from: false, only: loc.only === 'lychee' }
+    ];
+
+    return {
+      atDoor: !picked,
+      inShop: !!picked,
+      loc: loc, doors: doors, week: week, cats: cats, items: items,
+      backToDoor: () => this.setState({ picked: null })
+    };
+  }
+}
+</script>
+</body>
+</html>
