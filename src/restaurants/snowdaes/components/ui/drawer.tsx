@@ -4,6 +4,7 @@ import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/restaurants/snowdaes/lib/utils"
+import { useThemeScope } from "@/restaurants/snowdaes/lib/use-theme-scope"
 
 function Drawer({
   ...props
@@ -20,7 +21,13 @@ function DrawerTrigger({
 function DrawerPortal({
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Portal>) {
-  return <DrawerPrimitive.Portal data-slot="drawer-portal" {...props} />
+  /* Portals mount to <body> by default, which is OUTSIDE `.snowdaes` — so the
+     panel arrives with no palette and no fonts. See use-theme-scope.ts for the
+     measurements. An explicit container is the whole fix. */
+  const container = useThemeScope()
+  return (
+    <DrawerPrimitive.Portal data-slot="drawer-portal" container={container} {...props} />
+  )
 }
 
 function DrawerClose({

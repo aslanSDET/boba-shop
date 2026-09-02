@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 import { cn } from "@/restaurants/snowdaes/lib/utils"
 import { Button } from "@/restaurants/snowdaes/components/ui/button"
 import { XIcon } from "lucide-react"
+import { useThemeScope } from "@/restaurants/snowdaes/lib/use-theme-scope"
 
 function Dialog({
   ...props
@@ -22,7 +23,13 @@ function DialogTrigger({
 function DialogPortal({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+  /* Portals mount to <body> by default, which is OUTSIDE `.snowdaes` — so the
+     panel arrives with no palette and no fonts. See use-theme-scope.ts for the
+     measurements. An explicit container is the whole fix. */
+  const container = useThemeScope()
+  return (
+    <DialogPrimitive.Portal data-slot="dialog-portal" container={container} {...props} />
+  )
 }
 
 function DialogClose({
