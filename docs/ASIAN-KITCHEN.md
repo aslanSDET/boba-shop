@@ -262,6 +262,8 @@ Ordered by how much each answer changes the build.
 - ~~Does the menu need modifiers?~~ **Answered: yes, they are the product.** §3. The open part is the *shape* — an option that is also a menu item — and the drawer UX.
 - ~~What are the actual combo option lists?~~ **Answered — read in full from their white-label ordering site, 2026-09-01. See §8.**
 - Is the Kung Fu Tea ordering skeleton (`PLAN.md` §1) right for this restaurant, or is it a boba-shop pattern being carried somewhere it does not belong?
+- ~~Does choosing Square get us DoorDash delivery cheaply?~~ **Answered 2026-09-02, and the answer is no.** Square's On-Demand Delivery is Square Online only and does not dispatch a courier through the Orders API, so delivery on our own checkout is a direct DoorDash Drive integration. See `docs/SQUARE-PAYMENTS.md` §1.
+- **Does an order created through the Orders API reach the kitchen and print?** Unanswered, unanswerable in a sandbox, and blocking — the same question that dropped Phase 4 on the Clover side (`PLAN.md` §8.7). `docs/SQUARE-PAYMENTS.md` §8.
 
 
 ---

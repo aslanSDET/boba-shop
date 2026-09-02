@@ -16,6 +16,7 @@ import {
   type ModifierOption,
 } from "../menu";
 import { RESTAURANT, clockLabel, isOpenNow } from "../config";
+import { type Line, saveCart } from "../cart";
 
 /**
  * Asian Kitchen's ordering screen.
@@ -52,13 +53,6 @@ const FIRST_SECTION = CATEGORIES.find((c) => itemsIn(c.id).length > 0)?.id;
 const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
-/** One line of the cart: an item plus the options chosen for it. */
-interface Line {
-  itemId: string;
-  picks: string[];
-  price: number;
-  label: string;
-}
 
 /** Group ids an item asks for, expanded to real groups. */
 const categoryName = (id: string) => CATEGORIES.find((c) => c.id === id)?.name ?? "";
@@ -136,7 +130,14 @@ export function MenuScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const addLine = (line: Line) => setCart((c) => [...c, line]);
+  /* Mirrored to sessionStorage so it survives the navigation to /checkout,
+     which a useState does not. See cart.ts for why session and not local. */
+  const addLine = (line: Line) =>
+    setCart((c) => {
+      const next = [...c, line];
+      saveCart(next);
+      return next;
+    });
 
   /*
    * Which section is in view — the rail reflects position rather than guessing.
@@ -486,9 +487,11 @@ export function MenuScreen() {
 
       {cart.length > 0 && (
         <div className="ak-cart">
-          <button type="button" className="ak-btn">
+          {/* A link, not a button with a handler: checkout is a route, so the
+              browser should treat it as one — middle-click, long-press, back. */}
+          <a className="ak-btn" href="/checkout">
             {cart.length} {cart.length === 1 ? "item" : "items"} · {money(total)} · Checkout
-          </button>
+          </a>
         </div>
       )}
 

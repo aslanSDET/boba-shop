@@ -218,6 +218,13 @@ serves. The dependency points the wrong way and a second Clover restaurant would
 have nowhere to go. Left in place and commented at the import, because inverting
 it is the Phase 3 redesign done early against one example (§3).
 
+> **Payments and delivery researched 2026-09-02 — `docs/SQUARE-PAYMENTS.md`.**
+> The headline: Square does **not** give us courier dispatch. On-Demand Delivery
+> is Square Online only and the Orders API's `DELIVERY` fulfillment does not
+> trigger it, so delivery means integrating DoorDash Drive directly. Pickup
+> first, and the blocking unknown is whether an Orders API order reaches the
+> kitchen at all — the same question that dropped Phase 4 on the Clover side.
+
 **Phase 2 — Build Square concretely.** Asian Kitchen against a Square sandbox
 with a hand-built catalog transcribed from their public listing. Duplicate
 whatever is easier to duplicate. Do not touch `pos/clover/`.
