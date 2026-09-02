@@ -1731,3 +1731,70 @@
 
 .ak-co-addr { margin: 0; font-size: 0.95rem; }
 .ak-co-receipt { font-size: 0.8rem; color: var(--muted); }
+
+/* ── PICKUP MAP + FIELD VALIDATION ─────────────────────────────────────────── */
+
+.ak-co-map {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* A fixed aspect rather than a fixed height: the map has to be useful on a
+   360px phone and not absurd on a desktop, and `aspect-ratio` does that
+   without a media query. Border-radius needs the overflow clip because an
+   iframe paints over a rounded parent otherwise. */
+.ak-co-mapframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 9rem;
+  border: 0;
+  border-radius: 0.6rem;
+  overflow: hidden;
+  display: block;
+  background: var(--wash);
+}
+
+.ak-co-maplink {
+  align-self: flex-start;
+  font-family: var(--fm);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green-deep);
+  text-decoration: none;
+}
+.ak-co-maplink:hover { text-decoration: underline; }
+
+/* "required" reads as a label, not as an error — errors are red and appear
+   under the field, this is grey and sits beside the name. */
+.ak-co-req {
+  font-style: normal;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-left: 0.4rem;
+}
+
+.ak-co-hint {
+  margin: 0.2rem 0 -0.2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.ak-co-fielderr {
+  color: #b3261e;
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+}
+
+/* The ring is the accessible signal; the colour alone is not, and this menu is
+   read by people standing outside a shop in daylight. */
+.ak-co-field input[aria-invalid="true"] {
+  border-color: #b3261e;
+  box-shadow: 0 0 0 1px #b3261e;
+}

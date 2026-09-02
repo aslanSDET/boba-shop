@@ -38,6 +38,34 @@ export const RESTAURANT = {
  * Replace with the value from the owner's artwork before this goes anywhere
  * public — it is referenced from `theme.css` and nowhere else, so it is one edit.
  */
+/**
+ * Sales tax, as a percentage, applied to every order.
+ *
+ * ── THIS IS A PLACEHOLDER, AND IT IS THE ONLY NUMBER HERE THAT IS ────────────
+ *
+ * The sandbox merchant has **no TAX object in its catalog** (measured), so
+ * Square correctly returns `$0.00` tax and the checkout showed a zero tax line
+ * — accurate, and it reads as broken.
+ *
+ * 10% is in the right neighbourhood for prepared food in Birmingham, which
+ * stacks state, county and city rates, but it has NOT been confirmed against
+ * the shop's own register and must be before anyone is charged for real. It is
+ * a `docs/ASIAN-KITCHEN.md` §6 question.
+ *
+ * ── HOW THIS DOES NOT BREAK "THE POS IS THE CALCULATOR" ──────────────────────
+ *
+ * We send Square the RATE and Square computes the AMOUNT, as an order-scoped
+ * tax on the order it is already pricing. We never multiply anything. That is
+ * the same division already accepted for the unit price: the menu is
+ * transcribed, so we supply what an item costs and Square works out the total
+ * (`pos/square/order.ts`).
+ *
+ * The moment there is a catalog sync, this constant should disappear — a real
+ * merchant carries its tax on the location, `CalculateOrder` picks it up with
+ * no help from us, and that is strictly better than a number in a repo.
+ */
+export const SALES_TAX_PERCENT = "10";
+
 export const BRAND_GREEN = "#1E9350";
 
 /** "10:30" -> "10:30 am", the way it reads on a door. */

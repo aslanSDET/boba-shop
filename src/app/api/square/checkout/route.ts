@@ -1,32 +1,34 @@
 import { notThisDeployment, SquareError } from "@/pos/square/client";
-import { calculateOrder, CheckoutRequestError, type CheckoutRequest } from "@/pos/square/order";
+import { calculateOrder } from "@/pos/square/order";
+import { parseCheckoutRequest, RequestError } from "@/pos/square/request";
 
 /**
  * POST /api/square/checkout — price the cart. Creates nothing.
  *
- * This route is safe to call on every keystroke of the tip selector, which is
- * the whole point: `CalculateOrder` returns Square's own totals without
- * persisting an order. The Clover equivalent had to create one, and every
- * orphaned OPEN order this project has swept up came from that.
+ * Safe to call on every tip change, which is the point: `CalculateOrder`
+ * returns Square's own totals without persisting an order. The Clover
+ * equivalent had to create one, and every orphaned OPEN order this project has
+ * swept up came from that.
  *
- * The browser sends ids and counts. It does not send prices, and prices in the
- * request would be ignored if it did.
+ * The browser sends ids and counts. Prices in the request would be ignored, and
+ * the bounds in `request.ts` apply here too — pricing is cheap but it is not
+ * free, and an unbounded cart is still an unbounded API call.
  */
 export async function POST(request: Request) {
   const wrongShop = notThisDeployment();
   if (wrongShop) return wrongShop;
 
-  let body: CheckoutRequest;
+  let raw: unknown;
   try {
-    body = (await request.json()) as CheckoutRequest;
+    raw = await request.json();
   } catch {
     return Response.json({ error: "Expected a JSON body." }, { status: 400 });
   }
 
   try {
-    return Response.json(await calculateOrder(body));
+    return Response.json(await calculateOrder(parseCheckoutRequest(raw)));
   } catch (error) {
-    if (error instanceof CheckoutRequestError) {
+    if (error instanceof RequestError) {
       return Response.json({ error: error.message }, { status: 400 });
     }
     if (error instanceof SquareError) {

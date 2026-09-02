@@ -64,20 +64,24 @@ test.describe("Asian Kitchen checkout", () => {
     await expect(page.getByText(/Confirmed by Square at checkout/i)).toBeVisible();
 
     await expect(page.getByText("$12.49").first()).toBeVisible();
-    /* Tax is $0.00 because the sandbox merchant has no TAX catalog object.
-       That is the sandbox being empty, not our arithmetic. */
-    await expect(page.getByRole("definition").filter({ hasText: /^\$0\.00$/ })).toBeVisible();
+    /* Tax is Square's arithmetic, not ours: we send a 10% ORDER-scoped rate
+       and Square returns the amount, including the rounding decision.
+       $12.49 x 10% = $1.249 -> $1.25. The sandbox merchant has no TAX object of
+       its own, which is why the rate has to be supplied at all. */
+    await expect(page.getByRole("definition").filter({ hasText: /^\$1\.25$/ })).toBeVisible();
   });
 
   test("re-prices when the tip changes, without creating an order", async ({ page }) => {
     await addFirstItemAndGoToCheckout(page);
-    await expect(page.getByRole("button", { name: /Pay \$14\.99/ })).toBeVisible();
+    /* Tip is taken on subtotal + tax = 1249 + 125 = 1374c.
+       20% -> 275 -> 1649   none -> 1374   25% -> 344 -> 1718 */
+    await expect(page.getByRole("button", { name: /Pay \$16\.49/ })).toBeVisible();
 
     await page.getByRole("button", { name: "None" }).click();
-    await expect(page.getByRole("button", { name: /Pay \$12\.49/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Pay \$13\.74/ })).toBeVisible();
 
     await page.getByRole("button", { name: "25%" }).click();
-    await expect(page.getByRole("button", { name: /Pay \$15\.61/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Pay \$17\.18/ })).toBeVisible();
   });
 
   test("takes a real sandbox payment and lands on the confirmation", async ({ page }) => {
@@ -107,7 +111,10 @@ test.describe("Asian Kitchen checkout", () => {
 
   test("a declined card says so, and does not blame the network", async ({ page }) => {
     await addFirstItemAndGoToCheckout(page);
+    /* Name AND a contact: the Pay button is now gated on both, which is the
+       point of the validation and was worth the test noticing. */
     await page.getByLabel("Name").fill("Declined Test");
+    await page.getByLabel("Mobile").fill("2055550143");
 
     await fillCard(page, CARD.declined);
     await page.getByRole("button", { name: /^Pay \$/ }).click();
@@ -157,7 +164,7 @@ test.describe("payment idempotency", () => {
       tipCents: 250,
       sourceId: "cnon:card-nonce-ok",
       idempotencyKey: key,
-      note: "Idempotency Test",
+      customer: { name: "Idempotency Test", phone: "2055550143" },
     };
 
     const first = await request.post("/api/square/pay", { data: body });
@@ -179,6 +186,7 @@ test.describe("payment idempotency", () => {
         lines: [{ itemId: "h-comborice", picks: [] }],
         sourceId: "cnon:card-nonce-ok",
         idempotencyKey: `far-too-long-${crypto.randomUUID()}`,
+        customer: { name: "Key Length Test", phone: "2055550143" },
       },
     });
     expect(res.status()).toBe(400);
@@ -232,7 +240,7 @@ test("a declined payment cancels the order it created", async ({ request }) => {
       lines: [{ itemId: "h-comborice", picks: [] }],
       sourceId: "cnon:card-nonce-declined",
       idempotencyKey: crypto.randomUUID(),
-      note: "Decline cleanup test",
+      customer: { name: "Decline Cleanup Test", phone: "2055550143" },
     },
   });
 
@@ -240,8 +248,115 @@ test("a declined payment cancels the order it created", async ({ request }) => {
   const body = await res.json();
   expect(body.error).toMatch(/declin/i);
 
-  /* The order is not named in the error — deliberately, since the customer has
-     no use for it — so the assertion is on the merchant's books instead. */
-  const after = await strandedCount();
-  expect(after, "the decline must not add an order left OPEN with a FAILED tender").toBe(before);
+  /*
+   * `expect.poll`, not a bare read.
+   *
+   * Square's `orders/search` is eventually consistent — measured: it reported
+   * orders as OPEN that an authoritative GET showed CANCELED, several seconds
+   * apart. A single read straight after a write is therefore a coin toss, and
+   * this test duly passed alone and failed in a full run where other tests had
+   * just written.
+   *
+   * Polling asserts what is actually meant — that the count SETTLES back — and
+   * still fails, after the timeout, if an order is genuinely stranded.
+   */
+  await expect
+    .poll(strandedCount, {
+      timeout: 20_000,
+      message: "the decline must not leave an order OPEN with only a FAILED tender",
+    })
+    .toBe(before);
+});
+
+/**
+ * The hardening, proved.
+ *
+ * `POST /api/square/pay` is unauthenticated and creates real objects on a real
+ * merchant's account, so "the browser will only send sensible values" is not a
+ * posture. Each case below is a thing the browser could send and previously
+ * would have been believed.
+ */
+test.describe("request hardening", () => {
+  const good = {
+    lines: [{ itemId: "h-comborice", picks: [] }],
+    sourceId: "cnon:card-nonce-ok",
+    customer: { name: "Hardening Test", phone: "2055550143" },
+  };
+
+  const post = (request: import("@playwright/test").APIRequestContext, data: object) =>
+    request.post("/api/square/pay", {
+      data: { ...good, idempotencyKey: crypto.randomUUID(), ...data },
+    });
+
+  test("a NEGATIVE tip is refused — it would have cut the charge below the food price", async ({ request }) => {
+    const res = await post(request, { tipCents: -5000 });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/negative/i);
+  });
+
+  test("an absurd tip is refused", async ({ request }) => {
+    const res = await post(request, { tipCents: 99_999_999 });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/too large/i);
+  });
+
+  test("a fractional tip is refused", async ({ request }) => {
+    const res = await post(request, { tipCents: 12.5 });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/whole number/i);
+  });
+
+  test("a cart of ten thousand lines is refused before it reaches Square", async ({ request }) => {
+    const res = await post(request, {
+      lines: Array.from({ length: 10_000 }, () => ({ itemId: "h-comborice", picks: [] })),
+    });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/at most/i);
+  });
+
+  test("an enormous quantity is refused", async ({ request }) => {
+    const res = await post(request, {
+      lines: [{ itemId: "h-comborice", picks: [], quantity: 1_000_000 }],
+    });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/quantity/i);
+  });
+
+  test("a missing name is refused, because the counter has nothing to call", async ({ request }) => {
+    const res = await post(request, { customer: { phone: "2055550143" } });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/name/i);
+  });
+
+  test("a name with no way to reach them is refused", async ({ request }) => {
+    const res = await post(request, { customer: { name: "No Contact" } });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/mobile.*email|email.*mobile/i);
+  });
+
+  test("either a mobile OR an email is enough — not both", async ({ request }) => {
+    const withEmail = await post(request, {
+      customer: { name: "Email Only", email: "someone@example.com" },
+    });
+    expect(withEmail.ok(), await withEmail.text()).toBeTruthy();
+  });
+
+  test("a malformed email is refused", async ({ request }) => {
+    const res = await post(request, { customer: { name: "Bad Email", email: "not-an-email" } });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/email/i);
+  });
+});
+
+/** The map is a real element with a real accessible name, not a decorative box. */
+test("the checkout shows the pickup location on a map", async ({ page }) => {
+  await addFirstItemAndGoToCheckout(page);
+
+  const frame = page.locator("iframe.ak-co-mapframe");
+  await expect(frame).toBeVisible();
+  await expect(frame).toHaveAttribute("title", /Asian Kitchen.*Center Point/i);
+  /* Lazy on purpose: this is a phone-first page and the map is not the order. */
+  await expect(frame).toHaveAttribute("loading", "lazy");
+
+  await expect(page.getByRole("link", { name: /Open in Maps/i })).toBeVisible();
 });

@@ -201,8 +201,29 @@ export async function optional<T>(label: string, fn: () => Promise<T>): Promise<
   try {
     return await fn();
   } catch (error) {
-    const status = error instanceof SquareError ? ` (HTTP ${error.status})` : "";
-    console.warn(`[square] optional step "${label}" failed and was ignored${status}`);
+    /*
+     * The DETAIL, not just the status.
+     *
+     * "optional step failed and was ignored" with nothing after it is a dead
+     * end: the whole point of swallowing the error is that nobody sees it at
+     * request time, so the log is the only chance to find out why. This was
+     * written the short way first and cost a debugging round when the order
+     * cleanup started failing silently.
+     */
+    if (error instanceof SquareError) {
+      const detail = error.errors
+        .map((e) => [e.code, e.field, e.detail].filter(Boolean).join(" "))
+        .join("; ");
+      console.warn(
+        `[square] optional step "${label}" failed and was ignored ` +
+          `(HTTP ${error.status}${detail ? `: ${detail}` : ""})`,
+      );
+    } else {
+      console.warn(
+        `[square] optional step "${label}" failed and was ignored: ` +
+          `${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
     return null;
   }
 }

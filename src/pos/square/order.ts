@@ -43,24 +43,22 @@
  */
 
 import { itemById, optionById } from "@/restaurants/asian-kitchen/menu";
+import { SALES_TAX_PERCENT } from "@/restaurants/asian-kitchen/config";
 import { credential } from "./creds";
 import { money, optional, square, SquareError, toCents } from "./client";
 
-/** What the browser is allowed to send. Ids and counts, never prices. */
-export interface CartLineInput {
-  itemId: string;
-  /** Modifier option ids, in the order they were chosen. */
-  picks: string[];
-  quantity?: number;
-}
+/*
+ * The request types and every bound on them live in `request.ts`, because a
+ * route that creates real objects on a real merchant's account should validate
+ * in one auditable place rather than in scattered `if`s. `CheckoutRequestError`
+ * is an alias so existing call sites and their messages are unchanged.
+ */
+export type { CartLineInput, CheckoutRequest, CustomerInput } from "./request";
+export { parseCheckoutRequest, parseCustomer, ticketLabel } from "./request";
+import type { CartLineInput, CheckoutRequest } from "./request";
+import { RequestError } from "./request";
 
-export interface CheckoutRequest {
-  lines: CartLineInput[];
-  /** Whole cents. Square wants the tip as a separate money field, not a rate. */
-  tipCents?: number;
-}
-
-export class CheckoutRequestError extends Error {}
+export { RequestError as CheckoutRequestError };
 
 /**
  * The location every order belongs to.
@@ -86,7 +84,7 @@ export async function locationId(): Promise<string> {
     "/v2/locations",
   );
   const active = (res.locations ?? []).filter((l) => l.status !== "INACTIVE");
-  if (active.length === 0) throw new CheckoutRequestError("This Square merchant has no active location.");
+  if (active.length === 0) throw new RequestError("This Square merchant has no active location.");
   if (active.length > 1) {
     console.warn(
       `[square] ${active.length} active locations; using "${active[0].name}". ` +
@@ -108,18 +106,18 @@ export async function locationId(): Promise<string> {
  */
 function buildLineItems(lines: CartLineInput[]) {
   if (!Array.isArray(lines) || lines.length === 0) {
-    throw new CheckoutRequestError("The cart is empty.");
+    throw new RequestError("The cart is empty.");
   }
 
   return lines.map((line) => {
     const item = itemById(line.itemId);
-    if (!item) throw new CheckoutRequestError(`No such item: ${line.itemId}`);
+    if (!item) throw new RequestError(`No such item: ${line.itemId}`);
 
     const quantity = Math.max(1, Math.floor(line.quantity ?? 1));
 
     const modifiers = (line.picks ?? []).map((pickId) => {
       const option = optionById(pickId);
-      if (!option) throw new CheckoutRequestError(`No such option: ${pickId}`);
+      if (!option) throw new RequestError(`No such option: ${pickId}`);
       return {
         name: option.name,
         base_price_money: money(toCents(option.priceDelta)),
@@ -134,6 +132,27 @@ function buildLineItems(lines: CartLineInput[]) {
       ...(modifiers.length > 0 ? { modifiers } : {}),
     };
   });
+}
+
+
+/**
+ * The order-scoped tax sent with every pricing and creation call.
+ *
+ * Square computes the amount from the rate; we never multiply. See the long
+ * note on `SALES_TAX_PERCENT` for why the rate is ours at all, and why it
+ * should stop being ours the moment there is a catalog sync.
+ *
+ * Sent identically on CalculateOrder and CreateOrder — if the two differed, the
+ * price previewed would not be the price charged.
+ */
+function orderTaxes() {
+  return [
+    {
+      name: "Sales tax",
+      percentage: SALES_TAX_PERCENT,
+      scope: "ORDER",
+    },
+  ];
 }
 
 /** Square's own numbers, read back. Never computed here. */
@@ -186,6 +205,7 @@ export async function calculateOrder(request: CheckoutRequest): Promise<PricedOr
     order: {
       location_id: await locationId(),
       line_items: buildLineItems(request.lines),
+      taxes: orderTaxes(),
     },
   };
 
@@ -193,7 +213,7 @@ export async function calculateOrder(request: CheckoutRequest): Promise<PricedOr
     method: "POST",
     body,
   });
-  if (!res.order) throw new CheckoutRequestError("Square returned no order to price.");
+  if (!res.order) throw new RequestError("Square returned no order to price.");
 
   const priced = readTotals(res.order);
   // CalculateOrder does not carry a tip; it is a payment-time concept. Show it
@@ -241,7 +261,7 @@ export async function createOrderAndPay(args: {
   note?: string;
 }): Promise<{ orderId: string; paymentId: string; priced: PricedOrder; receiptUrl?: string }> {
   if (args.idempotencyKey.length > MAX_PAYMENT_IDEMPOTENCY_KEY) {
-    throw new CheckoutRequestError(
+    throw new RequestError(
       `idempotencyKey is ${args.idempotencyKey.length} characters; Square's payment ` +
         `limit is ${MAX_PAYMENT_IDEMPOTENCY_KEY}. A bare UUID is 36.`,
     );
@@ -259,6 +279,7 @@ export async function createOrderAndPay(args: {
         order: {
           location_id: location,
           line_items: buildLineItems(args.request.lines),
+          taxes: orderTaxes(),
           fulfillments: [
             {
               type: "PICKUP",
@@ -298,7 +319,7 @@ export async function createOrderAndPay(args: {
   );
 
   const orderId = created.order?.id;
-  if (!orderId) throw new CheckoutRequestError("Square created no order.");
+  if (!orderId) throw new RequestError("Square created no order.");
 
   const order = created.order!;
   const priced = readTotals(order);
@@ -355,7 +376,7 @@ export async function createOrderAndPay(args: {
   });
 
   const paymentId = paid.payment?.id;
-  if (!paymentId) throw new CheckoutRequestError("Square took no payment.");
+  if (!paymentId) throw new RequestError("Square took no payment.");
 
   return {
     orderId,
@@ -387,7 +408,27 @@ async function payOrThrowAfterCleanup(
       body,
     });
   } catch (error) {
-    await optional("cancel unpaid order", async () => {
+    /*
+     * Retried once, because the version is a moving target.
+     *
+     * Square increments an order's version as it records the FAILED tender, so
+     * a read-then-write races the settling of the very payment that failed: the
+     * PUT arrives with a version that was current a moment ago and is rejected.
+     * Observed as an intermittent cleanup failure — passing alone, failing in a
+     * full test run, which is the classic shape of exactly this.
+     *
+     * One retry with a freshly read version is enough; the version only moves
+     * while the payment settles, and that has finished by the second attempt.
+     */
+    await optional("cancel unpaid order", () => cancelOrder(orderId, location, 2));
+    throw error;
+  }
+}
+
+async function cancelOrder(orderId: string, location: string, attempts: number): Promise<unknown> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
       const current = await square<{
         order?: { version?: number; fulfillments?: Array<{ uid?: string }> };
       }>(`/v2/orders/${orderId}`);
@@ -403,7 +444,7 @@ async function payOrThrowAfterCleanup(
         .filter((f) => f.uid)
         .map((f) => ({ uid: f.uid!, state: "CANCELED" }));
 
-      return square(`/v2/orders/${orderId}`, {
+      return await square(`/v2/orders/${orderId}`, {
         method: "PUT",
         body: {
           order: {
@@ -414,9 +455,13 @@ async function payOrThrowAfterCleanup(
           },
         },
       });
-    });
-    throw error;
+    } catch (e) {
+      lastError = e;
+      /* Give the failed payment a moment to finish moving the version. */
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, 400));
+    }
   }
+  throw lastError;
 }
 
 export { SquareError };

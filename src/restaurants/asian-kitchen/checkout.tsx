@@ -33,6 +33,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RESTAURANT } from "./config";
 import { clearCart, toRequestLines, useStoredCart } from "./cart";
+import { PickupMap } from "./pickup-map";
 
 const money = (cents: number) =>
   (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -70,6 +71,10 @@ export function Checkout() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  /* Errors appear on blur, not on the first keystroke. Telling someone their
+     name is invalid while they are still typing the first letter of it is the
+     single most irritating thing a form can do. */
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const [card, setCard] = useState<SquareCard | null>(null);
   const [cardError, setCardError] = useState<string | null>(null);
@@ -174,6 +179,28 @@ export function Checkout() {
     };
   }, [cart]);
 
+  /*
+   * Mirrors `pos/square/request.ts` deliberately.
+   *
+   * The server is the authority — it rejects the same things with the same
+   * bounds, and it has to, because a form is not a security boundary. This
+   * exists so the customer finds out before they have typed a card number,
+   * not after.
+   */
+  const nameError = name.trim() ? null : "We need a name to call your order.";
+  const contactError =
+    phone.trim() || email.trim()
+      ? null
+      : "Add a mobile or an email so the shop can reach you.";
+  const phoneError =
+    phone.trim() && phone.replace(/\D/g, "").length < 7 ? "That number looks too short." : null;
+  const emailError =
+    email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+      ? "That email does not look right."
+      : null;
+
+  const detailsValid = !nameError && !contactError && !phoneError && !emailError;
+
   const pay = useCallback(async () => {
     if (!card || !cart || paying) return;
     setPaying(true);
@@ -216,7 +243,7 @@ export function Checkout() {
           tipCents,
           sourceId: result.token,
           idempotencyKey,
-          note: [name, phone].filter(Boolean).join(" · ").slice(0, 100),
+          customer: { name: name.trim(), phone: phone.trim(), email: email.trim() },
         }),
       });
       const data = await res.json();
@@ -277,6 +304,8 @@ export function Checkout() {
       <p className="ak-co-pill">Pickup at {RESTAURANT.address}</p>
       <p className="ak-co-sub">Ready in 15–20 minutes</p>
 
+      <PickupMap />
+
       <section className="ak-co-card" aria-labelledby="ak-co-items">
         <h2 id="ak-co-items" className="ak-co-h">
           Your order
@@ -308,28 +337,69 @@ export function Checkout() {
         <h2 id="ak-co-you" className="ak-co-h">
           Who is collecting
         </h2>
+
         <label className="ak-co-field">
-          <span>Name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+          <span>
+            Name <em className="ak-co-req">required</em>
+          </span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+            autoComplete="name"
+            /* aria-invalid and aria-describedby, not just red text: a screen
+               reader gets nothing from a colour change. */
+            aria-invalid={touched.name && !!nameError}
+            aria-describedby={touched.name && nameError ? "ak-err-name" : undefined}
+          />
+          {touched.name && nameError && (
+            <span id="ak-err-name" className="ak-co-fielderr">
+              {nameError}
+            </span>
+          )}
         </label>
+
+        <p className="ak-co-hint">One of these, so the shop can reach you:</p>
+
         <label className="ak-co-field">
           <span>Mobile</span>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
             inputMode="tel"
             autoComplete="tel"
+            aria-invalid={touched.contact && !!(phoneError || contactError)}
+            aria-describedby={touched.contact && phoneError ? "ak-err-phone" : undefined}
           />
+          {touched.contact && phoneError && (
+            <span id="ak-err-phone" className="ak-co-fielderr">
+              {phoneError}
+            </span>
+          )}
         </label>
+
         <label className="ak-co-field">
           <span>Email</span>
           <input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
             inputMode="email"
             autoComplete="email"
+            aria-invalid={touched.contact && !!(emailError || contactError)}
+            aria-describedby={touched.contact && emailError ? "ak-err-email" : undefined}
           />
+          {touched.contact && emailError && (
+            <span id="ak-err-email" className="ak-co-fielderr">
+              {emailError}
+            </span>
+          )}
         </label>
+
+        {touched.contact && contactError && (
+          <span className="ak-co-fielderr">{contactError}</span>
+        )}
       </section>
 
       <section className="ak-co-card" aria-labelledby="ak-co-tip">
@@ -403,11 +473,18 @@ export function Checkout() {
         <button
           type="button"
           className="ak-btn ak-co-pay"
-          disabled={!card || paying || !showing}
+          disabled={!card || paying || !showing || !detailsValid}
           onClick={pay}
         >
           {paying ? "Taking payment…" : `Pay ${money(totalCents)}`}
         </button>
+        {/* A disabled button with no explanation is a dead end. If it cannot be
+            pressed, the page says which field is why. */}
+        {!detailsValid && (
+          <p className="ak-co-note">
+            {nameError ?? contactError ?? phoneError ?? emailError}
+          </p>
+        )}
       </section>
     </main>
   );

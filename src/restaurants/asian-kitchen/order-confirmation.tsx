@@ -31,6 +31,7 @@
 import { useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { RESTAURANT } from "./config";
+import { PickupMap } from "./pickup-map";
 
 const money = (cents: number) =>
   (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -91,8 +92,6 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
 
   const checked = raw !== null;
 
-  const mapHref = `https://maps.google.com/?q=${encodeURIComponent(RESTAURANT.address)}`;
-
   return (
     <main className="ak-checkout">
       <p className="ak-co-pill">Paid · Pickup</p>
@@ -131,21 +130,16 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
         </section>
       )}
 
-      <section className="ak-co-card" aria-labelledby="ak-oc-where">
-        <h2 id="ak-oc-where" className="ak-co-h">
-          Where to collect
-        </h2>
-        <p className="ak-co-addr">{RESTAURANT.address}</p>
-        <a className="ak-btn" href={mapHref} target="_blank" rel="noreferrer noopener">
-          Open in Maps
+      {/* The map matters more here than on the checkout: this is the screen
+          someone reads while working out how to get to the shop. */}
+      <PickupMap />
+
+      {/* Rendered only if a number is actually known — see the header note. */}
+      {RESTAURANT.phone && (
+        <a className="ak-btn" href={`tel:${RESTAURANT.phone}`}>
+          Call the shop
         </a>
-        {/* Rendered only if a number is actually known — see the header note. */}
-        {RESTAURANT.phone && (
-          <a className="ak-btn" href={`tel:${RESTAURANT.phone}`}>
-            Call the shop
-          </a>
-        )}
-      </section>
+      )}
 
       {order?.receiptUrl && (
         <a className="ak-co-receipt" href={order.receiptUrl} target="_blank" rel="noreferrer noopener">
