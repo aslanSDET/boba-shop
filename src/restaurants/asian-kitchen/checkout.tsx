@@ -34,6 +34,7 @@ import { useRouter } from "next/navigation";
 import { RESTAURANT } from "./config";
 import { clearCart, toRequestLines, useStoredCart } from "./cart";
 import { PickupMap } from "./pickup-map";
+import { formatPhone, isCompletePhone, phoneDigitsRemaining } from "./lib-phone";
 
 const money = (cents: number) =>
   (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -200,11 +201,27 @@ export function Checkout() {
     phone.trim() || email.trim()
       ? null
       : "Add a mobile or an email so the shop can reach you.";
-  const phoneError =
-    phone.trim() && phone.replace(/\D/g, "").length < 7 ? "That number looks too short." : null;
+  /*
+   * "One more digit" beats "invalid number".
+   *
+   * A count is actionable — it tells you the number is nearly right and how
+   * near — where a generic rejection makes you re-read all ten from the top.
+   */
+  const missingDigits = phone.trim() ? phoneDigitsRemaining(phone) : 0;
+  const phoneError = !phone.trim()
+    ? null
+    : isCompletePhone(phone)
+      ? null
+      : missingDigits > 0
+        ? `${missingDigits} more ${missingDigits === 1 ? "digit" : "digits"} to go.`
+        : "That number has too many digits.";
+
+  /* Light on purpose. Strict email validation rejects real people — plus
+     addressing, new TLDs — and the cost of a wrong address here is one unsent
+     receipt, not a wrong charge. Enough shape to catch a slip. */
   const emailError =
-    email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-      ? "That email does not look right."
+    email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())
+      ? "That email is missing something — check for a typo."
       : null;
 
   const detailsValid = !nameError && !contactError && !phoneError && !emailError;
@@ -274,6 +291,15 @@ export function Checkout() {
           tipCents,
           sourceId: result.token,
           idempotencyKey,
+          /*
+           * Passed through to Square, where they land on the payment record.
+           *
+           * NOT because anything is sent to them — nothing is. There is no SMS
+           * integration and Square's API reference does not promise a receipt
+           * email for `buyer_email_address`, so the labels above deliberately
+           * promise neither. What this does buy is a merchant who can see who
+           * an order belongs to from their own dashboard.
+           */
           customer: { name: name.trim(), phone: phone.trim(), email: email.trim() },
         }),
       });
@@ -398,63 +424,75 @@ export function Checkout() {
         </label>
 
         {/*
-          NOT "optional".
-          These two are conditionally required — one of the pair — so marking
-          either "Optional" would be false and marking both "Required" would be
-          false in the other direction. The honest framing is to say what each
-          one buys you, and to state the rule once, above them.
+          NOT "optional", and not two equal fields either.
+
+          They are conditionally required — one of the pair — so marking either
+          "Optional" would be false and marking both "Required" false the other
+          way. And they are not peers: this is a pickup counter, so the phone is
+          the OPERATIONAL field, the one the shop uses to say the bag is ready.
+          Email is for the receipt.
+
+          So the rule is stated once, on the group, and each field carries its
+          purpose immediately after its own label rather than floated to the far
+          right where it read as a detached third column.
         */}
-        <p className="ak-co-rule">Add at least one, so the shop can reach you.</p>
+        <div className="ak-co-group">
+          <p className="ak-co-grouphead">
+            <span>How we reach you</span>
+            <em>Add at least one</em>
+          </p>
 
-        <label className="ak-co-field">
-          <span className="ak-co-label">
-            Mobile
-            <em className="ak-co-flag ak-co-flag-soft">Text when it&rsquo;s ready</em>
-          </span>
-          <input
-            ref={phoneRef}
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            spellCheck={false}
-            placeholder="(205) 555-0143"
-            aria-invalid={showContactError || !!(touched.contact && phoneError)}
-            aria-describedby={touched.contact && phoneError ? "ak-err-phone" : undefined}
-          />
-          {touched.contact && phoneError && (
-            <span id="ak-err-phone" className="ak-co-fielderr">
-              {phoneError}
+          <label className="ak-co-field">
+            <span className="ak-co-label">
+              Mobile
+              <em className="ak-co-purpose">in case the shop needs to call</em>
             </span>
-          )}
-        </label>
+            <input
+              ref={phoneRef}
+              value={phone}
+              onChange={(e) => setPhone(formatPhone(e.target.value))}
+              onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              spellCheck={false}
+              placeholder="(205) 555-0143"
+              maxLength={20}
+              aria-invalid={showContactError || !!(touched.contact && phoneError)}
+              aria-describedby={touched.contact && phoneError ? "ak-err-phone" : undefined}
+            />
+            {touched.contact && phoneError && (
+              <span id="ak-err-phone" className="ak-co-fielderr">
+                {phoneError}
+              </span>
+            )}
+          </label>
 
-        <label className="ak-co-field">
-          <span className="ak-co-label">
-            Email
-            <em className="ak-co-flag ak-co-flag-soft">Receipt</em>
-          </span>
-          <input
-            ref={emailRef}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            spellCheck={false}
-            placeholder="you@example.com"
-            aria-invalid={showContactError || !!(touched.contact && emailError)}
-            aria-describedby={touched.contact && emailError ? "ak-err-email" : undefined}
-          />
-          {touched.contact && emailError && (
-            <span id="ak-err-email" className="ak-co-fielderr">
-              {emailError}
+          <label className="ak-co-field">
+            <span className="ak-co-label">
+              Email
+              <em className="ak-co-purpose">goes on your receipt</em>
             </span>
-          )}
-        </label>
+            <input
+              ref={emailRef}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              spellCheck={false}
+              placeholder="you@example.com"
+              aria-invalid={showContactError || !!(touched.contact && emailError)}
+              aria-describedby={touched.contact && emailError ? "ak-err-email" : undefined}
+            />
+            {touched.contact && emailError && (
+              <span id="ak-err-email" className="ak-co-fielderr">
+                {emailError}
+              </span>
+            )}
+          </label>
+        </div>
 
         {showContactError && <span className="ak-co-fielderr">{contactError}</span>}
       </section>

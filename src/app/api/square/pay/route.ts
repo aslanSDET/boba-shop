@@ -53,6 +53,8 @@ export async function POST(request: Request) {
       sourceId: body.sourceId,
       idempotencyKey: body.idempotencyKey,
       note: ticketLabel(customer),
+      buyerEmail: customer.email,
+      buyerPhone: customer.phone,
     });
     return Response.json(result);
   } catch (error) {

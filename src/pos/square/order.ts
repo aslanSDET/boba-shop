@@ -272,6 +272,8 @@ export async function createOrderAndPay(args: {
   sourceId: string;
   idempotencyKey: string;
   note?: string;
+  buyerEmail?: string;
+  buyerPhone?: string;
 }): Promise<{ orderId: string; paymentId: string; priced: PricedOrder; receiptUrl?: string }> {
   if (args.idempotencyKey.length > MAX_PAYMENT_IDEMPOTENCY_KEY) {
     throw new RequestError(
@@ -386,6 +388,10 @@ export async function createOrderAndPay(args: {
       amount_money: money(chargeableCents),
       ...(args.request.tipCents ? { tip_money: money(args.request.tipCents) } : {}),
       autocomplete: true,
+      /* On the payment record so the merchant can see whose order it is from
+         their own dashboard. Square does not promise to send anything to
+         either, and the checkout copy promises nothing either. */
+      ...(args.buyerEmail ? { buyer_email_address: args.buyerEmail.slice(0, 255) } : {}),
   });
 
   const paymentId = paid.payment?.id;

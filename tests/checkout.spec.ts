@@ -372,3 +372,79 @@ test("the checkout shows the pickup location on a map", async ({ page }) => {
 
   await expect(page.getByRole("link", { name: /Open in Maps/i })).toBeVisible();
 });
+
+/**
+ * The light validation: enough to catch a slip, not enough to argue with a real
+ * customer. A missed digit is the common mistake on a phone keypad, so the
+ * message counts what is missing rather than just refusing.
+ */
+test.describe("contact validation", () => {
+  const base = {
+    lines: [{ itemId: "h-comborice", picks: [] }],
+    sourceId: "cnon:card-nonce-ok",
+  };
+  const post = (r: import("@playwright/test").APIRequestContext, customer: object) =>
+    r.post("/api/square/pay", {
+      data: { ...base, idempotencyKey: crypto.randomUUID(), customer },
+    });
+
+  test("a phone one digit short is refused, and says so", async ({ request }) => {
+    const res = await post(request, { name: "Short Number", phone: "(205) 555-014" });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/1 digit short/i);
+  });
+
+  test("a ten-digit number is accepted however it is punctuated", async ({ request }) => {
+    for (const phone of ["(205) 555-0143", "205-555-0143", "2055550143", "+1 205 555 0143"]) {
+      const res = await post(request, { name: "Punctuation", phone });
+      expect(res.ok(), `${phone} -> ${await res.text()}`).toBeTruthy();
+    }
+  });
+
+  test("an email with no TLD is refused", async ({ request }) => {
+    const res = await post(request, { name: "No TLD", email: "someone@gmail" });
+    expect(res.status()).toBe(400);
+    expect((await res.json()).error).toMatch(/typo|missing/i);
+  });
+
+  test("plus-addressing is accepted — real people use it", async ({ request }) => {
+    const res = await post(request, { name: "Plus", email: "yusuf+ak@example.co.uk" });
+    expect(res.ok(), await res.text()).toBeTruthy();
+  });
+
+  test("the checkout masks a number as it is typed", async ({ page }) => {
+    await addFirstItemAndGoToCheckout(page);
+    const phone = page.getByLabel("Mobile");
+
+    /* Typed one key at a time, not filled: the mask runs on every keystroke and
+       filling would bypass the thing under test. */
+    await phone.pressSequentially("2055550143");
+    await expect(phone).toHaveValue("(205) 555-0143");
+    await phone.blur();
+    await expect(page.locator("#ak-err-phone")).toHaveCount(0);
+  });
+
+  test("an incomplete number says how many digits are missing", async ({ page }) => {
+    await addFirstItemAndGoToCheckout(page);
+    const phone = page.getByLabel("Mobile");
+
+    await phone.pressSequentially("205555014");
+    /* Nine digits is visibly the wrong shape — which is the whole point of
+       masking, and is what a bare "2055550143" can never show. */
+    await expect(phone).toHaveValue("(205) 555-014");
+    await phone.blur();
+    await expect(page.locator("#ak-err-phone")).toHaveText(/1 more digit/i);
+
+    /*
+     * Re-focusing puts the caret at position 0, so appending needs an explicit
+     * End first — otherwise the keystroke lands at the front and (205) 555-014
+     * becomes (320) 555-5014. Browser behaviour rather than the mask's doing,
+     * and worth writing down because it looks exactly like a formatter bug.
+     */
+    await phone.focus();
+    await phone.press("End");
+    await phone.pressSequentially("3");
+    await expect(phone).toHaveValue("(205) 555-0143");
+    await expect(page.locator("#ak-err-phone")).toHaveCount(0);
+  });
+});

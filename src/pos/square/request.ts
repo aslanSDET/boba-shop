@@ -150,11 +150,34 @@ export function parseCustomer(input: unknown): CustomerInput {
      `+44`, extensions, plus-addressing, new TLDs — and the cost of a wrong
      address here is one unsent receipt, not a wrong charge. Enough shape to
      catch a slip, not enough to argue with a customer. */
-  if (phone && phone.replace(/\D/g, "").length < 7) {
-    throw new RequestError("That mobile number looks too short.");
+  if (phone) {
+    /*
+     * Ten digits for a US number, and the checkout masks to exactly that. The
+     * old floor of seven let a number through with three digits missing, which
+     * is a number the shop cannot call.
+     *
+     * Longer is allowed rather than rejected: 11 digits beginning 1 is the same
+     * number with the country code, and 11-15 is an international one. This is
+     * a Birmingham takeout counter so those are rare, but rejecting a real
+     * customer to enforce a format is the wrong trade — the shop can dial it
+     * either way.
+     */
+    const digits = phone.replace(/\D/g, "");
+    const normalised = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+    if (normalised.length < 10) {
+      const missing = 10 - normalised.length;
+      throw new RequestError(
+        `That mobile number is ${missing} digit${missing === 1 ? "" : "s"} short.`,
+      );
+    }
+    if (normalised.length > 15) {
+      throw new RequestError("That mobile number has too many digits.");
+    }
   }
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new RequestError("That email address does not look right.");
+  /* A dot and at least two characters after it, which catches `you@gmail` and
+     a trailing-dot slip without arguing with anyone's real address. */
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    throw new RequestError("That email is missing something — check for a typo.");
   }
 
   return { name, phone: phone || undefined, email: email || undefined };
