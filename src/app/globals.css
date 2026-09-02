@@ -50,58 +50,19 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
-  color-scheme: light;
-  /* Warm white ground — bright, roomy, food-forward */
-  --background: #faf8f5;
-  --foreground: #1a1512;
-  --card: #ffffff;
-  --card-foreground: #1a1512;
-  --popover: #ffffff;
-  --popover-foreground: #1a1512;
-  /* Snowdaes orange, lifted from the penguin mark. Dark text on it clears AA. */
-  --primary: #f5901e;
-  --primary-foreground: #1a1512;
-  /* Deeper orange for accent TEXT on light — the bright fill is unreadable small. */
-  --brand-ink: #b4530a;
-  --secondary: #f3eee7;
-  --secondary-foreground: #1a1512;
-  --muted: #f3eee7;
-  --muted-foreground: #6f6259;
-  --accent: #fdf1e2;
-  --accent-foreground: #1a1512;
-  --destructive: #c2410c;
-  --border: #e9e1d7;
-  --input: #ddd3c7;
-  /* Focus rings, not fills: the bright orange only reaches 2.23:1 on the ground,
-     under the 3:1 WCAG 1.4.11 floor for non-text. brand-ink clears it at 4.74:1. */
-  --ring: #b4530a;
-  --chart-1: #f5901e;
-  --chart-2: #6f9e4a;
-  --chart-3: #8b6fc0;
-  --chart-4: #e0654f;
-  --chart-5: #3f8fa3;
-  --radius: 1rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1512;
-  --sidebar-primary: #f5901e;
-  --sidebar-primary-foreground: #1a1512;
-  --sidebar-accent: #fdf1e2;
-  --sidebar-accent-foreground: #1a1512;
-  --sidebar-border: #e9e1d7;
-  --sidebar-ring: #f5901e;
-}
+
+
 
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+  /* No background, no font here: those belong to a restaurant, and this file is
+     shared by all of them. Each route paints its own ground — see
+     app/page.tsx and app/asian-kitchen/page.tsx. */
   html {
-    @apply font-sans;
+    color-scheme: light;
     -webkit-tap-highlight-color: transparent;
   }
   body {

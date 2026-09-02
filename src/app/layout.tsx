@@ -1,44 +1,29 @@
-import type { Metadata, Viewport } from "next";
-import { DM_Sans, Fraunces, Geist_Mono } from "next/font/google";
+import type { Metadata } from "next";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-display",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
-
+/**
+ * The only thing the two restaurants share.
+ *
+ * Next allows exactly one root layout, so this exists whether we want it or not.
+ * It is kept deliberately empty of personality: **no fonts, no palette, no
+ * theme colour, no shop name.** Snowdaes and Asian Kitchen have nothing in
+ * common, and anything set here would leak from one into the other — which it
+ * did, until the body background was moved out of here (PLATFORM.md §2).
+ *
+ * Each restaurant's own route supplies its fonts, its metadata and its ground:
+ * `app/page.tsx` for Snowdaes, `app/asian-kitchen/page.tsx` for Asian Kitchen.
+ *
+ * `globals.css` stays because it carries Tailwind's preflight, which the
+ * vendored shadcn primitives in `components/ui/` need. It is not a shared theme.
+ */
 export const metadata: Metadata = {
-  title: "Snowdaes | Order for pickup",
-  description:
-    "Shaved snow, egg puffs, and milk tea from Snowdaes in Billerica, MA. Order ahead for pickup.",
-};
-
-export const viewport: Viewport = {
-  themeColor: "#faf8f5",
+  title: "Order for pickup",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${dmSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
-      </body>
+    <html lang="en" className="h-full">
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }

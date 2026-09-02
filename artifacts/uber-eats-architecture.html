@@ -1,0 +1,732 @@
+<title>The Uber Eats Seam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+:root {
+  --paper:      #FBFBFC;
+  --surface:    #FFFFFF;
+  --surface-2:  #F4F5F8;
+  --ink:        #16181D;
+  --ink-2:      #3A3F4B;
+  --muted:      #626878;
+  --rule:       #E2E4EA;
+  --rule-soft:  #EDEEF2;
+  --accent:     #3D3A8C;
+  --accent-bg:  #EEEEFA;
+  --ok:         #16665F;
+  --ok-bg:      #E4F2EF;
+  --warn:       #8A5A11;
+  --warn-bg:    #FAF0DE;
+  --crit:       #91302F;
+  --crit-bg:    #FBEAE9;
+
+  --f-display: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --f-body:    'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --f-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:     #0F1116;
+    --surface:   #161921;
+    --surface-2: #1D212B;
+    --ink:       #E7E9EF;
+    --ink-2:     #C2C7D2;
+    --muted:     #8A91A2;
+    --rule:      #292E3A;
+    --rule-soft: #21252F;
+    --accent:    #A5A0F5;
+    --accent-bg: #21213F;
+    --ok:        #55C3AC;
+    --ok-bg:     #12302C;
+    --warn:      #DCA646;
+    --warn-bg:   #33270F;
+    --crit:      #E88585;
+    --crit-bg:   #381E1E;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:     #0F1116;
+  --surface:   #161921;
+  --surface-2: #1D212B;
+  --ink:       #E7E9EF;
+  --ink-2:     #C2C7D2;
+  --muted:     #8A91A2;
+  --rule:      #292E3A;
+  --rule-soft: #21252F;
+  --accent:    #A5A0F5;
+  --accent-bg: #21213F;
+  --ok:        #55C3AC;
+  --ok-bg:     #12302C;
+  --warn:      #DCA646;
+  --warn-bg:   #33270F;
+  --crit:      #E88585;
+  --crit-bg:   #381E1E;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 17px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0 clamp(16px, 4vw, 40px) 100px;
+}
+
+.wrap { max-width: 1140px; margin: 0 auto; }
+.prose { max-width: 69ch; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  padding: clamp(48px, 8vw, 92px) 0 0;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 40px;
+}
+.eyebrow {
+  font-family: var(--f-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 18px;
+}
+h1 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(38px, 6.5vw, 62px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  margin: 0 0 20px;
+  text-wrap: balance;
+}
+.standfirst {
+  font-size: clamp(18px, 2.2vw, 21px);
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 62ch;
+  margin: 0 0 34px;
+}
+.masthead-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 34px;
+  font-family: var(--f-display);
+  font-size: 13px;
+  color: var(--muted);
+  padding-bottom: 22px;
+}
+.masthead-meta b {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- structure ---------- */
+section { margin: 0 0 clamp(52px, 7vw, 78px); }
+
+h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(25px, 3.4vw, 33px);
+  letter-spacing: -0.018em;
+  line-height: 1.15;
+  margin: 0 0 10px;
+  text-wrap: balance;
+}
+h3 {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: -0.008em;
+  margin: 0 0 8px;
+}
+.section-note {
+  color: var(--muted);
+  font-size: 16px;
+  max-width: 66ch;
+  margin: 0 0 26px;
+}
+p { margin: 0 0 15px; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px;
+}
+
+code, .mono {
+  font-family: var(--f-mono);
+  font-size: 0.855em;
+  background: var(--surface-2);
+  padding: 0.12em 0.36em;
+  border-radius: 3px;
+  word-break: break-word;
+}
+
+/* ---------- tables ---------- */
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  background: var(--surface);
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--f-display);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+thead th {
+  background: var(--surface-2);
+  text-align: left;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  color: var(--ink-2);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface-2); }
+td.name { color: var(--ink); font-weight: 600; white-space: nowrap; }
+td.num  { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t-tight td, .t-tight th { padding-left: 13px; padding-right: 13px; }
+
+/* ---------- badges ---------- */
+.tag {
+  display: inline-block;
+  font-family: var(--f-display);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+.t-ok   { background: var(--ok-bg);   color: var(--ok); }
+.t-warn { background: var(--warn-bg); color: var(--warn); }
+.t-crit { background: var(--crit-bg); color: var(--crit); }
+.t-neu  { background: var(--surface-2); color: var(--muted); }
+.t-acc  { background: var(--accent-bg); color: var(--accent); }
+
+/* ---------- repo cards ---------- */
+.cards { display: grid; gap: 20px; }
+.card {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 22px clamp(18px, 2.6vw, 26px) 24px;
+}
+.card.lead { border-color: var(--accent); border-width: 1.5px; }
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  margin-bottom: 4px;
+}
+.card-head h3 { margin: 0; font-size: 20px; }
+.card-head .path { font-family: var(--f-mono); font-size: 13px; color: var(--accent); }
+.card-meta {
+  font-family: var(--f-display);
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+.card-body { font-size: 16.5px; }
+.card-body > p:last-child { margin-bottom: 0; }
+
+.borrow {
+  font-family: var(--f-display);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 20px 0 9px;
+}
+ul.borrow-list { margin: 0 0 4px; padding-left: 20px; }
+ul.borrow-list li { margin-bottom: 9px; }
+ul.borrow-list li::marker { color: var(--accent); }
+ul.borrow-list b { color: var(--ink); font-weight: 600; }
+
+.files {
+  margin-top: 18px;
+  padding: 11px 14px;
+  background: var(--surface-2);
+  border-radius: 5px;
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+  line-height: 1.85;
+  color: var(--muted);
+  word-break: break-word;
+}
+.files span { color: var(--ink-2); }
+
+blockquote {
+  margin: 16px 0;
+  padding: 2px 0 2px 18px;
+  border-left: 2.5px solid var(--accent);
+  color: var(--ink-2);
+  font-style: italic;
+}
+blockquote p:last-child { margin-bottom: 0; }
+
+/* ---------- callout ---------- */
+.callout {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-radius: 0 7px 7px 0;
+  padding: 20px clamp(18px, 2.4vw, 24px);
+  margin: 26px 0;
+}
+.callout.warn { border-left-color: var(--warn); }
+.callout h3 { margin-bottom: 7px; }
+.callout p:last-child { margin-bottom: 0; }
+.callout .prose { max-width: 68ch; }
+
+/* ---------- open questions ---------- */
+ol.decisions { counter-reset: d; list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+ol.decisions li {
+  counter-increment: d;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 14px;
+  align-items: start;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  background: var(--surface);
+  padding: 16px 18px;
+}
+ol.decisions li::before {
+  content: counter(d);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-variant-numeric: tabular-nums;
+}
+ol.decisions h3 { margin-bottom: 4px; }
+ol.decisions p { margin: 0; font-size: 16px; color: var(--ink-2); }
+
+footer {
+  border-top: 1px solid var(--rule);
+  padding-top: 22px;
+  color: var(--muted);
+  font-family: var(--f-display);
+  font-size: 13.5px;
+}
+footer p { margin-bottom: 9px; }
+footer .prose { max-width: 74ch; }
+
+@media (max-width: 620px) {
+  body { font-size: 16px; }
+  .card { padding: 18px 15px 20px; }
+  ol.decisions li { grid-template-columns: 1fr; gap: 9px; }
+
+/* ---------- topology: nodes, then the wires between them ---------- */
+.nodes{display:grid;gap:12px;grid-template-columns:1fr;margin:26px 0 0}
+@media(min-width:780px){.nodes{grid-template-columns:repeat(3,1fr)}}
+.node{border:1px solid var(--rule);border-radius:8px;background:var(--surface);padding:16px 18px}
+.node.mid{border-color:var(--accent);border-width:1.5px}
+.node b{display:block;font-family:var(--f-display);font-size:15px;color:var(--ink);margin-bottom:4px}
+.node span{font-family:var(--f-display);font-size:13px;color:var(--muted);line-height:1.45;display:block}
+.wires{border:1px solid var(--rule);border-radius:8px;background:var(--surface);
+       padding:18px clamp(14px,2vw,22px);margin:14px 0 0;overflow-x:auto}
+.wire{display:grid;grid-template-columns:118px 1fr;gap:14px;align-items:baseline;
+      padding:8px 0;border-bottom:1px solid var(--rule-soft)}
+.wire:last-child{border-bottom:none}
+.wire .lane{font-family:var(--f-display);font-size:11px;font-weight:600;letter-spacing:.08em;
+            text-transform:uppercase;color:var(--muted)}
+.wire .path{font-family:var(--f-mono);font-size:13px;color:var(--ink-2);white-space:nowrap}
+.wire .path em{font-style:normal;color:var(--accent)}
+.wire .path b{font-weight:500;color:var(--ink)}
+
+/* side-by-side comparison emphasis */
+td.us{color:var(--ok);font-weight:600}
+td.them{color:var(--ink-2)}
+ul.plain-list{margin:0 0 15px;padding-left:20px}
+ul.plain-list li{margin-bottom:9px}
+ul.plain-list li::marker{color:var(--accent)}
+ul.plain-list b{color:var(--ink);font-weight:600}
+</style>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Architecture note · Snowdaes</p>
+  <h1>The Uber&nbsp;Eats seam</h1>
+  <p class="standfirst">Uber Eats has been running against the Snowdaes Clover account this
+  whole time. It is the same integration we are building, by a company with a thousand
+  engineers, and its shape is visible from the outside. This is what it does, how it keeps a
+  menu fresh, and which parts of it we should copy.</p>
+  <div class="masthead-meta">
+    <span>Measured <b>31 Aug 2026</b></span>
+    <span>Billerica listing vs Clover catalog</span>
+    <span>Items compared <b>119</b></span>
+    <span>Price differences <b>0</b></span>
+  </div>
+</header>
+
+<section>
+  <h2>Uber never calls Clover</h2>
+  <p class="section-note">The first thing to get right, because it changes what you look for.</p>
+  <div class="prose">
+    <p>Uber Eats holds no Clover token and issues no request to <code>api.clover.com</code>.
+    Uber talks only to whoever built the connector, and for a Clover merchant that party is
+    <strong>Clover itself</strong> — the Uber Eats app in the Clover App Market, running on
+    Clover's servers. Uber's own developer documentation is explicit that the POS vendor writes
+    the integration; Uber supplies the API surface and the webhooks.</p>
+    <p>That is why setup asks for your Clover merchant ID in Uber's <code>POS StoreID</code>
+    field. You are not granting Uber access to Clover. You are telling Uber which store the
+    webhooks belong to, so Clover's connector can route them.</p>
+  </div>
+
+  <div class="nodes">
+    <div class="node">
+      <b>Uber's cloud</b>
+      <span>Marketplace APIs, webhooks, the consumer app. Knows a store id and a menu snapshot.</span>
+    </div>
+    <div class="node mid">
+      <b>Clover's connector</b>
+      <span>The Uber Eats App Market app. The only party that speaks both protocols. This is the box we are also building.</span>
+    </div>
+    <div class="node">
+      <b>Clover merchant data</b>
+      <span>Catalog, orders, tax rates, hours. One <code>/v3</code> surface, no alternatives.</span>
+    </div>
+  </div>
+
+  <div class="wires">
+    <div class="wire">
+      <span class="lane">Menu out</span>
+      <span class="path"><b>Clover connector</b> ──<em>PUT full menu</em>──▶ <b>Uber Menu API</b></span>
+    </div>
+    <div class="wire">
+      <span class="lane">Refresh in</span>
+      <span class="path"><b>Uber</b> ──<em>store.menu_refresh_request</em>──▶ <b>Clover connector</b></span>
+    </div>
+    <div class="wire">
+      <span class="lane">Order in</span>
+      <span class="path"><b>Uber</b> ──<em>orders.notification</em>──▶ <b>Clover connector</b></span>
+    </div>
+    <div class="wire">
+      <span class="lane">Order detail</span>
+      <span class="path"><b>Clover connector</b> ──<em>GET order details</em>──▶ <b>Uber</b></span>
+    </div>
+    <div class="wire">
+      <span class="lane">Accept</span>
+      <span class="path"><b>Clover connector</b> ──<em>POST accept / deny</em>──▶ <b>Uber</b></span>
+    </div>
+    <div class="wire">
+      <span class="lane">Write</span>
+      <span class="path"><b>Clover connector</b> ──<em>create order</em>──▶ <b>/v3/merchants/{mId}/orders</b></span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>The menu is a snapshot, not a live read</h2>
+  <p class="section-note">This is the design decision worth internalising, because we made the
+  same one and it is easy to talk yourself out of.</p>
+  <div class="prose">
+    <p>Uber does not query Clover when a customer opens the Snowdaes page. Clover's connector
+    <strong>pushes a complete menu</strong> to Uber, replacing what was there, and Uber serves
+    its own copy. When Uber wants a fresh one it asks, by firing
+    <code>store.menu_refresh_request</code> at the connector — it still never reaches into
+    Clover itself.</p>
+    <p>At Uber's traffic a live read per page view would be absurd, so of course they cache.
+    The useful part is that this is not an Uber-scale-only trick: it is the only sane shape,
+    and it is the shape <code>src/lib/clover-hours.ts</code> already uses, where
+    <code>fetchWeek()</code> is the single function that touches Clover and everything
+    downstream works on plain data.</p>
+  </div>
+
+  <div class="callout">
+    <h3>A push model drifts, and we can prove it</h3>
+    <div class="prose">
+      <p>Comparing the live Billerica listing against
+      <code>src/config/menu.billerica.generated.ts</code>: <strong>119 items each side, 118
+      identical prices, zero differences.</strong> Same names, same descriptions, same
+      <code>$0.00</code> bases rendered as "Priced by add-ons".</p>
+      <p>One exception. <strong>Green Apple</strong> ($6.45, Fruit Teas) exists in Clover and is
+      absent from Uber Eats. That single row is the whole lesson: a pushed snapshot is only as
+      fresh as the last push, and even a mature connector ends up one item out of step. Any
+      cache we build will do the same thing, and should be designed expecting it rather than
+      hoping otherwise.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Orders arrive as a webhook and become a Clover order</h2>
+  <div class="prose">
+    <p>The inbound path is a small state machine rather than a single call. Uber fires
+    <code>orders.notification</code>; the connector acknowledges it, fetches the full order,
+    then explicitly accepts or denies. Only then does it write into Clover. The acknowledge and
+    the accept are separate steps on purpose — the first says "received", the second says "the
+    kitchen has it".</p>
+    <p>We have no equivalent, and currently need none: an order on our site is created
+    <em>because</em> a card was charged, so there is nothing to accept and nobody to deny to.
+    That asymmetry is worth remembering the day someone asks for order rejection when an item
+    runs out.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Side by side</h2>
+  <p class="section-note">Same rails, three rows of difference.</p>
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>Concern</th><th>Clover's Uber Eats connector</th><th>What we are building</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="name">Menu source</td><td class="them">Clover <code>/v3</code> catalog</td><td class="us">Clover <code>/v3</code> catalog — same endpoints</td></tr>
+        <tr><td class="name">Menu freshness</td><td class="them">Pushed on change; Uber may request a refresh</td><td class="them">Regenerated by hand — <code>scripts/import-menu.mjs</code>, committed</td></tr>
+        <tr><td class="name">Order creation</td><td class="them">Clover <code>/v3</code> orders</td><td class="us">Clover <code>/v3</code> orders — same endpoints</td></tr>
+        <tr><td class="name">Who calculates tax</td><td class="them">Clover</td><td class="us">Clover</td></tr>
+        <tr><td class="name">Payment</td><td class="them">Uber collects, settles to the merchant separately</td><td class="us">Clover Ecommerce, into the merchant's own account</td></tr>
+        <tr><td class="name">Accept / deny</td><td class="them">Required, with a timeout</td><td class="them">None — paid orders only</td></tr>
+        <tr><td class="name">Discount codes</td><td class="them">Uber's own promotions API</td><td class="us">Ours, applied before tax</td></tr>
+        <tr><td class="name">Breadth</td><td class="them">Every Clover merchant, every menu shape</td><td class="us">One shop, two locations, one menu we can read</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p>Six of eight rows are identical because <strong>there is only one way in</strong>. Clover
+    exposes one catalog surface and one orders surface, so a funded team and a side project
+    converge on the same calls. When our importer read 119 items, it made the same request
+    Clover's connector makes before pushing to Uber — which is precisely why the price diff came
+    back clean.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Our credential is not their credential</h2>
+  <p class="section-note">The difference is one line of HTTP, and most of the risk in this
+  build lives inside it.</p>
+
+  <div class="prose">
+    <p>Clover's connector is an <strong>App Market app</strong>. A merchant installs it, Clover
+    mints a token scoped to the permissions that app declared, and the merchant can revoke it by
+    uninstalling. One app, thousands of merchants, no shared secret between them.</p>
+    <p>We do the other thing. <code>src/lib/clover.ts</code> reads a
+    <strong>static merchant API token out of the environment</strong> and puts it on every
+    platform call, with <code>CLOVER_MERCHANT_ID</code> naming the single shop:</p>
+  </div>
+
+  <div class="files">
+    headers.authorization = `Bearer ${<span>required("CLOVER_API_TOKEN")</span>}`;<br>
+    headers["X-Clover-Merchant-Id"] = <span>merchantId()</span>;
+  </div>
+
+  <div class="prose">
+    <p>For one shop this is the right call — an App Market app would be weeks of OAuth
+    plumbing to serve a single merchant we already have credentials for. But it is not the same
+    security model, and it is worth being precise about what we gave up rather than discovering
+    it later.</p>
+  </div>
+
+  <div class="scroll">
+    <table class="t-tight">
+      <thead><tr><th>Where it differs</th><th>Exposure</th><th>Standing</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="name">Order creation has no idempotency key</td>
+          <td><code>/api/checkout</code> creates a Clover order with nothing to collapse a
+          repeat on. <code>/api/checkout/pay</code> <em>does</em> send one. The duplicate-order
+          bug was fixed with a <code>useRef</code> in the browser, which stops React from
+          double-firing but not a double tap, a retry, or a flaky connection. Uber's connector
+          cannot duplicate: Uber's own order id is the identity, so a redelivered webhook is
+          the same order.</td>
+          <td><span class="tag t-crit">Highest</span></td>
+        </tr>
+        <tr>
+          <td class="name">No authentication on the routes</td>
+          <td>Anything that can reach <code>/api/checkout</code> can create orders on the
+          merchant. Fine on a laptop; an open order-creation endpoint the day it is public.
+          Uber's connector accepts only signed webhooks.</td>
+          <td><span class="tag t-crit">Before launch</span></td>
+        </tr>
+        <tr>
+          <td class="name">One token, full merchant, manual revocation</td>
+          <td>A leaked token is complete merchant access until a human notices and rotates it.
+          There is no scope and no uninstall. This is not theoretical — two sandbox tokens have
+          already ended up somewhere they should not have been, and the repo is public.</td>
+          <td><span class="tag t-warn">Live</span></td>
+        </tr>
+        <tr>
+          <td class="name">A Clover call on every checkout page view</td>
+          <td><code>/api/checkout/config</code> is <code>force-dynamic</code> and fetches
+          <code>/pakms/apikey</code> per request. The key is per-merchant and changes almost
+          never — it wants the same memo <code>fetchWeek()</code> has. Today it is latency on
+          the money path and rate-limit exposure for no gain.</td>
+          <td><span class="tag t-warn">Cheap fix</span></td>
+        </tr>
+        <tr>
+          <td class="name">One merchant id, and the second shop is already promised</td>
+          <td><code>merchantId()</code> reads a single env var, and the hours badge has
+          <code>Hours · Billerica</code> written into the markup. Lowell needs a second token, a
+          second merchant id, and a per-location path through the client. Structural, not a bug.</td>
+          <td><span class="tag t-warn">Known</span></td>
+        </tr>
+        <tr>
+          <td class="name">No retry or backoff</td>
+          <td>A 429 becomes "Clover is busy. Try that again in a moment." and the customer is
+          the retry loop. Defensible for a proof of concept, and a deliberate choice rather
+          than an oversight — but Uber's connector retries and ours does not.</td>
+          <td><span class="tag t-neu">Accepted</span></td>
+        </tr>
+        <tr>
+          <td class="name">Ownership of the credential</td>
+          <td>An App Market install belongs to the merchant. Our token belongs to whoever
+          created it. Snowdaes cannot revoke the site by uninstalling something — this is the
+          bus-factor question in its technical form.</td>
+          <td><span class="tag t-neu">Worth naming</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <h3>Three things we do that Uber's connector has no reason to</h3>
+    <div class="prose">
+      <p><code>guardProductionWrite()</code> refuses any non-GET against production outright, so
+      the proof of concept physically cannot put paper in a working kitchen.
+      <code>optional()</code> makes every secondary call — the print event, for one — incapable
+      of failing a sale that already took money. And the tokenisation key is fetched at request
+      time in exchange for a credential we already hold, rather than pasted into
+      <code>.env.local</code> as a second secret to leak.</p>
+      <p>None of that is Uber's problem, because Uber is not a side project pointed at a family
+      member's live till. It is the right kind of paranoia for what this actually is.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Guidance</h2>
+  <p class="section-note">What this should and should not change about the build.</p>
+
+  <div class="cards">
+    <div class="card lead">
+      <div class="card-head"><h3>Keep the single Clover seam</h3>
+        <span class="path">src/lib/clover-hours.ts</span></div>
+      <div class="card-meta">Already right. Do not erode it.</div>
+      <div class="card-body">
+        <p>One function performs I/O and returns plain data; everything else is pure. That is
+        the same separation Clover's connector must have internally, and it is what makes the
+        eventual DynamoDB swap a one-function job. The failure mode is gradual: a Clover call
+        leaking into a component, then another, until the cache is unimplementable.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Cache the menu without apology</h3>
+        <span class="path">src/config/*.generated.ts</span></div>
+      <div class="card-meta">Validated by Uber doing exactly this</div>
+      <div class="card-body">
+        <p>A generated, committed menu is not a shortcut we took because the database was
+        deferred. It is the same architecture Uber runs, one step less automated. The honest
+        gap is the trigger: <strong>Uber gets a refresh webhook, we get a person remembering to
+        re-run a script.</strong> Clover publishes inventory webhooks, and wiring one to
+        regenerate the menu is the natural next step — not a rewrite.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Clover stays the calculator</h3></div>
+      <div class="card-meta">Now four writers on one merchant</div>
+      <div class="card-body">
+        <p>The counter, Clover's own ordering page, Uber's connector and our site all create
+        orders against one merchant. Clover is built for that. But it is also the concrete
+        reason not to compute totals ourselves: four writers and one calculator reconcile,
+        four writers and four calculators do not. The numbers in <code>useCart</code> stay a
+        preview.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Do not build the middleware</h3></div>
+      <div class="card-meta">Deliverect · Otter · Chowly · Cuboh</div>
+      <div class="card-body">
+        <p>An industry exists solely to be the box in the middle, because every marketplace
+        times every POS is an N×M problem. Owner.com is native on Clover and Square and routes
+        everything else through Otter. We have one POS, one merchant and one menu we can read
+        end to end — the easiest instance of the problem. Resist any abstraction that pretends
+        otherwise.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>What is measured, and what is only documented</h2>
+  <p class="section-note">Same convention as the field notes: nothing inherits confidence from
+  sitting next to something that was checked.</p>
+  <div class="scroll">
+    <table class="t-tight">
+      <thead><tr><th>Claim</th><th>Standing</th><th>Basis</th></tr></thead>
+      <tbody>
+        <tr><td class="name">119 items each side, 0 price differences</td><td><span class="tag t-ok">Confirmed</span></td><td>Read the live listing, diffed against the generated menu</td></tr>
+        <tr><td class="name">Green Apple missing from Uber Eats</td><td><span class="tag t-ok">Confirmed</span></td><td>Same diff</td></tr>
+        <tr><td class="name">Uber Eats publishes popularity ranking</td><td><span class="tag t-ok">Confirmed</span></td><td>Read from the DOM, not from text order, which mis-attributed two</td></tr>
+        <tr><td class="name">Billerica delivery showed unavailable</td><td><span class="tag t-warn">Point in time</span></td><td>One page load. Could be hours, couriers, or a standing setting — ask the owner</td></tr>
+        <tr><td class="name">Webhook names, PUT full-menu replacement</td><td><span class="tag t-neu">Documented</span></td><td>Uber's developer docs. We have not run against them</td></tr>
+        <tr><td class="name">POS vendor builds the integration</td><td><span class="tag t-neu">Documented</span></td><td>Uber's docs, plus Clover's own setup flow</td></tr>
+        <tr><td class="name">Clover's connector reads the same <code>/v3</code> catalog</td><td><span class="tag t-warn">Inferred</span></td><td>Strongly implied — the prices match exactly and no second surface exists — but we have not seen their code</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Open</h2>
+  <ol class="decisions">
+    <li><div><b>Menu refresh trigger.</b> Today the menu is only as fresh as the last manual
+    <code>import-menu.mjs</code> run. Clover inventory webhooks are the fix; nothing else about
+    the design changes.</div></li>
+    <li><div><b>Popularity.</b> <code>isPopular</code> is <code>false</code> on all 93 items, so
+    the badge is dead. Uber Eats has published eight, ranked. Good enough to seed, but it is the
+    delivery crowd's taste — computing it from Clover sales is the real answer.</div></li>
+    <li><div><b>Order identity across writers.</b> Four systems now create orders on one
+    merchant. Our pickup code is the last four of the Clover order id, which is fine, but nobody
+    has checked it against a busy Saturday with Uber orders interleaved.</div></li>
+    <li><div><b>Idempotency on order creation.</b> The one item on this page that is a defect
+    rather than a trade-off. A server-side key on <code>/api/checkout</code>, derived from the
+    cart, would close the hole the <code>useRef</code> only hides.</div></li>
+    <li><div><b>Authentication before anything is public.</b> Not needed on a laptop, not
+    optional the day a URL exists.</div></li>
+  </ol>
+</section>
+
+<footer style="border-top:1px solid var(--rule);padding-top:22px;margin-top:60px;color:var(--muted);font-size:15px">
+  <p>Companion to <code>scripts/spike/prior-art.md</code> and
+  <code>scripts/spike/payment-paths.md</code>. Uber's API details are from their public
+  developer documentation; the price and menu figures are ours, measured once, on the date above.</p>
+</footer>
+
+</div>

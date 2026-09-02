@@ -1,4 +1,11 @@
-# Boba Shop — Ordering Website: Project Plan
+# Snowdaes — Ordering Website: Project Plan
+
+> **Scope note (2026-08-31).** This repo now serves more than one restaurant.
+> This file is **Snowdaes' plan** — Clover, Billerica and Lowell. Anything about
+> how the repo hosts several restaurants on several POS platforms lives in
+> [`PLATFORM.md`](PLATFORM.md); the second restaurant's brief is in
+> [`docs/ASIAN-KITCHEN.md`](docs/ASIAN-KITCHEN.md). §1's benchmark table is
+> Snowdaes' visual direction, not the repo's.
 
 > **Read this first, every time.** This file is the single source of truth for the project — vision, decisions made, current build status, and what's next. Update it whenever a phase completes or a decision changes. If you are an agent picking up work here, read all of §0–§4 before touching code; they explain *why* the code looks the way it does, not just *what* to build next.
 

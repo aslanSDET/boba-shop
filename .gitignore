@@ -94,3 +94,10 @@ geminiResearch.md
 # out of the repo because they are not ours to redistribute and the conclusions
 # are in artifacts/designlang-field-test.html.
 research/designlang/
+
+# Asian Kitchen menu photography — downloaded by
+# scripts/asian-kitchen/fetch-photos.mjs. Deliberately NOT committed: it came
+# from a third-party ordering listing, may be subject to third-party copyright,
+# and has not been cleared with the owner (docs/ASIAN-KITCHEN.md §4). Re-run the
+# script to repopulate. The manifest and the index ARE tracked.
+/public/asian-kitchen/menu/
