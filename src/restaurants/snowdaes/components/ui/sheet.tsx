@@ -6,6 +6,7 @@ import { Dialog as SheetPrimitive } from "radix-ui"
 import { cn } from "@/restaurants/snowdaes/lib/utils"
 import { Button } from "@/restaurants/snowdaes/components/ui/button"
 import { XIcon } from "lucide-react"
+import { useThemeScope } from "@/restaurants/snowdaes/lib/use-theme-scope"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
@@ -26,7 +27,13 @@ function SheetClose({
 function SheetPortal({
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Portal>) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
+  /* Portals mount to <body> by default, which is OUTSIDE `.snowdaes` — so the
+     panel arrives with no palette and no fonts. See use-theme-scope.ts for the
+     measurements. An explicit container is the whole fix. */
+  const container = useThemeScope()
+  return (
+    <SheetPrimitive.Portal data-slot="sheet-portal" container={container} {...props} />
+  )
 }
 
 function SheetOverlay({
