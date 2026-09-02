@@ -1,0 +1,64 @@
+# Custom response headers for the Snowdaes deployment.
+#
+# ── WHY THIS FILE AND NOT amplify.yml ────────────────────────────────────────
+#
+# These rules first went into `amplify.yml` under a `customHeaders:` key, which
+# is where older Amplify documentation puts them. The build went green and the
+# headers did not change — `aws amplify get-app` reported `customHeaders: ''`,
+# and a cache-busted request still came back `max-age=5` with
+# `x-cache: Miss from cloudfront`, so it was not a stale edge entry either.
+#
+# AWS has moved them. From their custom-headers page:
+#
+#   "Previously, custom HTTP headers were specified for an app either by editing
+#    the build specification (buildspec) in the Amplify console or by
+#    downloading and updating the amplify.yml file... We highly recommend
+#    migrating custom headers specified in this way out of the buildspec and the
+#    amplify.yml file."
+#
+# `customHttp.yml` in the project root is the current location. Same YAML shape,
+# different file — which is exactly why the mistake was invisible until the
+# deployed response was actually measured.
+#
+# ── WHAT THESE RULES ARE FOR ─────────────────────────────────────────────────
+#
+# Measured on the deployed site:
+#
+#   /_next/static/chunks/*.js   public, max-age=31536000, immutable
+#   /menu/items/almond-joy.jpg  max-age=5, stale-while-revalidate
+#
+# Next content-hashes its own build output and Amplify honours that, so
+# `/_next/*` is already correct and is deliberately NOT listed here. What is
+# wrong is everything served straight out of `public/`: Amplify's default is
+# five seconds, on 2.6MB of photographs that have not changed since import.
+#
+# That default cancels the reason a CDN was chosen at all. The argument in
+# CLOVER-AND-LAUNCH.md §8 was never cost — it was that almost all traffic is
+# cellular, on a mid-range Android, standing outside the shop. Re-validating
+# every image every five seconds is the one behaviour that argument cannot
+# survive.
+#
+# ── WHY ONE WEEK AND NOT `immutable` ─────────────────────────────────────────
+#
+# These filenames are slugs, not content hashes: `scripts/import-menu.mjs`
+# matches photos to items by name, so re-shooting the Thai Dye rewrites the same
+# `/menu/items/thai-dye.jpg`. A year of `immutable` would mean a replaced photo
+# never reaching anyone who had already seen the old one.
+#
+# A week with `stale-while-revalidate` keeps the phone-on-cellular win and
+# bounds how long a swapped photo can be wrong. If one has to change
+# immediately, rename it — the import script derives the name from the item, so
+# that is a rename rather than a cache problem.
+customHeaders:
+  - pattern: '/menu/**'
+    headers:
+      - key: 'Cache-Control'
+        value: 'public, max-age=604800, stale-while-revalidate=86400'
+  - pattern: '/brand/**'
+    headers:
+      - key: 'Cache-Control'
+        value: 'public, max-age=604800, stale-while-revalidate=86400'
+  - pattern: '**/*.avif'
+    headers:
+      - key: 'Cache-Control'
+        value: 'public, max-age=604800, stale-while-revalidate=86400'
