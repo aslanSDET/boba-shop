@@ -452,9 +452,11 @@ export const MODIFIER_GROUPS: Record<string, ModifierGroup> = {
 
 /* ── items ────────────────────────────────────────────────────────────────── */
 
-/* Served by `app/api/asian-kitchen/photo/[file]`, not from `public/`. The
-   photographs are not in this repository and cannot be — see photos.ts. */
-const img = (file: string) => `/api/asian-kitchen/photo/${file}`;
+/* `public/asian-kitchen/menu/` — but those files are NOT in this repository.
+   They are synced out of a private S3 bucket during the build; `amplify.yml`
+   explains why they cannot be committed and why the build is the right place
+   to put them. Locally they are already on disk from fetch-photos.mjs. */
+const img = (file: string) => `/asian-kitchen/menu/${file}`;
 
 export const ITEMS: MenuItem[] = [
   // ── Pick a Meal ─────────────────────────────────────────────────────────

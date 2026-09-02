@@ -19,12 +19,10 @@
 #                 "snowdaes". Correct by accident on this deployment; wrong the
 #                 day Asian Kitchen ships, when its API routes would answer as
 #                 Snowdaes instead of 404ing.
-#   ASIAN_KITCHEN_PHOTO_BUCKET
-#               — not a secret; a bucket name is not a credential, and the
-#                 bucket is private (an anonymous GET returns 403). Read at
-#                 request time by the photo route, so it has the same problem
-#                 RESTAURANT has: set only in the console it would be absent in
-#                 the Lambda, and every menu photograph would silently 404.
+#
+# ASIAN_KITCHEN_PHOTO_BUCKET is deliberately NOT in that line. It is consumed by
+# the preBuild sync above and never at request time, so it has no business
+# reaching the Lambda.
 #   CLOVER_ENV  — not a secret. Also defaults to "sandbox" in code, but a
 #                 default that happens to be safe is not the same as a stated
 #                 one, and this is the variable that decides whether a write can
@@ -35,9 +33,41 @@ frontend:
     preBuild:
       commands:
         - npm ci --cache .npm --prefer-offline
+        # ── ASIAN KITCHEN'S MENU PHOTOGRAPHY ─────────────────────────────────
+        #
+        # 45 items reference photographs that are NOT in this repository and
+        # cannot be. They came from a third-party ordering listing, may be
+        # subject to third-party copyright, and have not been cleared with the
+        # owner (docs/ASIAN-KITCHEN.md §4) — and this repo is public, so
+        # committing them would be republishing, not caching. `.gitignore`
+        # keeps `/public/asian-kitchen/menu/` out deliberately.
+        #
+        # They live in a private S3 bucket instead and are copied in here, at
+        # build time, so that they end up as ordinary static files.
+        #
+        # ── WHY THE BUILD AND NOT A ROUTE HANDLER ────────────────────────────
+        #
+        # They were briefly served by an API route reading S3 per request. That
+        # worked, and broke `next/image`: the optimiser reads a STATIC source
+        # straight out of the bundle, but a route source needs an HTTP
+        # self-fetch — which this branch's basic auth answers with a 401, so
+        # every photo came back "Error loading source image".
+        #
+        # Measured both ways. Through the optimiser a 187,981-byte photograph
+        # comes back as 8,599 bytes at tile width. Giving up a 22x reduction on
+        # 45 photographs, for phones on cellular, is not a trade worth making
+        # to keep a route handler.
+        #
+        # As static files they need no Lambda, no compute role and no per-image
+        # invocation, and they are still absent from git.
+        #
+        # Guarded on RESTAURANT: a Snowdaes build must not pull another shop's
+        # assets. `|| true` because a missing bucket should degrade to the "AK"
+        # tile fallback, not fail the build.
+        - if [ "$RESTAURANT" = "asian-kitchen" ] && [ -n "$ASIAN_KITCHEN_PHOTO_BUCKET" ]; then aws s3 sync "s3://$ASIAN_KITCHEN_PHOTO_BUCKET/menu" public/asian-kitchen/menu --only-show-errors || true; fi
     build:
       commands:
-        - env | grep -e '^RESTAURANT=' -e '^CLOVER_ENV=' -e '^ASIAN_KITCHEN_PHOTO_BUCKET=' >> .env.production || true
+        - env | grep -e '^RESTAURANT=' -e '^CLOVER_ENV=' >> .env.production || true
         - npm run build
   artifacts:
     # .next, not out — this app has four dynamic API routes, so it deploys to
