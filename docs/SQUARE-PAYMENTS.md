@@ -271,3 +271,53 @@ The checkout page from the brief is sound and mostly carries over:
 The delivery design in the brief — address autocomplete, drop-off notes, fee
 breakdown, courier tracker — is **not wasted**, it is just Phase 2, and it is
 larger than it looked.
+
+---
+
+## 12. What does deploying this need that running it does not?
+
+Two AWS objects that have nothing to do with the code, and a green build tells
+you nothing about either.
+
+Measured on the deployment the day §11 shipped:
+
+```
+GET https://main.d28ppkfg682mtw.amplifyapp.com/api/square/config
+503 {"error":"Square is not configured on this deployment."}
+```
+
+The page renders, the menu works, the cart works, and the card form never
+mounts — `checkout.tsx` reads that 503 and shows "Card payment is not
+configured on this deployment", which is why Pay sits disabled. Nothing in the
+build, the tests or `tsc` can see this: all 36 tests pass against localhost,
+where `.env.local` supplies the credentials and the SSM fallback is never
+reached.
+
+What was missing:
+
+1. **Nothing at `/boba-shop/asian-kitchen/` in Parameter Store.** Amplify's
+   environment variables are build-time only, so credentials are read at
+   request time by the branch's compute role instead — the long version is in
+   `pos/clover/creds.ts`. Square's credentials were never written there,
+   because the Square work was built and tested locally and merged without the
+   provisioning half.
+
+2. **`AsianKitchenSSRComputeRole` could not have read them anyway.** It carries
+   one inline policy, `ReadAsianKitchenMenuPhotos` — `s3:GetObject` on the
+   photo bucket and nothing else — because it was created before Square
+   existed. It needs a second policy for `ssm:GetParameter*` scoped to this
+   shop's prefix, plus `kms:Decrypt` conditioned on `kms:ViaService`.
+
+Snowdaes is the proof the mechanism itself is sound rather than the suspect:
+`/api/clover/hours` on that deployment returns 200 with real hours, read from
+`/boba-shop/snowdaes/` at request time through `SnowdaesSSRComputeRole`.
+
+The prefix per restaurant is not tidiness. One role that can read both prefixes
+is one bug away from taking a payment against the other shop's merchant
+account.
+
+Both writes need `ssm:PutParameter` and `iam:PutRolePolicy`, which
+`boba-shop-deploy`'s `AdministratorAccess-Amplify` does not include. **No
+rebuild is needed afterwards** — the role is already attached to the branch and
+`creds.ts` reads at request time, so the next Lambda invocation picks it up.
+A failed read is not cached, only a successful one.

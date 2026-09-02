@@ -65,6 +65,13 @@ export default defineConfig({
      * Port 3210 rather than 3000: this project routinely has other servers up,
      * and a suite that silently tests whatever happens to be listening is worse
      * than one that fails to start.
+     *
+     * `next start` and NOT `next build && next start`, so it serves whatever
+     * `.next` is already on disk. That keeps a run fast, and it means a CSS or
+     * component change you have not built yet is invisible to the suite —
+     * measured: the header tests passed against a stale bundle while the fixed
+     * stylesheet sat unbuilt beside it. Run `RESTAURANT=asian-kitchen npm run
+     * build` after touching anything the browser loads.
      */
     command: "RESTAURANT=asian-kitchen npx next start -p 3210",
     url: "http://localhost:3210",
