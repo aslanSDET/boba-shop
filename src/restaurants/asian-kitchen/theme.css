@@ -24,8 +24,28 @@
 }
 
 .ak {
-  --green: #1e9350; /* ESTIMATED from the storefront photo — see config.ts */
-  --green-deep: #0e5c31;
+  /*
+   * ESTIMATED from the storefront photo (see config.ts) and then DARKENED, by
+   * about 9% of value on the same hue, to carry white text.
+   *
+   * The header is white type on this green, and most of it is small: hours at
+   * 10px, the address at 13px, the rail's active pill at 12.5px. At the
+   * original #1e9350 that measured 3.93:1 — under WCAG AA's 4.5 for anything
+   * below 18.66px, and this is a takeout menu people read on a phone in a car
+   * park, which is the worst lighting any of it will ever get. #1b8548 measures
+   * 4.67:1 and is not a colour anyone would pick out of a line-up against the
+   * old one.
+   *
+   * `--green-deep` moved with it. It is the tagline chip sitting ON the green,
+   * and holding it still would have dropped that separation from 2.06:1 to
+   * 1.73:1 — fixing the text and quietly flattening the header instead. At
+   * #0c5029 the chip reads exactly as it did (2.05:1).
+   *
+   * BRAND_GREEN in config.ts is this same value and tints the phone's status
+   * bar. The two must not drift.
+   */
+  --green: #1b8548;
+  --green-deep: #0c5029;
   --ground: #fbfbf9;
   --card: #ffffff;
   --ink: #1a1d18;
@@ -1550,7 +1570,8 @@
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #a07d33;
+  /* Darkened from #a07d33, which measured 3.68:1 at 9.5px. */
+  color: #7a5c1c;
 }
 .ak-soon-name {
   margin: 7px 0 0;
@@ -1589,7 +1610,10 @@
 .ak-fineprint {
   font-size: 11px;
   line-height: 1.65;
-  color: #8b9284;
+  /* Was a hardcoded #8b9284, which is the one grey on this page that never went
+     through --muted and measured 3.10:1 — the worst contrast on the menu, on
+     the paragraph that carries the "prices may be out of date" warning. */
+  color: var(--muted);
 }
 
 /* ── CHECKOUT & CONFIRMATION ───────────────────────────────────────────────

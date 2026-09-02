@@ -66,7 +66,11 @@ export const RESTAURANT = {
  */
 export const SALES_TAX_PERCENT = "10";
 
-export const BRAND_GREEN = "#1E9350";
+/* The header green, and the phone status-bar tint via asianKitchenViewport.
+   Darkened from the #1E9350 estimated off the storefront photo so white text at
+   10-13px clears WCAG AA — the reasoning is on --green in theme.css. Keep the
+   two in step. */
+export const BRAND_GREEN = "#1B8548";
 
 /** "10:30" -> "10:30 am", the way it reads on a door. */
 export function clockLabel(hhmm: string): string {
