@@ -44,7 +44,7 @@
 
 import { itemById, optionById } from "@/restaurants/asian-kitchen/menu";
 import { credential } from "./creds";
-import { money, square, SquareError, toCents } from "./client";
+import { money, optional, square, SquareError, toCents } from "./client";
 
 /** What the browser is allowed to send. Ids and counts, never prices. */
 export interface CartLineInput {
@@ -326,10 +326,24 @@ export async function createOrderAndPay(args: {
   const chargeableCents = priced.totalCents - priced.tipCents;
   const amountToCharge = chargeableCents + (args.request.tipCents ?? 0);
 
-  const paid = await square<{ payment?: { id?: string; receipt_url?: string } }>("/v2/payments", {
-    method: "POST",
-    timeoutMs: 20_000,
-    body: {
+  /*
+   * ── A DECLINED CARD MUST NOT LEAVE AN ORDER BEHIND ─────────────────────────
+   *
+   * The order exists before the payment is attempted, so a decline strands it:
+   * OPEN on the merchant's account, with a FAILED tender and no money. Measured
+   * — three of them accumulated on the sandbox merchant from repeated runs of
+   * the decline test before this existed.
+   *
+   * That is the same litter Clover produced, and the reason `CalculateOrder`
+   * was such a relief: pricing no longer creates anything. But PAYING still
+   * does, so the window is smaller rather than gone, and it has to be swept.
+   *
+   * The cancel is wrapped in `optional()` deliberately. If cancelling fails,
+   * the customer must still be told their card was declined — a cleanup
+   * failure reported instead of the decline would send them to fix the wrong
+   * thing. A stranded order is a nuisance; a misleading error is a lost sale.
+   */
+  const paid = await payOrThrowAfterCleanup(orderId, location, {
       // Unchanged, not suffixed: 45-character ceiling. See the note above.
       idempotency_key: args.idempotencyKey,
       source_id: args.sourceId,
@@ -338,7 +352,6 @@ export async function createOrderAndPay(args: {
       amount_money: money(chargeableCents),
       ...(args.request.tipCents ? { tip_money: money(args.request.tipCents) } : {}),
       autocomplete: true,
-    },
   });
 
   const paymentId = paid.payment?.id;
@@ -355,6 +368,55 @@ export async function createOrderAndPay(args: {
     },
     receiptUrl: paid.payment?.receipt_url,
   };
+}
+
+
+/**
+ * Take the payment; if it fails for any reason, cancel the order we just made
+ * and re-throw the ORIGINAL error. See the note at the call site.
+ */
+async function payOrThrowAfterCleanup(
+  orderId: string,
+  location: string,
+  body: Record<string, unknown>,
+): Promise<{ payment?: { id?: string; receipt_url?: string } }> {
+  try {
+    return await square<{ payment?: { id?: string; receipt_url?: string } }>("/v2/payments", {
+      method: "POST",
+      timeoutMs: 20_000,
+      body,
+    });
+  } catch (error) {
+    await optional("cancel unpaid order", async () => {
+      const current = await square<{
+        order?: { version?: number; fulfillments?: Array<{ uid?: string }> };
+      }>(`/v2/orders/${orderId}`);
+
+      /*
+       * The FULFILLMENTS have to be cancelled too, not just the order.
+       * Setting `state: CANCELED` alone is rejected with INVALID_VALUE while a
+       * fulfillment is still PROPOSED — measured, twice: first by hand sweeping
+       * old test orders, then again by this very cleanup silently failing and
+       * leaving the litter it was written to remove.
+       */
+      const fulfillments = (current.order?.fulfillments ?? [])
+        .filter((f) => f.uid)
+        .map((f) => ({ uid: f.uid!, state: "CANCELED" }));
+
+      return square(`/v2/orders/${orderId}`, {
+        method: "PUT",
+        body: {
+          order: {
+            location_id: location,
+            version: current.order?.version ?? 1,
+            state: "CANCELED",
+            ...(fulfillments.length > 0 ? { fulfillments } : {}),
+          },
+        },
+      });
+    });
+    throw error;
+  }
 }
 
 export { SquareError };

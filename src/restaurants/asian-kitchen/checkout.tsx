@@ -179,9 +179,31 @@ export function Checkout() {
     setPaying(true);
     setError(null);
     try {
-      const result = await card.tokenize();
+      /*
+       * Tokenizing is a separate failure domain from paying, and conflating
+       * them produces a lie. An invalid card reported as "could not reach the
+       * shop" sends the customer to check their wifi instead of their card
+       * number — which is what this code did until someone testing it saw both
+       * messages at once.
+       */
+      let result: Awaited<ReturnType<typeof card.tokenize>>;
+      try {
+        result = await card.tokenize();
+      } catch (e) {
+        setError(
+          e instanceof Error && e.message
+            ? `Card entry failed: ${e.message}`
+            : "Card entry failed. Reload the page and try again.",
+        );
+        setPaying(false);
+        return;
+      }
+
       if (result.status !== "OK" || !result.token) {
-        setError(result.errors?.[0]?.message ?? "Please check the card details.");
+        /* Square returns an array; showing only the first hides "and the
+           postcode is wrong too", which is the second thing they need to fix. */
+        const messages = (result.errors ?? []).map((x) => x.message).filter(Boolean);
+        setError(messages.length > 0 ? messages.join(" ") : "Please check the card details.");
         setPaying(false);
         return;
       }
@@ -218,6 +240,8 @@ export function Checkout() {
       clearCart();
       router.push(`/order/${data.orderId}`);
     } catch {
+      /* Only reachable now if the fetch to our own server failed — which is
+         genuinely a connectivity problem, so the message is finally true. */
       setError("Could not reach the shop. Your card has not been charged.");
       setPaying(false);
     }

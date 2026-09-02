@@ -101,3 +101,9 @@ research/designlang/
 # and has not been cleared with the owner (docs/ASIAN-KITCHEN.md §4). Re-run the
 # script to repopulate. The manifest and the index ARE tracked.
 /public/asian-kitchen/menu/
+
+# Playwright — run output, not source. The specs and the config ARE tracked.
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
