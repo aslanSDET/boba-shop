@@ -185,6 +185,50 @@ test.describe("Asian Kitchen checkout", () => {
     await expect(page).toHaveURL(/\/checkout/);
   });
 
+  /**
+   * The retry after a decline — the single most likely thing a real customer
+   * does on this page, and it was broken.
+   *
+   * The idempotency key was minted once per page mount while `card.tokenize()`
+   * mints a new single-use nonce on every press, so the second Pay sent the same
+   * key with a different `source_id` and Square answered
+   *
+   *   IDEMPOTENCY_KEY_REUSED
+   *   "Different request parameters used for the same idempotency_key"
+   *
+   * The customer was told their card was declined, corrected it, and got an
+   * internal-sounding error for their trouble — with no way forward except a
+   * reload they had no reason to guess at.
+   *
+   * Driven through the UI rather than the API on purpose: the bug lived in how
+   * the page reused a value across two presses, which is invisible to a test
+   * that constructs each request itself.
+   */
+  test("a declined card can be corrected and paid on the same page", async ({ page }) => {
+    await addFirstItemAndGoToCheckout(page);
+
+    await page.getByLabel("Name").fill("Retry Test");
+    await page.getByLabel("Mobile").fill("2055550143");
+
+    await fillCard(page, CARD.declined);
+    await page.getByRole("button", { name: /^Pay \$/ }).click();
+
+    const alert = page.locator("main").getByRole("alert");
+    await expect(alert).toBeVisible({ timeout: 45_000 });
+    await expect(alert).toContainText(/declin/i);
+
+    /* Now do exactly what a customer does: type a card that works, press Pay. */
+    await fillCard(page, CARD.ok);
+    await page.getByRole("button", { name: /^Pay \$/ }).click();
+
+    await page.waitForURL(/\/order\/[A-Za-z0-9]+/, { timeout: 45_000 });
+    await expect(page.getByText(/Show this number at the counter/i)).toBeVisible();
+
+    /* The specific regression: the second attempt must not be refused for
+       reusing the first attempt's key. */
+    await expect(page.locator("main")).not.toContainText(/idempotency/i);
+  });
+
   test("an empty cart offers a way back rather than a broken page", async ({ page }) => {
     await page.goto("/checkout");
     await expect(page.getByRole("heading", { name: /Your order is empty/i })).toBeVisible();
