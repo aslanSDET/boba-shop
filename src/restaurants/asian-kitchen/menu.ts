@@ -452,7 +452,9 @@ export const MODIFIER_GROUPS: Record<string, ModifierGroup> = {
 
 /* ── items ────────────────────────────────────────────────────────────────── */
 
-const img = (file: string) => `/asian-kitchen/menu/${file}`;
+/* Served by `app/api/asian-kitchen/photo/[file]`, not from `public/`. The
+   photographs are not in this repository and cannot be — see photos.ts. */
+const img = (file: string) => `/api/asian-kitchen/photo/${file}`;
 
 export const ITEMS: MenuItem[] = [
   // ── Pick a Meal ─────────────────────────────────────────────────────────
