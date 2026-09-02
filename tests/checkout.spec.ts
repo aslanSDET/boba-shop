@@ -84,7 +84,7 @@ test.describe("Asian Kitchen checkout", () => {
     await expect(page.getByRole("button", { name: /Pay \$17\.18/ })).toBeVisible();
   });
 
-  test("takes a real sandbox payment and lands on the confirmation", async ({ page }) => {
+  test("takes a real sandbox payment and lands on the confirmation", async ({ page, request }) => {
     await addFirstItemAndGoToCheckout(page);
 
     await page.getByLabel("Name").fill("Playwright Test");
@@ -100,10 +100,57 @@ test.describe("Asian Kitchen checkout", () => {
     /* The URL is the proof: Square returned an order id and we routed to it. */
     await page.waitForURL(/\/order\/[A-Za-z0-9]+/, { timeout: 45_000 });
 
-    /* By role, not by text: Next renders a visually-hidden
-       `#__next-route-announcer__` carrying the same string for screen readers,
-       so a bare text match resolves to two elements and trips strict mode. */
-    await expect(page.getByRole("heading", { name: /^AK-/ })).toBeVisible();
+    /*
+     * The confirmation number must be SQUARE'S, not one we derived.
+     *
+     * It used to be `AK-` + the last four characters of the order id, which
+     * measured 162 distinct tickets across 229 real orders (67 collisions) and
+     * existed only in the browser — the shop could never look it up. Square's
+     * `receipt_number` is on the payment record and is the first four
+     * characters of the payment id, which is the end that actually varies.
+     *
+     * Asserted against Square's own books rather than a shape: a regex like
+     * /^[A-Za-z0-9]{4}$/ would pass just as happily on a number we made up.
+     *
+     * By role, not by text: Next renders a visually-hidden
+     * `#__next-route-announcer__` carrying the same string for screen readers,
+     * so a bare text match resolves to two elements and trips strict mode.
+     */
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toBeVisible();
+    const shown = (await heading.innerText()).trim();
+
+    const orderId = new URL(page.url()).pathname.split("/").pop()!;
+    const sq = {
+      Authorization: `Bearer ${process.env.SQUARE_SANDBOX_ACCESS_TOKEN}`,
+      "Square-Version": "2025-01-23",
+    };
+
+    /* GET by id, not orders/search: the search index is eventually consistent
+       by several seconds — measured — and this runs immediately after paying. */
+    const found = await request.get(
+      `https://connect.squareupsandbox.com/v2/orders/${orderId}`,
+      { headers: sq },
+    );
+    expect(found.ok(), await found.text()).toBeTruthy();
+    const mine = (await found.json()).order;
+    expect(mine, "the order we just paid should be on the merchant's books").toBeTruthy();
+
+    const tenderId = mine.tenders?.[0]?.id;
+    expect(tenderId, "a paid order carries a tender").toBeTruthy();
+    const payment = await request.get(
+      `https://connect.squareupsandbox.com/v2/payments/${tenderId}`,
+      { headers: sq },
+    );
+    const receiptNumber = (await payment.json()).payment?.receipt_number;
+
+    expect(receiptNumber, "Square issues a receipt_number on a COMPLETED payment").toBeTruthy();
+    expect(
+      shown,
+      `the confirmation shows "${shown}" but Square's receipt number is "${receiptNumber}"`,
+    ).toBe(receiptNumber);
+    /* And it is not the old derived shape. */
+    expect(shown.startsWith("AK-")).toBe(false);
     await expect(page.getByText(/Show this number at the counter/i)).toBeVisible();
     await expect(page.getByText(/Combination Fried Rice/i)).toBeVisible();
 
