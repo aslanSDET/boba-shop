@@ -1,0 +1,1581 @@
+/*
+ * Asian Kitchen's own look, scoped to `.ak`.
+ *
+ * Scoped on purpose: Snowdaes owns the tokens in `app/globals.css`, and until
+ * this repo actually deploys one restaurant per environment (PLATFORM.md §2)
+ * both live in one build. A wrapper class keeps them from fighting.
+ *
+ * Direction: the storefront header on a quiet body. Green is the sign; every
+ * value below the header stays out of the food's way.
+ */
+
+/*
+ * The page wrapper, not just the app root.
+ *
+ * `app/globals.css` paints `body` with Snowdaes' warm cream, and that shows
+ * anywhere this page does not cover — overscroll, and any viewport taller than
+ * the content. Painting the wrapper is the fix that survives one build serving
+ * both restaurants; it becomes redundant, harmlessly, once each restaurant has
+ * its own deployment (PLATFORM.md §2).
+ */
+.ak-page {
+  background: #fbfbf9;
+  min-height: 100dvh;
+}
+
+.ak {
+  --green: #1e9350; /* ESTIMATED from the storefront photo — see config.ts */
+  --green-deep: #0e5c31;
+  --ground: #fbfbf9;
+  --card: #ffffff;
+  --ink: #1a1d18;
+  --ink-2: #3c433a;
+  --muted: #6b7264;
+  --rule: #e7e9e3;
+  --rule-soft: #eff1ec;
+  --wash: #f1f5ef; /* the "your usual" panel */
+
+  /*
+   * The menu is a document, not a dashboard: it wants a measure.
+   *
+   * Without one the grid stretched to the viewport, and at 1500px each tile
+   * photo rendered ~500px wide. Their photography is not a consistent set —
+   * some plates are shot on a board, others are a phone snap of a styrofoam
+   * box on a counter — and at that size the difference is all you see. Capped
+   * at 760px a tile is ~235px, which is the size the weakest photo survives.
+   *
+   * Applied as a padding rather than a wrapper element so the green header,
+   * the sticky rail's rule and the cart bar still run full-bleed while their
+   * contents line up with the menu. Below 760px the max() falls through to the
+   * 16px phone gutter.
+   */
+  --measure: 760px;
+  --gutter: max(16px, calc((100% - var(--measure)) / 2));
+
+  /* Supplied by next/font in app/asian-kitchen/page.tsx; the stacks are real
+     fallbacks, so the page still reads correctly if a face fails to load. */
+  --fd: var(--font-ak-display), "Arial Narrow", Helvetica, sans-serif;
+  --fb: var(--font-ak-body), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --fm: var(--font-ak-mono), ui-monospace, Menlo, monospace;
+
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--fb);
+  min-height: 100dvh;
+  /* Their food is the colour; a dark inversion would fight every photograph.
+     Single-theme on purpose, painted explicitly so it holds on any host. */
+  color-scheme: light;
+}
+
+.ak *,
+.ak *::before,
+.ak *::after {
+  box-sizing: border-box;
+}
+
+/* ── header: the sign ─────────────────────────────────────────────────── */
+.ak-header {
+  background: var(--green);
+  padding: 12px var(--gutter) 12px;
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+/*
+ * Identity left, whereabouts right, and they swap to stacked below ~560px.
+ * The hours used to be absolutely positioned into the top-right corner, which
+ * left nowhere to put the address without it colliding on a narrow screen.
+ */
+.ak-header-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 20px;
+}
+.ak-where {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+@media (min-width: 560px) {
+  .ak-where {
+    align-items: flex-end;
+    text-align: right;
+  }
+}
+.ak-mark {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+/* Their real badge. It carries its own white ring, so it needs no plate. */
+.ak-mark-badge {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  display: block;
+}
+.ak-wordmark {
+  font-family: var(--fd);
+  font-weight: 800;
+  font-size: clamp(22px, 6vw, 26px);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.ak-tagline {
+  margin-top: 9px;
+  background: var(--green-deep);
+  color: #fff;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  display: inline-block;
+}
+/* state, then the hours it describes */
+.ak-when {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ak-open {
+  font-family: var(--fm);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: #fff;
+  color: var(--green-deep);
+  white-space: nowrap;
+}
+/* Shut should read as shut, not as a quieter shade of open. */
+.ak-open[data-open="false"] {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffd9c2;
+  box-shadow: inset 0 0 0 1px rgba(255, 217, 194, 0.45);
+}
+.ak-hours {
+  font-family: var(--fm);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.94);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/*
+ * No dotted underline and no help cursor. Both are affordances for a `title`
+ * tooltip, and a `title` tooltip does not exist on a touch device — so on the
+ * platform this page is actually for they advertise an explanation nobody can
+ * open. The abbr stays for screen readers; About spells out "Central" in full
+ * for everyone else.
+ */
+.ak-tz {
+  text-decoration: none;
+}
+/*
+ * A link to Maps, and measured at 37px tall — under the target on the one
+ * control in the header anybody actually taps. Same trick as the sheet's
+ * steppers: the pseudo-element carries the hit area so the two lines of type
+ * stay exactly where they are.
+ */
+.ak-address {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  color: #fff;
+  text-decoration: none;
+  min-width: 0;
+}
+.ak-address::after {
+  content: "";
+  position: absolute;
+  inset: -5px -6px;
+  border-radius: 6px;
+}
+.ak-address:hover .ak-address-street {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ak-address-street {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+}
+.ak-address-city {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* ── buttons ──────────────────────────────────────────────────────────── */
+.ak-btn {
+  width: 100%;
+  background: var(--green);
+  color: #fff;
+  border: 0;
+  border-radius: 11px;
+  font-family: var(--fb);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms ease;
+}
+.ak-btn:hover {
+  background: var(--green-deep);
+}
+.ak-btn:disabled {
+  background: #c3ccbe;
+  cursor: not-allowed;
+}
+/* Keyboard users land on the header first; this jumps past it to the menu. */
+.ak-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 60;
+  background: #fff;
+  color: var(--green-deep);
+  font-family: var(--fb);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 0 0 8px 0;
+}
+.ak-skip:focus {
+  left: 0;
+}
+.ak :focus-visible {
+  outline: 2px solid var(--green-deep);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── the band ─────────────────────────────────────────────────────────────
+ * A still of their own counter, framed for the loop the owner means to shoot.
+ * Full-bleed so it reads as the room rather than as a picture of the room; the
+ * copy sits bottom-left over a scrim that is heaviest exactly where the words
+ * are, so it survives whatever the footage turns out to look like.
+ */
+.ak-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 39 / 19;
+  max-height: 210px;
+  overflow: hidden;
+  background: #14170f;
+}
+/* Wider than a phone the band turns into a letterbox and `cover` throws the
+   top of the frame away — which here is the lit menu boards, the one thing in
+   the shot worth seeing. Give it more height rather than a harder crop. */
+@media (min-width: 620px) {
+  .ak-hero {
+    max-height: 300px;
+  }
+}
+.ak-hero-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /*
+   * The source is already cropped to the counter and the floor — the ceiling
+   * tiles and the strip lights are not in it at all. Centre is right here;
+   * biasing up put the ceiling back in frame on a wide viewport.
+   */
+  /* Just below centre: on a wide screen the band is a letterbox and centring
+     it crops the floor away, which is half of what makes the room look good. */
+  object-position: 50% 60%;
+  display: block;
+}
+.ak-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /*
+   * Four stops, not three. With a single ramp the eyebrow landed at the pale
+   * point of the gradient and on a pale part of the photo — measured
+   * unreadable. The scrim now goes dark from just above the copy, and stays
+   * light across the middle so the room still reads.
+   */
+  background: linear-gradient(
+    180deg,
+    rgba(16, 20, 14, 0.46) 0%,
+    rgba(16, 20, 14, 0.08) 30%,
+    rgba(16, 20, 14, 0.58) 66%,
+    rgba(16, 20, 14, 0.92) 100%
+  );
+  pointer-events: none;
+}
+.ak-hero-copy {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 14px;
+  z-index: 1;
+}
+.ak-hero-eyebrow {
+  margin: 0;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #a8e2bd;
+  text-shadow: 0 1px 3px rgba(10, 13, 8, 0.7);
+}
+.ak-hero-headline {
+  margin: 6px 0 0;
+  font-family: var(--fd);
+  font-weight: 700;
+  font-size: clamp(22px, 6.4vw, 28px);
+  line-height: 1.05;
+  color: #fff;
+  text-transform: uppercase;
+  text-wrap: balance;
+  max-width: 15ch;
+  text-shadow: 0 1px 8px rgba(10, 13, 8, 0.5);
+}
+
+/* ── category rail ────────────────────────────────────────────────────── */
+/*
+ * Wraps. It used to scroll sideways, and at 390px that put 561px of buttons in
+ * the box — "Sides" and "Drinks" were off-screen with nothing to say so. A menu
+ * of seven categories should show all seven.
+ *
+ * Underlined tabs are a horizontal-scroll idiom; wrapped onto two rows they
+ * read as broken. Pills are a wrapping idiom, so the shape changed with the
+ * behaviour rather than being retrofitted onto it.
+ */
+.ak-rail {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 11px var(--gutter);
+  background: var(--ground);
+  border-bottom: 1px solid var(--rule);
+}
+.ak-rail button {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-family: var(--fb);
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.ak-rail button:hover {
+  border-color: var(--green);
+}
+.ak-rail button[aria-current="true"] {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  font-weight: 600;
+}
+/* A hairline that separates "food" from "everything else". It disappears when
+   the pills wrap onto a new row, where the line break already does the job. */
+.ak-rail-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--rule);
+  margin: 2px 3px;
+}
+/* Scoped through .ak-rail so these out-specify `.ak-rail button` above rather
+   than fighting it with !important. */
+.ak-rail .ak-rail-about {
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+}
+.ak-rail .ak-rail-about[aria-current="true"] {
+  background: var(--green);
+  border-style: solid;
+  border-color: var(--green);
+  color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ak-rail button {
+    transition: none;
+  }
+}
+/* The rail is sticky, so every row it wraps to is screen a customer never gets
+   back. Tighter on a phone, where eight pills would otherwise take three. */
+@media (max-width: 559px) {
+  .ak-rail {
+    gap: 6px;
+    padding-block: 9px;
+  }
+  /* 38px, not 44. Eight nav pills at 44 stand 100px tall once they wrap, and
+     this rail is sticky — that is a tenth of a phone screen permanently spent
+     on navigation. A deliberate trade against the guideline, not an oversight;
+     every control that commits an order meets 44 or better. */
+  .ak-rail button {
+    font-size: 12.5px;
+    padding: 8px 11px;
+    min-height: 38px;
+  }
+}
+
+/* ── menu ─────────────────────────────────────────────────────────────── */
+.ak-section-head {
+  font-family: var(--fd);
+  font-weight: 700;
+  /*
+   * A condensed face set in caps loses its word shapes, so it needs size and
+   * tracking back to stay readable — 17px at 0.05em was a label you decoded
+   * rather than read. The hairline underneath does the separating that the
+   * old tight spacing was trying to do with proximity alone.
+   */
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  padding: 38px var(--gutter) 10px;
+  margin: 0;
+  position: relative;
+  /* Clears the sticky rail, whose height changes when the pills wrap.
+     `--ak-rail-h` is published by MenuScreen; the fallback is one row. */
+  scroll-margin-top: calc(var(--ak-rail-h, 57px) + 14px);
+}
+/*
+ * The rule stops at the measure, like every other line on the page. Left to
+ * `border-bottom` it ran the full viewport while the menu sat in a 760px
+ * column — the same escape the list dividers made before it.
+ */
+.ak-section-head::after,
+.ak-section-note::after {
+  content: "";
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 0;
+  height: 1px;
+  background: var(--rule);
+}
+.ak-section-head:has(+ .ak-section-note)::after {
+  display: none;
+}
+/*
+ * When a section carries a note, the note is part of the heading block — so
+ * the rule moves down to sit under both. Without this the line lands between
+ * a title and its own subtitle, which reads as two sections.
+ */
+.ak-section-head:has(+ .ak-section-note) {
+  padding-bottom: 4px;
+}
+.ak-section-note {
+  position: relative;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  padding: 0 var(--gutter) 12px;
+  margin: 0;
+  text-wrap: pretty;
+}
+/* ── plates: the shop's product, not a category ───────────────────────────── */
+.ak-plates {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px var(--gutter) 0;
+}
+.ak-plate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 78px;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 11px 13px 11px 11px;
+  cursor: pointer;
+  font-family: var(--fb);
+  color: var(--ink);
+  position: relative;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 120ms ease;
+}
+.ak-plate:hover {
+  border-color: var(--green);
+}
+.ak-plate[data-lead] {
+  border: 2px solid var(--green);
+  padding: 10px 12px 10px 10px;
+}
+.ak-plate-flag {
+  position: absolute;
+  top: -9px;
+  left: 12px;
+  background: var(--green);
+  color: #fff;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.ak-plate-media {
+  position: relative;
+  flex: none;
+  width: 76px;
+  height: 76px;
+  border-radius: 12px;
+  overflow: visible;
+  background: var(--rule-soft);
+}
+.ak-plate-media > img,
+.ak-plate-media > .ak-nophoto {
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px rgba(26, 29, 24, 0.07);
+}
+/* The count rides the corner of the dish rather than standing in for it. */
+.ak-plate-n {
+  position: absolute;
+  left: -7px;
+  bottom: -7px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--fd);
+  font-weight: 800;
+  font-size: 19px;
+  line-height: 1;
+  box-shadow: 0 0 0 3px var(--card);
+}
+/* "JR" is two glyphs where the others are one; drop it a step so the badges
+   still read as a set. */
+.ak-plate[data-junior] .ak-plate-n {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.ak-plate-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ak-plate-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.ak-plate-sub {
+  font-family: var(--fm);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.ak-plate-price {
+  flex: none;
+  text-align: right;
+  font-family: var(--fd);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.ak-plate-from {
+  display: block;
+  font-family: var(--fm);
+  font-weight: 400;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── à la carte: the photo grid ───────────────────────────────────────────
+ * Food first, the way people expect a takeout menu to look. A square
+ * centre-crop is the kindest frame for a set shot by different people at
+ * different times — it throws away the edges, which is where the countertop
+ * and the styrofoam live — and the inset hairline keeps a white plate on a
+ * pale ground from dissolving into the page.
+ */
+.ak-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 13px;
+  padding: 18px var(--gutter) 0;
+}
+@media (min-width: 620px) {
+  .ak-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.ak-tile {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--fb);
+  color: var(--ink);
+  min-width: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--rule-soft);
+  box-shadow: inset 0 0 0 1px rgba(26, 29, 24, 0.07);
+}
+.ak-tile:hover .ak-thumb {
+  box-shadow: inset 0 0 0 1px rgba(26, 29, 24, 0.07), 0 0 0 2px var(--green);
+}
+
+.ak-tile h3 {
+  font-weight: 600;
+  font-size: 13.5px;
+  margin: 8px 0 1px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+.ak-price {
+  font-family: var(--fm);
+  font-size: 12px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.ak-desc {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 2px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ak-badge {
+  align-self: flex-start;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  background: #e4f0e7;
+  color: #2c6b44;
+  border-radius: 4px;
+  padding: 2px 5px;
+  margin-top: 4px;
+}
+
+/* no-photo fallback: the roundel on a warm field, never a broken tile */
+.ak-nophoto {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(150deg, #eef1ea, #e3e8de);
+  color: #a9b3a2;
+  font-family: var(--fd);
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 0.04em;
+}
+
+/* ── sheet ────────────────────────────────────────────────────────────── */
+.ak-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 20, 14, 0.5);
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+@media (min-width: 640px) {
+  .ak-scrim {
+    align-items: center;
+  }
+}
+/*
+ * A flex column, not a scroll box with a sticky child. `position: sticky` inside
+ * an `overflow-y: auto` parent pins to the scrollport, which painted the footer
+ * on top of the combo list rather than below it — reserving space with
+ * padding-bottom does not help, because a sticky element is out of that flow.
+ * Body scrolls, footer is its sibling and never moves.
+ */
+.ak-sheet {
+  background: var(--card);
+  width: 100%;
+  max-width: 560px;
+  max-height: 92dvh;
+  border-radius: 20px 20px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  animation: ak-rise 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/*
+ * The grabber. It is the affordance that says "this drags", and on a phone it
+ * is also the drag surface — bound here and on the photo rather than on the
+ * body, so the gesture can never fight a scroll. Gone at tablet width, where
+ * the sheet is a centred dialog and a grabber would be a lie.
+ */
+.ak-grab {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 22px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+}
+.ak-grab::before {
+  content: "";
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 6px rgba(16, 20, 14, 0.35);
+}
+@media (min-width: 640px) {
+  .ak-grab {
+    display: none;
+  }
+}
+.ak-sheet-hero {
+  touch-action: pan-y;
+}
+/*
+ * A short scrim across the top of the photo. Both controls that live up there —
+ * the grabber and the close button — are white, and half this shop's
+ * photography is a pale plate on a light wood board, on which a white bar is
+ * simply invisible. Measured: the grabber rendered correctly and could not be
+ * seen. Short enough not to darken the food.
+ */
+.ak-sheet-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 62px;
+  background: linear-gradient(to bottom, rgba(16, 20, 14, 0.36), rgba(16, 20, 14, 0));
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Springs back on `translate`, which is what the drag writes — see the note in
+   menu-screen.tsx. Never `transition: all`. */
+.ak-sheet {
+  transition: translate 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ak-sheet {
+    transition: none;
+  }
+}
+
+.ak-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 18px;
+}
+@media (min-width: 640px) {
+  .ak-sheet {
+    border-radius: 18px;
+    max-height: 86dvh;
+  }
+}
+/* A phone in landscape is about 370px tall. The photo is the first thing to
+   give up its space; the choices are the point. */
+@media (max-height: 460px) {
+  .ak-sheet-hero,
+  .ak-sheet-hero-short {
+    max-height: 88px;
+  }
+  .ak-sheet {
+    max-height: 96dvh;
+  }
+}
+@keyframes ak-rise {
+  from {
+    transform: translateY(22px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ak-sheet {
+    animation: none;
+  }
+  .ak-btn {
+    transition: none;
+  }
+}
+/*
+ * Capped, not just proportional. At 16/9 with no ceiling the hero took ~250px
+ * of a 92dvh sheet, and on a laptop that pushed every option group below the
+ * fold — the sheet opened showing a photo, a title and a disabled "Choose 4
+ * more" button with nothing visible to choose. The first group has to be on
+ * screen when the sheet opens; the photo is context, not the content.
+ */
+.ak-sheet-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  max-height: 190px;
+  background: var(--rule-soft);
+  overflow: hidden;
+}
+.ak-sheet-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Dismiss is the one control every viewer needs; it was 32px. Same trick as
+   the steppers: 38px drawn, 50px reachable. */
+.ak-close {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  touch-action: manipulation;
+}
+.ak-close::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+.ak-sheet h2 {
+  font-family: var(--fd);
+  font-weight: 800;
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  margin: 14px 16px 0;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.ak-sheet-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 16px 0;
+}
+.ak-sheet-meta b {
+  color: #2c6b44;
+  font-weight: 600;
+}
+
+/*
+ * Shorter still when the item has choices to make. The photograph is context;
+ * the option groups are the content, and on a laptop every pixel the hero takes
+ * is a pixel of "Choose 4 more" with nothing visible to choose.
+ */
+.ak-sheet-hero-short {
+  aspect-ratio: 3 / 1;
+  max-height: 132px;
+}
+
+/* One line, not a card. It sits above the option groups, which say the same
+   thing in more detail — a third stacked block here pushed them off screen. */
+.ak-sheet-gets {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 7px 16px 0;
+  text-wrap: pretty;
+}
+.ak-sheet-gets b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.ak-sheet-desc {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 9px 16px 0;
+  text-wrap: pretty;
+}
+
+/* ── option groups ────────────────────────────────────────────────────── */
+.ak-group {
+  padding: 28px 16px 0;
+  scroll-margin-top: 8px;
+}
+.ak-group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 13px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.ak-group-head h3 {
+  margin: 0;
+  font-family: var(--fd);
+  font-weight: 700;
+  font-size: 17px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink);
+}
+.ak-count {
+  margin-left: auto;
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ak-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/*
+ * These went missing entirely in a bad delete, and the failure was invisible
+ * in the markup: with no rule at all the pills stopped being pills and ran
+ * together as a line of text with the surcharge welded to the name —
+ * "Fruit Lemonade+$3.49". A price needs to look like a price.
+ */
+.ak-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 1px solid var(--rule);
+  border-radius: 22px;
+  background: var(--card);
+  color: var(--ink-2);
+  font-family: var(--fb);
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.ak-opt:hover {
+  border-color: var(--green);
+}
+.ak-opt[aria-pressed="true"] {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  font-weight: 600;
+}
+/* The surcharge is a separate fact from the name, so it gets its own colour,
+   its own face and a gap — never butted against the last letter. */
+.ak-opt .delta {
+  font-family: var(--fm);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--green-deep);
+  white-space: nowrap;
+}
+.ak-opt[aria-pressed="true"] .delta {
+  color: rgba(255, 255, 255, 0.88);
+}
+.ak-opt .ak-cal {
+  margin-left: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ak-opt {
+    transition: none;
+  }
+}
+
+/* ── step rail ────────────────────────────────────────────────────────────
+ * One chip per required group, in order, each carrying a dot per pick it
+ * wants. It answers "how much of this is there?" — the question the per-group
+ * counters could not, because each of them only ever describes itself.
+ */
+.ak-steps {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 14px 16px 0;
+  padding: 0;
+}
+.ak-steps > li {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+/* Tappable: the rail says where you are, so it should also take you there. */
+.ak-step {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-family: var(--fb);
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 10px;
+  border: 1px solid var(--rule);
+  background: var(--ground);
+  padding: 8px 9px;
+}
+.ak-step:hover {
+  border-color: var(--green);
+}
+.ak-step[data-state="now"] {
+  background: var(--wash);
+  border: 1.5px solid var(--green);
+  padding: 7.5px 8.5px;
+}
+.ak-step-n {
+  display: block;
+  font-family: var(--fm);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9aa295;
+}
+.ak-step[data-state="now"] .ak-step-n {
+  color: #4e7a5c;
+}
+.ak-step-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ak-step[data-state="now"] .ak-step-label,
+.ak-step[data-state="done"] .ak-step-label {
+  color: var(--ink);
+  font-weight: 700;
+}
+.ak-step-dots {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.ak-step-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px #d8ded6;
+}
+.ak-step-dots span[data-on] {
+  background: var(--green);
+  box-shadow: none;
+}
+.ak-step-skip {
+  display: block;
+  font-family: var(--fm);
+  font-size: 9.5px;
+  color: #9aa295;
+  margin-top: 7px;
+}
+
+/* ── choice rows ──────────────────────────────────────────────────────────
+ * A row per option, the way a counter menu lists them: name on the left, what
+ * their board prints about it on the right, and the quantity control last.
+ */
+.ak-rows {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--card);
+  margin: 0 16px;
+}
+.ak-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--rule-soft);
+  min-height: 52px;
+}
+.ak-row:last-child {
+  border-bottom: 0;
+}
+.ak-row[data-on="true"] {
+  background: var(--wash);
+}
+.ak-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 0;
+  padding: 11px 6px 11px 13px;
+  font-family: var(--fb);
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-row-main:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+.ak-opt-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+/* Their board marks heat with one or two chilli peppers. Kept small: it is a
+   label, not an illustration. */
+.ak-spice {
+  font-size: 9.5px;
+  letter-spacing: -1px;
+  flex: none;
+  line-height: 1;
+}
+.ak-cal {
+  margin-left: auto;
+  font-family: var(--fm);
+  font-size: 10px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+  white-space: nowrap;
+}
+.ak-row .delta {
+  font-family: var(--fm);
+  font-size: 10.5px;
+  color: var(--green-deep);
+  font-weight: 500;
+  flex: none;
+  margin-left: 0;
+  white-space: nowrap;
+}
+.ak-row .ak-cal + .delta {
+  margin-left: 8px;
+}
+.ak-row .ak-opt-name + .delta {
+  margin-left: auto;
+}
+
+/*
+ * 36px of circle, 48px of target. A stepper next to a second stepper is
+ * exactly where a thumb misses, but drawing 48px circles in a menu row looks
+ * like a calculator — so the pseudo-element carries the hit area and the
+ * border carries the look.
+ */
+.ak-qty {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 8px;
+  flex: none;
+  min-width: 96px;
+  justify-content: flex-end;
+}
+.ak-qty button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-family: var(--fb);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.ak-qty button::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+}
+.ak-qty button:hover {
+  border-color: var(--green);
+}
+.ak-qty button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.ak-qty b {
+  font-family: var(--fm);
+  font-size: 13px;
+  min-width: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.ak-tick {
+  flex: none;
+  width: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 700;
+}
+.ak-count.is-done {
+  color: var(--green-deep);
+  font-weight: 600;
+}
+
+/* sheet footer */
+.ak-sheet-foot {
+  flex: 0 0 auto;
+  position: relative;
+  background: var(--card);
+  border-top: 1px solid var(--rule);
+  padding: 11px 16px calc(13px + env(safe-area-inset-bottom));
+}
+/*
+ * The scroll body ends in a hard 1px rule, so a combo row that happens to
+ * straddle the boundary was sliced clean in half — it read as broken layout
+ * rather than as "there is more below". This fades the last few pixels so the
+ * cut is legible as a scroll edge. Sits above the footer, never over it, and
+ * the body's own padding-bottom means it fades over whitespace once you reach
+ * the end rather than veiling the final row.
+ */
+.ak-sheet-foot::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 26px;
+  background: linear-gradient(to top, var(--card), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.ak-status {
+  font-family: var(--fm);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+/* ── cart bar ─────────────────────────────────────────────────────────── */
+.ak-cart {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  background: var(--card);
+  border-top: 1px solid var(--rule);
+  padding: 11px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+  margin-top: 26px;
+}
+
+/* ── about ────────────────────────────────────────────────────────────────
+ * Ordered the way somebody collecting food needs it: where, then whether it is
+ * open, then when it is open, then how you get it. Every line is the shop's
+ * own; the phone number is bracketed rather than guessed.
+ */
+.ak-about {
+  padding: 0 0 0;
+  margin-top: 34px;
+  border-top: 1px solid var(--rule);
+  scroll-margin-top: calc(var(--ak-rail-h, 57px) + 14px);
+}
+.ak-about-head {
+  background: var(--green);
+  padding: 24px var(--gutter) 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.ak-about-badge {
+  width: 86px;
+  height: 86px;
+  display: block;
+}
+.ak-about h2 {
+  margin: 0;
+  font-family: var(--fd);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.ak-about-tag {
+  margin: 0;
+  background: var(--green-deep);
+  color: #fff;
+  font-family: var(--fd);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+}
+.ak-about-lede {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 20px 0 0;
+  padding: 0 var(--gutter);
+  max-width: none;
+  text-wrap: pretty;
+}
+
+/* ── map ──────────────────────────────────────────────────────────────── */
+.ak-map {
+  position: relative;
+  margin-top: 18px;
+  height: 232px;
+  background: var(--rule-soft);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  overflow: hidden;
+}
+.ak-map iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  /* Google's tiles run warm; a touch of desaturation settles them next to the
+     shop's green without making the map hard to read. */
+  filter: saturate(0.88);
+}
+.ak-map-card {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 12px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 12px;
+  padding: 11px 12px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  box-shadow: 0 2px 10px rgba(26, 29, 24, 0.16);
+}
+.ak-map-addr {
+  flex: 1;
+  min-width: 0;
+}
+.ak-map-street {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+}
+.ak-map-city {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.ak-map-go {
+  flex: none;
+  background: var(--green);
+  color: #fff;
+  text-decoration: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 10px 15px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 120ms ease;
+}
+.ak-map-go:hover {
+  background: var(--green-deep);
+  color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ak-map-go {
+    transition: none;
+  }
+}
+
+/* ── facts ────────────────────────────────────────────────────────────── */
+.ak-facts {
+  margin: 16px var(--gutter) 0;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.ak-fact {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--rule-soft);
+}
+.ak-fact:first-child {
+  border-top: 0;
+}
+.ak-fact dt {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.ak-fact dd {
+  margin: 0 0 0 auto;
+  font-size: 13px;
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.ak-num {
+  font-family: var(--fm);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+/* An unanswered question should look like one, not like data. */
+.ak-todo {
+  font-family: var(--fm);
+  font-size: 12px;
+  color: #b45309;
+}
+.ak-fact-status {
+  background: var(--wash);
+  align-items: center;
+}
+.ak-fact-status dt {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.ak-fact-status dd {
+  font-family: var(--fm);
+  font-size: 11.5px;
+  color: var(--green-deep);
+}
+.ak-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #c3ccbe;
+  flex: none;
+  box-shadow: 0 0 0 4px rgba(107, 114, 100, 0.14);
+}
+/* Green only once the client has actually looked at a clock. */
+.ak-fact-status[data-open="true"] .ak-dot {
+  background: var(--green);
+  box-shadow: 0 0 0 4px rgba(30, 147, 80, 0.18);
+}
+.ak-fact-status[data-open="false"] .ak-dot {
+  background: #b45309;
+  box-shadow: 0 0 0 4px rgba(180, 83, 9, 0.16);
+}
+.ak-fact-status[data-open="false"] dd {
+  color: #b45309;
+}
+
+/* ── coming soon ──────────────────────────────────────────────────────── */
+.ak-soon {
+  margin: 20px var(--gutter) 0;
+  border: 1px dashed #c9b48a;
+  background: #fdfaf3;
+  border-radius: 14px;
+  padding: 15px;
+}
+.ak-soon-label {
+  margin: 0;
+  font-family: var(--fm);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a07d33;
+}
+.ak-soon-name {
+  margin: 7px 0 0;
+  font-family: var(--fd);
+  font-weight: 700;
+  font-size: 19px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.ak-soon-note {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.ak-foot {
+  padding: 26px var(--gutter) 40px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  border-top: 1px solid var(--rule);
+  margin-top: 30px;
+}
+.ak-foot p {
+  margin: 0 0 8px;
+  max-width: 68ch;
+}
+.ak-foot-lead {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+/* Genuinely fine print: smaller and quieter than the disclosure above it, but
+   still above the 11px floor where this stops being readable on a phone. */
+.ak-fineprint {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #8b9284;
+}

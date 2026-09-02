@@ -5,14 +5,14 @@
  *   node scripts/import-menu.mjs billerica  # one
  *
  * Reads assets/clover/<location>.json (pulled from the shop's own Clover
- * account) and writes src/config/menu.<location>.generated.ts conforming to the
- * existing types in src/types/boba.ts. Nothing here is hand-maintained —
+ * account) and writes src/restaurants/snowdaes/menu.<location>.generated.ts conforming to the
+ * existing types in src/restaurants/snowdaes/types.ts. Nothing here is hand-maintained —
  * PLAN.md 8.7 makes Clover the source of truth for names, prices and modifiers,
  * so re-running this is how the menu changes.
  *
  * Curated fields Clover has no home for (illustration colourways, "popular"
  * flags, editorial copy) must NOT be added to the generated file — they belong
- * in src/config/item-art.ts and friends, keyed by Clover id, so a re-import
+ * in src/restaurants/snowdaes/item-art.ts and friends, keyed by Clover id, so a re-import
  * cannot wipe them. Prior art on this: the surveyed Django integration
  * preserves locally-curated fields by name across every resync.
  */
@@ -30,7 +30,7 @@ const UNLIMITED = 2147483647;
 
 /**
  * Twelve Clover categories collapse onto four product types. This only decides
- * which illustration stands in when an item has no photo (src/types/boba.ts),
+ * which illustration stands in when an item has no photo (src/restaurants/snowdaes/types.ts),
  * so a rough fit is fine — but a NEW category must be added here deliberately
  * rather than defaulted, which is why the fallback throws.
  */
@@ -177,7 +177,7 @@ function build(location) {
 //
 // ${itemBlocks.length} items · ${kept.length} modifier groups · ${cats.length} categories
 
-import type { MenuCategory, MenuItem, ModifierGroup } from "@/types/boba";
+import type { MenuCategory, MenuItem, ModifierGroup } from "@/restaurants/snowdaes/types";
 
 export const CATEGORIES: MenuCategory[] = [
 ${cats.map((c) => `  { id: ${lit(c.id)}, name: ${lit(c.name)}, productType: ${lit(PRODUCT_TYPE[c.name])} },`).join("\n")}
@@ -189,7 +189,7 @@ ${cats.map((c) => `  { id: ${lit(c.id)}, name: ${lit(c.name)}, productType: ${li
     kept.map((g) => g.text).join("\n\n") +
     `\n\nexport const ITEMS: MenuItem[] = [\n` + itemBlocks.join("\n") + `\n];\n`;
 
-  const out = join(ROOT, "src/config", `menu.${location}.generated.ts`);
+  const out = join(ROOT, "src/restaurants/snowdaes", `menu.${location}.generated.ts`);
   writeFileSync(out, header + body, "utf8");
 
   return { out, items: itemBlocks.length, groups: kept.length, cats: cats.length, warnings, photos: itemBlocks.filter((b) => b.includes("imageUrl")).length };

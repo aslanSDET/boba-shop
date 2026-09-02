@@ -1,0 +1,453 @@
+<title>Menu Reconciliation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  /* ── Palette taken off their own menu board ────────────────────────────
+     The boards are a specific object: a silver-grey gradient panel, red
+     section headings, an orange rule that ends in a dot, green category
+     labels, and black panels for wings and Philly. Every colour below is
+     read from that, not chosen from scratch. */
+  :root {
+    --board: #eef0f2;
+    --paper: #fbfbfa;
+    --panel: #ffffff;
+    --ink: #14171a;
+    --ink-2: #39424a;
+    --slate: #5b6470;
+    --rule: #dfe3e6;
+    --rule-soft: #ecEEF0;
+    --red: #c8102e;
+    --orange: #f07c00;
+    --green: #1e9350;
+    --green-deep: #0e5c31;
+    --black-panel: #1b1d1f;
+    --flag: #fdf3ee;
+    --flag-line: #f3d9c6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --board: #1a1e21;
+      --paper: #121517;
+      --panel: #1a1e21;
+      --ink: #edf0f2;
+      --ink-2: #c2cad1;
+      --slate: #929ca6;
+      --rule: #2c3237;
+      --rule-soft: #23282c;
+      --red: #ff6b7f;
+      --orange: #ff9f38;
+      --green: #47c07a;
+      --green-deep: #7fd8a3;
+      --black-panel: #0c0e0f;
+      --flag: #241a13;
+      --flag-line: #3d2a1b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --board: #1a1e21;
+    --paper: #121517;
+    --panel: #1a1e21;
+    --ink: #edf0f2;
+    --ink-2: #c2cad1;
+    --slate: #929ca6;
+    --rule: #2c3237;
+    --rule-soft: #23282c;
+    --red: #ff6b7f;
+    --orange: #ff9f38;
+    --green: #47c07a;
+    --green-deep: #7fd8a3;
+    --black-panel: #0c0e0f;
+    --flag: #241a13;
+    --flag-line: #3d2a1b;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Public Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px 96px; }
+
+  /* ── the signature: their orange rule, ending in a dot ─────────────────
+     Every panel on their board heads its section with this. Borrowing it
+     is what marks each section here as coming from the board rather than
+     from us. */
+  .rule-head { display: flex; align-items: center; gap: 14px; margin: 0; }
+  .rule-head h2 {
+    font-family: "Saira Condensed", "Arial Narrow", Helvetica, sans-serif;
+    font-weight: 700; font-size: clamp(22px, 4vw, 30px);
+    text-transform: uppercase; letter-spacing: 0.01em;
+    color: var(--red); margin: 0; text-wrap: balance; flex: none;
+  }
+  .rule-head::after {
+    content: ""; flex: 1; height: 3px; background: var(--orange);
+    position: relative; border-radius: 2px;
+  }
+  .rule-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--orange); flex: none; }
+
+  header.top {
+    background: var(--board);
+    border-bottom: 3px solid var(--orange);
+    padding: 36px 0 30px;
+    margin-bottom: 6px;
+  }
+  header.top .wrap { padding-bottom: 0; }
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--green-deep); margin: 0 0 10px;
+  }
+  h1 {
+    font-family: "Saira Condensed", "Arial Narrow", Helvetica, sans-serif;
+    font-weight: 800; font-size: clamp(34px, 8vw, 58px); line-height: 1.02;
+    text-transform: uppercase; margin: 0; color: var(--ink); text-wrap: balance;
+  }
+  .standfirst { font-size: 17px; color: var(--ink-2); max-width: 62ch; margin: 14px 0 0; text-wrap: pretty; }
+
+  .sources { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin: 26px 0 0; }
+  .source { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 13px; }
+  .source dt {
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate); margin: 0;
+  }
+  .source dd { margin: 4px 0 0; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .source p { margin: 3px 0 0; font-size: 12.5px; color: var(--slate); line-height: 1.45; }
+
+  section { margin-top: 52px; }
+  .lede { font-size: 15.5px; color: var(--ink-2); max-width: 66ch; margin: 14px 0 0; text-wrap: pretty; }
+
+  .scroll { overflow-x: auto; margin: 20px 0 0; border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+  th, td { padding: 9px 13px; text-align: left; border-bottom: 1px solid var(--rule-soft); }
+  thead th {
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate);
+    background: var(--rule-soft); border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  .num { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .up { color: var(--red); font-weight: 700; }
+  .same { color: var(--slate); }
+  .dish { font-weight: 600; }
+  tfoot td { font-size: 12.5px; color: var(--slate); background: var(--rule-soft); }
+
+  .callout {
+    background: var(--flag); border: 1px solid var(--flag-line);
+    border-radius: 10px; padding: 15px 17px; margin: 22px 0 0;
+  }
+  .callout p { margin: 0; font-size: 14.5px; color: var(--ink-2); text-wrap: pretty; }
+  .callout p + p { margin-top: 8px; }
+  .callout strong { color: var(--ink); }
+
+  .gaps { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 11px; }
+  .gaps li {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+    padding: 13px 15px; border-left: 3px solid var(--orange);
+  }
+  .gaps h3 {
+    margin: 0; font-size: 15px; font-weight: 600; color: var(--ink);
+    display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
+  }
+  .gaps p { margin: 5px 0 0; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; text-wrap: pretty; }
+  .tag {
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 9.5px;
+    letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+    background: var(--rule-soft); color: var(--slate); font-weight: 500; white-space: nowrap;
+  }
+  .tag.wrong { background: var(--red); color: #fff; }
+  .tag.missing { background: var(--orange); color: #17181a; }
+  .gaps li.is-wrong { border-left-color: var(--red); }
+
+  code {
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.88em;
+    background: var(--rule-soft); padding: 1px 5px; border-radius: 4px; color: var(--ink-2);
+  }
+  .panel-dark {
+    background: var(--black-panel); color: #f2f4f5; border-radius: 12px;
+    padding: 22px 24px; margin: 22px 0 0;
+  }
+  .panel-dark h3 {
+    font-family: "Saira Condensed", "Arial Narrow", Helvetica, sans-serif;
+    font-weight: 700; font-size: 20px; text-transform: uppercase;
+    color: var(--orange); margin: 0 0 10px; letter-spacing: 0.02em;
+  }
+  .panel-dark p { margin: 0; color: #c8ced3; font-size: 14px; text-wrap: pretty; }
+  .panel-dark p + p { margin-top: 9px; }
+  .panel-dark strong { color: #fff; }
+  .flavours { display: flex; flex-wrap: wrap; gap: 6px; margin: 13px 0 0; padding: 0; list-style: none; }
+  .flavours li {
+    font-size: 12.5px; padding: 4px 10px; border-radius: 20px;
+    border: 1px solid #3a3f43; color: #c8ced3;
+  }
+  .flavours li.new { border-color: var(--orange); color: var(--orange); }
+  .flavours li.gone { text-decoration: line-through; opacity: 0.5; }
+
+  footer { margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--rule); color: var(--slate); font-size: 12.5px; }
+  footer p { margin: 0 0 6px; max-width: 70ch; text-wrap: pretty; }
+  @media (max-width: 560px) {
+    .rule-head h2 { font-size: 21px; }
+    th, td { padding: 8px 10px; }
+  }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">Asian Kitchen · Center Point · 1 September 2026</p>
+    <h1>What the board says, what DoorDash says, what we built</h1>
+    <p class="standfirst">
+      The photographs of the in-store menu boards are the first primary source we have
+      had. They disagree with the listing our menu was transcribed from — on price, on
+      structure, and on a whole category nobody knew about.
+    </p>
+
+    <dl class="sources">
+      <div class="source">
+        <dt>Source A — truth</dt>
+        <dd>The in-store boards</dd>
+        <p>Seven photographs. Prices, calories, spice levels, ingredients.</p>
+      </div>
+      <div class="source">
+        <dt>Source B — the listing</dt>
+        <dd>The public delivery listing</dd>
+        <p>Read live today. Confirms what our menu was built from.</p>
+      </div>
+      <div class="source">
+        <dt>Source C — ours</dt>
+        <dd><code>menu.ts</code>, 68 items</dd>
+        <p>Transcribed from B. Matches B exactly on every price checked.</p>
+      </div>
+    </dl>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <div class="rule-head"><h2>The markup</h2><span class="rule-dot"></span></div>
+    <p class="lede">
+      Our build matches the delivery listing to the cent. The listing does not match the
+      counter. Every main dish is priced roughly a fifth higher online than the board
+      charges in the shop.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Dish</th><th class="num">In store</th><th class="num">Listing &amp; our build</th><th class="num">Difference</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="dish">Pick Any One Item</td><td class="num">$7.99</td><td class="num">$9.59</td><td class="num up">+20.0%</td></tr>
+          <tr><td class="dish">Pick Any Two Items</td><td class="num">$9.49</td><td class="num">$11.19</td><td class="num up">+17.9%</td></tr>
+          <tr><td class="dish">Pick Any Three Items</td><td class="num">$10.99</td><td class="num">$12.89</td><td class="num up">+17.3%</td></tr>
+          <tr><td class="dish">Kid’s Meal</td><td class="num">$6.49</td><td class="num">$7.99</td><td class="num up">+23.1%</td></tr>
+          <tr><td class="dish">Family Feast</td><td class="num">$32.99</td><td class="num">$34.99</td><td class="num up">+6.1%</td></tr>
+          <tr><td class="dish">Chicken Fried Rice / Lo Mein</td><td class="num">$10.49</td><td class="num">$12.49</td><td class="num up">+19.1%</td></tr>
+          <tr><td class="dish">Beef &amp; Shrimp Fried Rice / Lo Mein</td><td class="num">$11.49</td><td class="num">$13.99</td><td class="num up">+21.8%</td></tr>
+          <tr><td class="dish">Combination Fried Rice / Lo Mein</td><td class="num">$12.49</td><td class="num">$14.99</td><td class="num up">+20.0%</td></tr>
+          <tr><td class="dish">Fountain drink · Sweet tea (regular)</td><td class="num">$1.99</td><td class="num">$2.99</td><td class="num up">+50.3%</td></tr>
+          <tr><td class="dish">Bottled drinks</td><td class="num">$2.49</td><td class="num">$3.49</td><td class="num up">+40.2%</td></tr>
+          <tr><td class="dish">Side Mixed Vegetables</td><td class="num">$5.49</td><td class="num">$7.99</td><td class="num up">+45.5%</td></tr>
+          <tr><td class="dish">Lo Mein · Fried Rice · Steamed Rice</td><td class="num">$4.99 / $3.99 / $2.99</td><td class="num">same</td><td class="num same">0%</td></tr>
+          <tr><td class="dish">Egg roll · Spring roll · Rangoon</td><td class="num">$1.50 / $1.00 / $2.00</td><td class="num">same</td><td class="num same">0%</td></tr>
+          <tr><td class="dish">Wings, 6 / 10 / 15 / 30 pieces</td><td class="num">$8.49 – $35.49</td><td class="num">same</td><td class="num same">0%</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="4">Percentages computed from the two prices shown. Board prices read from the high-resolution panels; listing prices read live today.</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p><strong>The pattern is not uniform, and that is the interesting part.</strong>
+      Mains, drinks and the one premium side carry 17–50%. Plain sides and plain wings
+      carry nothing at all. Someone marked up the items that sell, and left the cheap
+      attachments alone.</p>
+      <p>This is the strongest argument the project has, but it needs one caveat said out
+      loud: <strong>a markup is not the commission.</strong> It shows the shop already
+      prices around the platform. What the platform actually takes from them is on their
+      statements, and still has not been established.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="rule-head"><h2>Missing entirely</h2><span class="rule-dot"></span></div>
+    <p class="lede">Things on the board that have no representation in our build at all.</p>
+
+    <ul class="gaps">
+      <li>
+        <h3>Hibachi — four dishes <span class="tag missing">whole category</span></h3>
+        <p>Chicken $12.99 · Steak $16.99 · Seafood $16.99 · Combination $18.99, all marked
+        <strong>“Coming Soon!”</strong> on the board. This closes a question that has been
+        open in the notes since the start: hibachi is on their sign and absent from the
+        menu because <em>they have not launched it yet</em>. It is on the delivery listing
+        nowhere.</p>
+      </li>
+      <li>
+        <h3>Philly sizes — Small, Regular, Large <span class="tag missing">structure</span></h3>
+        <p>Every cheesesteak is sold in three sizes; our build carries one price each, and
+        it is the small. An Original Cheesesteak is $6.99 / $9.49 / $12.49 on the board and
+        a flat $7.49 in our data. Same for all six.</p>
+      </li>
+      <li>
+        <h3>Drink sizes — Regular and Large <span class="tag missing">structure</span></h3>
+        <p>Original Lemonade $2.49 / $3.49. Fruit Lemonade $2.99 / $4.29. Fountain and tea
+        $1.99 / $2.49. Our build has a single price per drink and no size choice.</p>
+      </li>
+      <li>
+        <h3>Philly extras <span class="tag missing">modifier group</span></h3>
+        <p>Bacon +$1 · Extra cheese +$1 · Extra meat +$2 · Jalapeños +$1 · Banana peppers
+        +$1. Also <strong>“Upgrade to combo, from $3.49”</strong>, which the listing
+        mentions in prose but never as a choice.</p>
+      </li>
+      <li>
+        <h3>Ingredients for all six cheesesteaks <span class="tag missing">copy</span></h3>
+        <p>The board spells each one out — <em>“Steak, grilled onions, mushrooms, green
+        peppers, cheese, lettuce, tomato, mayo &amp; pickle.”</em> Our item sheet shows
+        these six as name and price only. Six of the 29 items flagged as having no detail
+        are answered outright by one photograph.</p>
+      </li>
+      <li>
+        <h3>Calories on everything <span class="tag missing">data</span></h3>
+        <p>Every dish, every entrée choice, every side carries a calorie count, and the
+        combos carry ranges. Worth having on its own terms, and worth asking whether
+        their location is required to display it.</p>
+      </li>
+      <li>
+        <h3>Spice level <span class="tag missing">data</span></h3>
+        <p>Seven entrées carry one or two chilli marks: General Tso, Blackpepper Chicken,
+        Mongolian Beef, Pepper Steak and Blackpepper Shrimp at one; Kung Pao and Spicy Beef
+        and Jalapeño Shrimp at two. Nothing in our build expresses heat.</p>
+      </li>
+      <li>
+        <h3>Wings: fries or veg sticks, and drink size <span class="tag missing">modifier group</span></h3>
+        <p>Each wing combo includes a choice of regular fries <em>or</em> veg sticks, plus a
+        20&nbsp;oz drink — 32&nbsp;oz on the extra large. We model neither.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="rule-head"><h2>Wrong, not just missing</h2><span class="rule-dot"></span></div>
+    <p class="lede">
+      Places where our build asserts something the board contradicts. These matter more
+      than the gaps, because they look finished.
+    </p>
+
+    <ul class="gaps">
+      <li class="is-wrong">
+        <h3>Family Feast is modelled as the wrong meal <span class="tag wrong">wrong</span></h3>
+        <p>The board: <strong>“3 sides, 2 entrées, 4 egg rolls &amp; cookies · Serves
+        3–4.”</strong> Our build models it as three entrées and one side, reusing the Pick
+        Any Three structure. It is a different dish. The listing’s own description says the
+        same thing as the board and we did not carry it across.</p>
+      </li>
+      <li class="is-wrong">
+        <h3>Five entrées cannot be chosen in a combo <span class="tag wrong">wrong</span></h3>
+        <p>The board offers <strong>15</strong> entrée choices. Our combo group offers 12,
+        and they are not a subset — <strong>Kung Pao Chicken, Mushroom Chicken, Spicy Beef,
+        Pepper Steak and Jalapeño Shrimp</strong> are missing, while <strong>Spicy Grill
+        Chicken</strong> and <strong>Chicken and Broccoli</strong> are offered and appear
+        nowhere on the board.</p>
+      </li>
+      <li class="is-wrong">
+        <h3>Beef is overcharged in every combo <span class="tag wrong">wrong</span></h3>
+        <p>The board is explicit: <strong>premium charge +$1.00 beef, +$1.50 shrimp.</strong>
+        Our build applies a flat +$1.50 to both, so every beef combo prices fifty cents
+        high.</p>
+      </li>
+      <li class="is-wrong">
+        <h3>Wing flavours are a different list <span class="tag wrong">wrong</span></h3>
+        <p>Our build has six. The current board has seven, the listing’s own text names
+        nine, and the three lists do not agree with one another. See below.</p>
+      </li>
+      <li class="is-wrong">
+        <h3>“No description” was our error, not theirs <span class="tag wrong">wrong</span></h3>
+        <p>The last pass concluded 49 of 68 items had no description anywhere. That was
+        wrong — the listing carries descriptions our transcription simply did not capture:
+        <em>“Chinese fried rice with eggs, peas, and carrots”</em>, <em>“Original Lo Mein
+        cooked with brown sauce, cabbage, and carrots”</em>, <em>“Crispy fries topped with
+        creamy ranch dressing and a sprinkle of Cajun seasoning”</em>, <em>“Perfect
+        combination of fried rice, shrimp, beef, and chicken”</em>, and more. The owner does
+        not need to write these; we need to re-read the source.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="rule-head"><h2>The boards disagree with each other</h2><span class="rule-dot"></span></div>
+    <p class="lede">
+      Two of the photographs show the wings panel, and they are different boards. The
+      composite matches what the delivery listing was built from; the photograph of the
+      wall is current. The menu changed and the listing was never updated.
+    </p>
+
+    <div class="panel-dark">
+      <h3>Wing flavours</h3>
+      <p><strong>On the wall today (7):</strong></p>
+      <ul class="flavours">
+        <li>Buffalo</li><li class="new">Mango Habanero</li><li>Asian Spice</li>
+        <li>Sweet Chili</li><li>Lemon Pepper</li><li>Teriyaki</li><li>Honey Glaze</li>
+      </ul>
+      <p style="margin-top:15px"><strong>On the listing, and in our build:</strong></p>
+      <ul class="flavours">
+        <li>Buffalo</li><li>Asian Spice</li><li>Sweet Chili</li><li>Lemon Pepper</li>
+        <li class="gone">Mild</li><li class="gone">Asian BBQ</li><li class="gone">Orange</li>
+      </ul>
+      <p style="margin-top:15px"><strong>Mango Habanero is new and reaches no customer
+      ordering online.</strong> Mild, Asian BBQ and Orange are still being sold online and
+      are no longer on the wall. Our build carries six flavours and is wrong against both.</p>
+      <p>The wing combo prices differ too: $10.99 / $13.99 / $19.99 / $37.99 on the wall
+      against $11.49 / $14.49 / $20.49 / $38.49 in our build. Confirm which is current
+      before touching the data — a photograph of a board is not proof it is today’s board.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="rule-head"><h2>What this changes</h2><span class="rule-dot"></span></div>
+    <p class="lede">In the order it is worth doing.</p>
+    <ul class="gaps">
+      <li>
+        <h3>Ask which price list is real before rebuilding anything</h3>
+        <p>Two boards disagree on wings, and the in-store and online prices disagree
+        everywhere. Only the owner can say which is current and whether the online markup
+        is deliberate. Rebuilding the data first risks encoding a third wrong answer.</p>
+      </li>
+      <li>
+        <h3>Re-read the listing for descriptions we dropped</h3>
+        <p>Cheap, no owner needed, and it removes most of the “29 items with no detail”
+        problem on its own.</p>
+      </li>
+      <li>
+        <h3>Fix the four outright errors</h3>
+        <p>Family Feast composition, the five absent entrée choices, the beef premium, and
+        the wing flavour list. These are wrong today regardless of which price list wins.</p>
+      </li>
+      <li>
+        <h3>Add sizes as a real modifier group</h3>
+        <p>Philly small/regular/large and drink regular/large are the same shape as the
+        entrée and side groups already in the schema. Doing this properly also sets up
+        Square, where variations are how sizes are modelled anyway.</p>
+      </li>
+      <li>
+        <h3>Decide whether direct ordering prices at the counter or at the listing</h3>
+        <p>The whole pitch is that the shop keeps the margin the platform takes. If the
+        direct site charges in-store prices, the customer sees roughly 20% off and the shop
+        still nets more. That is a decision for the owner, and it is the single most
+        valuable question in this document.</p>
+      </li>
+    </ul>
+  </section>
+
+  <footer>
+    <p><strong>Provenance.</strong> Board prices read from seven photographs supplied by the
+    project owner, 1 September 2026. Listing prices and descriptions read live from the
+    public delivery listing the same day. Our own figures dumped from
+    <code>src/restaurants/asian-kitchen/menu.ts</code> at the same time.</p>
+    <p>Nothing here has been confirmed by the restaurant. Where two sources disagree, both
+    are shown rather than resolved. The photographs are the owner’s; the food photography
+    currently in the build is not, and is still unresolved.</p>
+  </footer>
+</div>

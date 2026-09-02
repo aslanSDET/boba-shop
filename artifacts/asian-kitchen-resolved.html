@@ -1,0 +1,316 @@
+<title>Asian Kitchen Ordering Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#F4F5F2; --surface:#FFFFFF; --surface2:#EAECE6;
+  --ink:#161A14; --ink2:#3C423A; --muted:#6B7167;
+  --rule:#DCE0D7; --rule-soft:#E8EBE4;
+  --ak:#1E9350; --ak-deep:#0E5C31; --rust:#8A5344;
+  --fd:'Saira Condensed','Arial Narrow',Helvetica,sans-serif;
+  --fb:'Public Sans',-apple-system,Segoe UI,Helvetica,sans-serif;
+  --fm:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#12140F; --surface:#191C16; --surface2:#22261F;
+  --ink:#E9ECE5; --ink2:#C4C9BE; --muted:#8E948A;
+  --rule:#2C3128; --rule-soft:#232720;
+  --ak:#5BC886; --ak-deep:#8FE0AE; --rust:#C08370;
+}}
+:root[data-theme="dark"]{
+  --ground:#12140F; --surface:#191C16; --surface2:#22261F;
+  --ink:#E9ECE5; --ink2:#C4C9BE; --muted:#8E948A;
+  --rule:#2C3128; --rule-soft:#232720;
+  --ak:#5BC886; --ak-deep:#8FE0AE; --rust:#C08370;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--fb);font-size:17px;line-height:1.6;margin:0;padding:0 clamp(16px,4vw,40px) 96px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto}
+.prose{max-width:66ch}
+h1{font-family:var(--fd);font-weight:800;font-size:clamp(40px,7vw,72px);line-height:.96;text-transform:uppercase;margin:0 0 16px;text-wrap:balance}
+h2{font-family:var(--fd);font-weight:700;font-size:clamp(26px,3.6vw,34px);line-height:1.1;text-transform:uppercase;letter-spacing:.01em;margin:0 0 10px;text-wrap:balance}
+h3{font-family:var(--fd);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.02em;margin:0 0 8px}
+p{margin:0 0 14px}
+section{margin:0 0 clamp(46px,7vw,76px)}
+.eyebrow{font-family:var(--fm);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ak);margin:0 0 16px}
+.masthead{padding:clamp(44px,8vw,84px) 0 26px;border-bottom:3px solid var(--ink);margin-bottom:38px}
+.standfirst{font-size:clamp(18px,2.1vw,21px);line-height:1.5;color:var(--ink2);max-width:62ch;margin:0}
+.sub{color:var(--muted);font-size:15.5px;max-width:66ch;margin:0 0 26px}
+.note{border:1px solid var(--rule);border-left:3px solid var(--ak);background:var(--surface);border-radius:0 8px 8px 0;padding:18px 22px;margin:22px 0}
+.note p:last-child{margin-bottom:0}
+ul{margin:0 0 14px;padding-left:20px} li{margin-bottom:9px}
+li::marker{color:var(--ak)}
+code{font-family:var(--fm);font-size:.86em;background:var(--surface2);padding:.1em .35em;border-radius:3px}
+b,strong{font-weight:600}
+
+.screens{display:grid;gap:36px;grid-template-columns:1fr;justify-items:center}
+@media(min-width:860px){.screens{grid-template-columns:1fr 1fr;align-items:start}}
+.col{display:flex;flex-direction:column;gap:14px;align-items:center;max-width:400px}
+.cap{font-family:var(--fm);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:0;text-align:center}
+.why{font-size:15px;color:var(--ink2);margin:0}
+.why b{color:var(--ink)}
+
+.phone{width:100%;max-width:340px;border:9px solid #121212;border-radius:36px;overflow:hidden;
+       box-shadow:0 16px 38px rgba(0,0,0,.17);background:#FBFBF9}
+.scr{height:690px;overflow:hidden;position:relative;font-family:'Public Sans',sans-serif;
+     background:#FBFBF9;color:#1A1D18;font-size:13px;line-height:1.45}
+.scr *{box-sizing:border-box}
+
+/* photo stand-ins — blocked out, never faked */
+.ph{background:
+   repeating-linear-gradient(135deg,rgba(0,0,0,.045) 0 7px,transparent 7px 14px),
+   linear-gradient(160deg,#C9743A,#A8501F 55%,#6E3413);position:relative}
+.ph.b{background:repeating-linear-gradient(135deg,rgba(0,0,0,.045) 0 7px,transparent 7px 14px),linear-gradient(160deg,#D8A24A,#B2701F 60%,#7A4712)}
+.ph.c{background:repeating-linear-gradient(135deg,rgba(0,0,0,.045) 0 7px,transparent 7px 14px),linear-gradient(160deg,#8FAE55,#5C7C2E 60%,#3B5218)}
+.ph.d{background:repeating-linear-gradient(135deg,rgba(0,0,0,.045) 0 7px,transparent 7px 14px),linear-gradient(160deg,#B9563C,#8A2F1B 60%,#571A0D)}
+.ph::after{content:"PHOTO";position:absolute;right:5px;bottom:4px;font-family:'JetBrains Mono',monospace;font-size:7.5px;letter-spacing:.14em;color:rgba(255,255,255,.7)}
+
+/* ── A's header, kept verbatim ─────────────────────────── */
+.hdr{background:#1E9350;padding:11px 14px 10px;position:relative}
+.hdr .hours{position:absolute;right:14px;top:13px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(255,255,255,.92);letter-spacing:.05em}
+.hdr .mark{display:flex;align-items:center;gap:9px}
+.hdr .roundel{width:32px;height:32px;border-radius:50%;background:#fff;color:#1E9350;font-family:'Saira Condensed',sans-serif;
+  font-weight:800;font-size:15px;display:grid;place-items:center;flex:none;letter-spacing:-.02em}
+.hdr .wm{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:23px;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.hdr .tag{margin-top:8px;background:#0E5C31;color:#fff;font-family:'Saira Condensed',sans-serif;font-weight:600;
+  font-size:10.5px;letter-spacing:.17em;text-transform:uppercase;padding:3px 8px;display:inline-block}
+
+/* ── B's body ──────────────────────────────────────────── */
+.usual{margin:13px 14px 0;background:#F1F5EF;border-radius:13px;padding:12px 13px}
+.usual .lbl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#4E7A5C}
+.usual .ord{font-weight:600;font-size:14px;margin:4px 0 9px;letter-spacing:-.01em}
+.btn{width:100%;background:#1E9350;color:#fff;border:0;border-radius:10px;font-family:'Public Sans',sans-serif;
+  font-weight:600;font-size:13.5px;padding:11px;cursor:pointer;font-variant-numeric:tabular-nums}
+.btn:focus-visible{outline:2px solid #0E5C31;outline-offset:2px}
+.rail{display:flex;gap:17px;padding:15px 14px 9px;overflow:hidden;font-size:12.5px;color:#6B7264;border-bottom:1px solid #EBEDE7}
+.rail span{white-space:nowrap}
+.rail span.on{color:#14170F;font-weight:600;border-bottom:2px solid #1E9350;padding-bottom:5px;margin-bottom:-1px}
+.sec{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.05em;
+  color:#14170F;padding:14px 14px 2px;margin:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:9px 14px 0}
+.tile .ph{width:100%;height:82px;border-radius:12px}
+.tile h4{font-weight:600;font-size:12.5px;margin:7px 0 1px;letter-spacing:-.01em}
+.tile .pr{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5C6356;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.08em;
+  background:#E4F0E7;color:#2C6B44;border-radius:4px;padding:1px 5px;margin-top:4px}
+.row{display:flex;gap:10px;align-items:center;padding:9px 14px;border-top:1px solid #EFF1EC}
+.row .ph{width:46px;height:46px;flex:none;border-radius:8px}
+.row h4{margin:0;font-weight:600;font-size:12.5px}
+.row p{margin:1px 0 0;font-size:10.5px;color:#787F72}
+.row .pr{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#1A1D18;font-variant-numeric:tabular-nums}
+
+/* ── configurator ──────────────────────────────────────── */
+.cfg-hero{height:130px}
+.cfg-title{padding:12px 14px 0}
+.cfg-title h4{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:23px;text-transform:uppercase;margin:0;letter-spacing:.01em}
+.cfg-title .meta{font-size:11px;color:#6B7264;margin:3px 0 0}
+.cfg-title .meta b{color:#2C6B44;font-weight:600}
+.pop{padding:13px 14px 0}
+.pop .lbl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#4E7A5C;margin:0 0 7px}
+.combo{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:#fff;border:1px solid #E2E6DD;
+  border-radius:11px;padding:9px 10px;margin-bottom:7px;cursor:pointer;font-family:'Public Sans',sans-serif}
+.combo:focus-visible{outline:2px solid #1E9350;outline-offset:2px}
+.combo .n{font-family:'JetBrains Mono',monospace;font-size:10px;color:#8B9284;flex:none}
+.combo .txt{font-size:11.5px;font-weight:500;color:#1A1D18;line-height:1.35}
+.combo .add{margin-left:auto;flex:none;width:22px;height:22px;border-radius:50%;background:#1E9350;color:#fff;
+  display:grid;place-items:center;font-size:14px;line-height:1}
+.orline{display:flex;align-items:center;gap:10px;padding:11px 14px 3px;color:#8B9284;font-size:10.5px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase}
+.orline::before,.orline::after{content:"";height:1px;background:#E2E6DD;flex:1}
+.same{display:flex;align-items:center;gap:9px;margin:9px 14px 0;background:#F1F5EF;border-radius:11px;padding:10px 12px}
+.same .sw{width:34px;height:20px;border-radius:11px;background:#1E9350;flex:none;position:relative}
+.same .sw::after{content:"";position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.same .t{font-size:12px;font-weight:600}
+.same .s{font-size:10.5px;color:#6B7264;margin-top:1px}
+.grp{padding:14px 14px 0}
+.grp .gh{display:flex;align-items:baseline;gap:7px;margin-bottom:8px}
+.grp .gh h5{margin:0;font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+.grp .gh .req{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.1em;background:#EFF1EC;color:#6B7264;border-radius:3px;padding:2px 5px}
+.grp .gh .cnt{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:#8B9284}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{font-size:11.5px;border:1px solid #E2E6DD;background:#fff;border-radius:20px;padding:6px 11px;color:#3C433A;
+  font-family:'Public Sans',sans-serif;cursor:pointer}
+.opt.on{background:#1E9350;border-color:#1E9350;color:#fff;font-weight:600}
+.opt .d{font-family:'JetBrains Mono',monospace;font-size:9.5px;opacity:.8;margin-left:3px}
+.opt:focus-visible{outline:2px solid #1E9350;outline-offset:2px}
+.foot{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #E2E6DD;padding:10px 14px 13px}
+.foot .st{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#6B7264;letter-spacing:.06em;margin:0 0 7px;text-align:center}
+
+.scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{background:var(--surface2);text-align:left;font-family:var(--fd);font-weight:700;font-size:12px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);padding:11px 14px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--rule-soft);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+td.k{color:var(--ink);font-weight:600}
+footer{border-top:1px solid var(--rule);padding-top:22px;margin-top:54px;color:var(--muted);font-size:15px}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Asian Kitchen · resolved direction</p>
+  <h1>Asian Kitchen ordering screens</h1>
+  <p class="standfirst">Direction A’s header on direction B’s body, as chosen. Two screens:
+  the menu, and the combo builder that has to beat four stacked dropdowns on their
+  DoorDash page.</p>
+</header>
+
+<section>
+  <h2>The two screens</h2>
+  <p class="sub">Real menu, real prices, real hours. Photography is blocked out rather than
+  faked, because who owns those images is still unanswered.</p>
+
+  <div class="screens">
+
+    <!-- ═══════ MENU ═══════ -->
+    <div class="col">
+      <div class="phone"><div class="scr">
+        <div class="hdr">
+          <span class="hours">OPEN · TILL 7:45</span>
+          <div class="mark"><div class="roundel">AK</div><div class="wm">Asian Kitchen</div></div>
+          <div class="tag">Hibachi · Asian · Philly Steak</div>
+        </div>
+
+        <div class="usual">
+          <div class="lbl">Your usual</div>
+          <div class="ord">3 Items · Sesame ×3 · Fried Rice</div>
+          <button class="btn" type="button">Reorder · $12.89</button>
+        </div>
+
+        <div class="rail"><span class="on">Meals</span><span>Entrées</span><span>Wings</span><span>Philly</span><span>Sides</span><span>Drinks</span></div>
+
+        <p class="sec">Most ordered</p>
+        <div class="grid">
+          <div class="tile"><div class="ph"></div><h4>Pick Any Three</h4><div class="pr">$12.89</div><span class="badge">#2 MOST LIKED</span></div>
+          <div class="tile"><div class="ph b"></div><h4>Pick Any Two</h4><div class="pr">$11.19</div><span class="badge">#1 MOST LIKED</span></div>
+        </div>
+
+        <p class="sec">House special</p>
+        <div class="row"><div class="ph c"></div><div><h4>Combination Fried Rice</h4><p>Chicken, shrimp &amp; beef</p></div><span class="pr">$14.99</span></div>
+        <div class="row"><div class="ph d"></div><div><h4>Family Feast</h4><p>Feeds four</p></div><span class="pr">$34.99</span></div>
+        <div class="row"><div class="ph"></div><div><h4>Combination Lo Mein</h4><p>Chicken, shrimp &amp; beef</p></div><span class="pr">$14.99</span></div>
+      </div></div>
+      <p class="cap">Menu</p>
+      <p class="why"><b>What changed from B:</b> the green band and tagline bar are back at the
+      top, so the shop is recognisable in the first 90 pixels. Everything below stays quiet —
+      underline tabs rather than boxed pills, food carrying the colour, green reserved for the
+      one button you actually press.</p>
+    </div>
+
+    <!-- ═══════ CONFIGURATOR ═══════ -->
+    <div class="col">
+      <div class="phone"><div class="scr">
+        <div class="ph cfg-hero"></div>
+        <div class="cfg-title">
+          <h4>Pick Any Three</h4>
+          <p class="meta">3 entrées &amp; 1 side · <b>88% liked (300)</b></p>
+        </div>
+
+        <div class="pop">
+          <p class="lbl">What people actually order</p>
+          <button class="combo" type="button"><span class="n">1</span>
+            <span class="txt">Sesame Chicken ×3 · Fried Rice</span><span class="add" aria-hidden="true">+</span></button>
+          <button class="combo" type="button"><span class="n">2</span>
+            <span class="txt">Honey Chicken ×3 · Lo Mein</span><span class="add" aria-hidden="true">+</span></button>
+          <button class="combo" type="button"><span class="n">3</span>
+            <span class="txt">Honey · Sesame · Orange · Lo Mein</span><span class="add" aria-hidden="true">+</span></button>
+        </div>
+
+        <div class="orline">or build it</div>
+
+        <div class="same">
+          <span class="sw" aria-hidden="true"></span>
+          <div><div class="t">Same for all three</div><div class="s">Pick one entrée, get three</div></div>
+        </div>
+
+        <div class="grp">
+          <div class="gh"><h5>Entrée</h5><span class="req">REQUIRED</span><span class="cnt">×3</span></div>
+          <div class="opts">
+            <button class="opt on" type="button">Sesame Chicken</button>
+            <button class="opt" type="button">Honey Chicken</button>
+            <button class="opt" type="button">General Tso</button>
+            <button class="opt" type="button">Orange Chicken</button>
+            <button class="opt" type="button">Broccoli Beef<span class="d">+1.50</span></button>
+            <button class="opt" type="button">Black Pepper Shrimp<span class="d">+1.50</span></button>
+          </div>
+        </div>
+
+        <div class="grp">
+          <div class="gh"><h5>Side</h5><span class="req">REQUIRED</span><span class="cnt">×1</span></div>
+          <div class="opts">
+            <button class="opt on" type="button">Fried Rice</button>
+            <button class="opt" type="button">Lo Mein</button>
+            <button class="opt" type="button">Steamed Rice</button>
+            <button class="opt" type="button">Egg Roll</button>
+          </div>
+        </div>
+
+        <div class="foot">
+          <p class="st">ALL SET · SESAME ×3 · FRIED RICE</p>
+          <button class="btn" type="button">Add to Order · $12.89</button>
+        </div>
+      </div></div>
+      <p class="cap">Combo builder</p>
+      <p class="why"><b>The screen that matters.</b> Their Storefront asks for four separate
+      “Select 1” dropdowns with the side wedged between the first and second entrée. This
+      offers the three real popular orders first, then collapses the choice: because half of
+      all orders are the same dish three times, <b>Same for all three</b> turns four decisions
+      into two.</p>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>Against what they have now</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th></th><th>DoorDash Storefront</th><th>This</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Whose brand</td><td>DoorDash’s type, no logo, no colour</td><td>Their sign, their green, their tagline</td></tr>
+        <tr><td class="k">Taps to a repeat order</td><td>Item → 4 selections → add → cart</td><td><b>One</b> — “Your usual”</td></tr>
+        <tr><td class="k">Taps to Sesame ×3</td><td>4 dropdowns, scrolling</td><td><b>One</b> — popular combos</td></tr>
+        <tr><td class="k">Building a custom plate</td><td>4 stacked Select&nbsp;1 groups</td><td>2 groups, side last where it belongs</td></tr>
+        <tr><td class="k">Who owns the customer</td><td>DoorDash</td><td>Asian Kitchen</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <p><strong>The “one tap” rows are the pitch.</strong> Not the colours — a regular ordering
+    three times a week goes from roughly six interactions to one. That is the argument to make
+    to him, and it is the reason “Your usual” needs somewhere to store an order
+    (<code>PLATFORM.md</code> §4), which is the first thing on this project that costs money.</p>
+  </div>
+</section>
+
+<section class="prose">
+  <h2>Decisions inside these screens</h2>
+  <ul>
+    <li><strong>The side moved to the end.</strong> DoorDash puts it between the 1st and 2nd entrée. Nobody thinks about a meal that way.</li>
+    <li><strong>Twelve entrées, six shown.</strong> The rest sit behind the list; the six are the ones that appear in the popular combinations.</li>
+    <li><strong>Price deltas on the chip.</strong> Beef and shrimp are <code>+$1.50</code> and that has to be visible <em>before</em> tapping, not as a total that silently jumped.</li>
+    <li><strong>Underline tabs, not pills.</strong> Six categories in a row of pills is a wall; underlines let the food be the loudest thing.</li>
+    <li><strong>No “Most Ordered” duplicate section.</strong> Their menu lists the same items twice, once under Most Ordered and again in their real category. One place each.</li>
+  </ul>
+</section>
+
+<section class="prose">
+  <h2>Still open</h2>
+  <ul>
+    <li><strong>The green</strong> is estimated from a photograph. His artwork replaces it everywhere.</li>
+    <li><strong>The roundel</strong> is set as plain type here. His real badge should be dropped in as-is, not redrawn.</li>
+    <li><strong>Photography</strong> is blocked out. This design leans on it more than the alternatives did.</li>
+    <li><strong>Hibachi</strong> is on the sign and absent from the menu. It sits in the tagline bar here on his authority; if it is gone, the bar changes.</li>
+  </ul>
+</section>
+
+<footer>
+  <p>Menu, prices, hours and combination data read from their live ordering page, 1 September
+  2026. Brand details from the storefront photograph. Direction chosen from
+  <a href="https://claude.ai/code/artifact/024cb2fe-d6a5-49e5-85ea-37b04bda5a50">Three Doors for Asian Kitchen</a>.</p>
+</footer>
+
+</div>

@@ -13,11 +13,11 @@
   "iconLibrary": "lucide",
   "rtl": false,
   "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "components": "@/restaurants/snowdaes/components",
+    "utils": "@/restaurants/snowdaes/lib/utils",
+    "ui": "@/restaurants/snowdaes/components/ui",
+    "lib": "@/restaurants/snowdaes/lib",
+    "hooks": "@/restaurants/snowdaes/lib"
   },
   "menuColor": "default",
   "menuAccent": "subtle",

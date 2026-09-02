@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 380" width="1560" height="380" role="presentation">
+  <title>Asian Kitchen — neon wok</title>
+  <!--
+    A drawn stand-in for the video the owner intends to shoot. Deliberately not
+    the default neon palette: cyan-and-magenta would belong to any late-night
+    anything. Amber tubes, a red pair of chopsticks lifted straight off their
+    badge, and the shop's own green washing the floor, so the band belongs to
+    this restaurant rather than to the genre.
+
+    Everything sits right of centre: the headline occupies the left third, and
+    the gradient at the end darkens that side back down so the type always has
+    a ground to sit on.
+  -->
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b0d08"/>
+      <stop offset="0.6" stop-color="#12120c"/>
+      <stop offset="1" stop-color="#1b160e"/>
+    </linearGradient>
+
+    <radialGradient id="warmth" cx="0.66" cy="0.58" r="0.52">
+      <stop offset="0" stop-color="#ff9a2e" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ff9a2e" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="greenwash" cx="0.16" cy="0.92" r="0.58">
+      <stop offset="0" stop-color="#1e9350" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#1e9350" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Two-stage bloom: a wide halo plus a tight one. That combination is
+         what makes a stroke read as a lit tube instead of a blurred line. -->
+    <filter id="bloomWarm" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="wide"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3.4" result="tight"/>
+      <feMerge>
+        <feMergeNode in="wide"/>
+        <feMergeNode in="wide"/>
+        <feMergeNode in="tight"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="bloomSoft" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <linearGradient id="counter" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#241c14" stop-opacity="0.9"/>
+      <stop offset="0.6" stop-color="#4a3826" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#221a12" stop-opacity="0.9"/>
+    </linearGradient>
+
+    <linearGradient id="leftfade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#090b06" stop-opacity="0.88"/>
+      <stop offset="0.44" stop-color="#090b06" stop-opacity="0.32"/>
+      <stop offset="0.72" stop-color="#090b06" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1560" height="380" fill="url(#ground)"/>
+
+  <!-- the tiled back wall, barely there: enough to read as a room -->
+  <g stroke="#1c2018" stroke-width="1" opacity="0.55">
+    <path d="M0 48 H1560 M0 96 H1560 M0 144 H1560 M0 192 H1560 M0 240 H1560 M0 288 H1560"/>
+    <path d="M90 0 V318 M282 0 V318 M474 0 V318 M666 0 V318 M858 0 V318 M1050 0 V318 M1242 0 V318 M1434 0 V318"/>
+  </g>
+
+  <rect width="1560" height="380" fill="url(#warmth)"/>
+  <rect width="1560" height="380" fill="url(#greenwash)"/>
+
+  <!-- counter slab: the horizon everything stands on -->
+  <rect x="0" y="322" width="1560" height="18" fill="url(#counter)"/>
+  <rect x="0" y="322" width="1560" height="2" fill="#c9a35f" opacity="0.45"/>
+
+  <!-- steam first, so the tubes read in front of it -->
+  <g filter="url(#bloomSoft)" fill="none" stroke="#b9ecd0" stroke-linecap="round" opacity="0.42">
+    <path d="M 860 150 C 848 128 876 116 864 94 C 856 79 874 70 868 56" stroke-width="3"/>
+    <path d="M 918 158 C 906 134 934 122 922 100 C 915 86 931 77 926 64" stroke-width="2.6" opacity="0.85"/>
+    <path d="M 976 152 C 966 132 990 121 980 102 C 974 90 988 82 984 71" stroke-width="2.2" opacity="0.6"/>
+  </g>
+
+  <!-- the wok: rim, a bowl that hangs BELOW it, then the handle -->
+  <g filter="url(#bloomWarm)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#ff9f28" stroke-width="7">
+      <path d="M 814 196 H 1054"/>
+      <path d="M 814 196 C 826 286 1042 286 1054 196"/>
+      <path d="M 1054 196 L 1112 172"/>
+    </g>
+    <g stroke="#ffe4ad" stroke-width="2.4" opacity="0.92">
+      <path d="M 814 196 H 1054"/>
+      <path d="M 814 196 C 826 286 1042 286 1054 196"/>
+      <path d="M 1054 196 L 1112 172"/>
+    </g>
+  </g>
+
+  <!-- flame, beneath the bowl and clear of it -->
+  <g filter="url(#bloomWarm)" fill="none" stroke-linecap="round">
+    <path d="M 882 320 C 872 304 886 296 880 282 C 895 293 902 307 895 320" stroke="#ff6a24" stroke-width="4.5"/>
+    <path d="M 930 320 C 918 300 938 290 930 272 C 952 288 960 306 950 320" stroke="#ff8a1f" stroke-width="5.5"/>
+    <path d="M 980 320 C 970 304 984 296 978 283 C 993 294 999 308 991 320" stroke="#ff6a24" stroke-width="4.5"/>
+  </g>
+
+  <!-- their badge's chopsticks, at the badge's own angle, kept to the right -->
+  <g filter="url(#bloomWarm)" stroke-linecap="round">
+    <g stroke="#ef3a2e" stroke-width="6">
+      <path d="M 902 176 L 1106 62"/>
+      <path d="M 918 200 L 1128 88"/>
+    </g>
+    <g stroke="#ffc4bd" stroke-width="1.9" opacity="0.9">
+      <path d="M 902 176 L 1106 62"/>
+      <path d="M 918 200 L 1128 88"/>
+    </g>
+  </g>
+
+  <!-- light pooling on the counter under the sign -->
+  <ellipse cx="942" cy="330" rx="178" ry="11" fill="#ff9a2e" opacity="0.18" filter="url(#bloomSoft)"/>
+
+  <!-- darken the left third back down: that is where the headline goes -->
+  <rect width="1560" height="380" fill="url(#leftfade)"/>
+</svg>

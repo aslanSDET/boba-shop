@@ -1,0 +1,372 @@
+<title>Three Doors for Asian Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#F4F5F2; --surface:#FFFFFF; --surface2:#EAECE6;
+  --ink:#161A14; --ink2:#3C423A; --muted:#6B7167;
+  --rule:#DCE0D7; --rule-soft:#E8EBE4;
+  --ak:#1E9350;            /* estimated from the storefront sign */
+  --ak-deep:#0E5C31;
+  --rust:#8A5344;          /* the mansard roof */
+  --fd:'Saira Condensed','Arial Narrow',Helvetica,sans-serif;
+  --fb:'Public Sans',-apple-system,Segoe UI,Helvetica,sans-serif;
+  --fm:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#12140F; --surface:#191C16; --surface2:#22261F;
+  --ink:#E9ECE5; --ink2:#C4C9BE; --muted:#8E948A;
+  --rule:#2C3128; --rule-soft:#232720;
+  --ak:#5BC886; --ak-deep:#8FE0AE; --rust:#C08370;
+}}
+:root[data-theme="dark"]{
+  --ground:#12140F; --surface:#191C16; --surface2:#22261F;
+  --ink:#E9ECE5; --ink2:#C4C9BE; --muted:#8E948A;
+  --rule:#2C3128; --rule-soft:#232720;
+  --ak:#5BC886; --ak-deep:#8FE0AE; --rust:#C08370;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--fb);font-size:17px;line-height:1.6;margin:0;padding:0 clamp(16px,4vw,40px) 96px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1220px;margin:0 auto}
+.prose{max-width:66ch}
+h1{font-family:var(--fd);font-weight:800;font-size:clamp(40px,7vw,74px);line-height:.96;letter-spacing:.005em;text-transform:uppercase;margin:0 0 16px;text-wrap:balance}
+h2{font-family:var(--fd);font-weight:700;font-size:clamp(26px,3.6vw,36px);line-height:1.08;text-transform:uppercase;letter-spacing:.01em;margin:0 0 10px}
+h3{font-family:var(--fd);font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.02em;margin:0 0 8px}
+p{margin:0 0 14px}
+section{margin:0 0 clamp(48px,7vw,80px)}
+a{color:var(--ak-deep)}
+.eyebrow{font-family:var(--fm);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ak);margin:0 0 16px}
+.masthead{padding:clamp(44px,8vw,88px) 0 26px;border-bottom:3px solid var(--ink);margin-bottom:40px}
+.standfirst{font-size:clamp(18px,2.1vw,21px);line-height:1.5;color:var(--ink2);max-width:60ch;margin:0 0 8px}
+.note{border:1px solid var(--rule);border-left:3px solid var(--ak);background:var(--surface);border-radius:0 8px 8px 0;padding:18px 22px;margin:22px 0}
+.note p:last-child{margin-bottom:0}
+.sub{color:var(--muted);font-size:15.5px;max-width:64ch;margin:0 0 24px}
+ul{margin:0 0 14px;padding-left:20px} li{margin-bottom:8px}
+li::marker{color:var(--ak)}
+code{font-family:var(--fm);font-size:.86em;background:var(--surface2);padding:.1em .35em;border-radius:3px}
+
+/* ── facts strip ─────────────────────────────────────────── */
+.facts{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:10px;overflow:hidden;grid-template-columns:1fr}
+@media(min-width:700px){.facts{grid-template-columns:repeat(4,1fr)}}
+.fact{background:var(--surface);padding:16px 18px}
+.fact dt{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.fact dd{margin:0;font-family:var(--fd);font-size:19px;font-weight:700;text-transform:uppercase;line-height:1.15}
+.fact dd small{display:block;font-family:var(--fb);font-size:13px;font-weight:400;text-transform:none;color:var(--muted);letter-spacing:0;margin-top:3px}
+
+/* ── the three directions ────────────────────────────────── */
+.decks{display:grid;gap:34px;grid-template-columns:1fr}
+@media(min-width:900px){.decks{grid-template-columns:repeat(3,1fr);gap:26px}}
+.deck{display:flex;flex-direction:column;gap:16px}
+.deck-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.deck-head .letter{font-family:var(--fm);font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--surface);background:var(--ink);border-radius:3px;padding:3px 7px}
+.deck-head h3{margin:0}
+.deck-body{font-size:15.5px;color:var(--ink2)}
+.deck-body p{margin:0 0 10px}
+.deck-body p:last-child{margin-bottom:0}
+.risk{font-family:var(--fm);font-size:12px;color:var(--muted);border-top:1px solid var(--rule-soft);padding-top:10px;margin-top:4px}
+.risk b{color:var(--ink);font-weight:500}
+
+/* ── phone frame ─────────────────────────────────────────── */
+.phone{width:100%;max-width:330px;margin:0 auto;border:9px solid #121212;border-radius:34px;overflow:hidden;
+       box-shadow:0 14px 34px rgba(0,0,0,.16);background:#fff}
+.screen{height:566px;overflow:hidden;position:relative;font-size:13px;line-height:1.45}
+.screen *{box-sizing:border-box}
+.ph-note{font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:center;margin:0}
+
+/* photo stand-ins: honest blocks, never fake photography */
+.ph{background:
+   repeating-linear-gradient(135deg,rgba(0,0,0,.045) 0 7px,transparent 7px 14px),
+   linear-gradient(160deg,#C9743A,#A8501F 55%,#6E3413);
+   position:relative}
+.ph.b{background:
+   repeating-linear-gradient(135deg,rgba(0,0,0,.045) 0 7px,transparent 7px 14px),
+   linear-gradient(160deg,#D8A24A,#B2701F 60%,#7A4712)}
+.ph.c{background:
+   repeating-linear-gradient(135deg,rgba(0,0,0,.045) 0 7px,transparent 7px 14px),
+   linear-gradient(160deg,#8FAE55,#5C7C2E 60%,#3B5218)}
+.ph::after{content:"PHOTO";position:absolute;right:6px;bottom:5px;font-family:var(--fm);font-size:8px;
+  letter-spacing:.14em;color:rgba(255,255,255,.72)}
+
+/* ══ A · SIGN ═════════════════════════════════════════════ */
+.A{background:#FFFFFF;color:#14170F;font-family:'Public Sans',sans-serif}
+.A .top{background:#1E9350;padding:11px 13px 9px}
+.A .mark{display:flex;align-items:center;gap:8px}
+.A .roundel{width:30px;height:30px;border-radius:50%;background:#fff;color:#1E9350;font-family:'Saira Condensed',sans-serif;
+  font-weight:800;font-size:14px;display:grid;place-items:center;letter-spacing:-.02em;flex:none}
+.A .wm{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:22px;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.A .tag{margin-top:7px;background:#0E5C31;color:#fff;font-family:'Saira Condensed',sans-serif;font-weight:600;
+  font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;display:inline-block}
+.A .hours{float:right;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:rgba(255,255,255,.9);letter-spacing:.06em}
+.A .usual{border:2px solid #14170F;margin:11px;padding:10px 11px}
+.A .usual .lbl{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#0E5C31}
+.A .usual .ord{font-weight:600;font-size:13.5px;margin:3px 0 8px}
+.A .usual button{width:100%;background:#14170F;color:#fff;border:0;font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:14px;letter-spacing:.1em;text-transform:uppercase;padding:9px;cursor:pointer}
+.A .rail{display:flex;gap:5px;padding:0 11px 9px;overflow:hidden}
+.A .rail span{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:11.5px;text-transform:uppercase;
+  letter-spacing:.07em;border:1.5px solid #14170F;padding:3px 8px;white-space:nowrap}
+.A .rail span.on{background:#14170F;color:#fff}
+.A .card{display:flex;gap:10px;border:1.5px solid #14170F;margin:0 11px 8px;padding:8px;align-items:center}
+.A .card .ph{width:58px;height:58px;flex:none}
+.A .card h4{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;margin:0 0 2px;letter-spacing:.01em}
+.A .card p{margin:0;font-size:11px;color:#4A5142}
+.A .card .pr{margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:#0E5C31}
+
+/* ══ B · COUNTER ══════════════════════════════════════════ */
+.B{background:#FBFBF9;color:#1A1D18;font-family:'Public Sans',sans-serif}
+.B .top{padding:13px 14px 10px;display:flex;align-items:center;gap:9px;border-bottom:1px solid #E7E9E3}
+.B .roundel{width:26px;height:26px;border-radius:50%;background:#1E9350;color:#fff;font-family:'Saira Condensed',sans-serif;
+  font-weight:800;font-size:12px;display:grid;place-items:center;flex:none}
+.B .wm{font-weight:600;font-size:15px;letter-spacing:-.01em}
+.B .open{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#5C6356}
+.B .open i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#1E9350;margin-right:4px}
+.B .usual{margin:12px 14px 0;background:#F1F5EF;border-radius:12px;padding:12px 13px}
+.B .usual .lbl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#4E7A5C}
+.B .usual .ord{font-weight:600;font-size:14px;margin:4px 0 9px;letter-spacing:-.01em}
+.B .usual button{width:100%;background:#1E9350;color:#fff;border:0;border-radius:9px;font-family:'Public Sans',sans-serif;
+  font-weight:600;font-size:13.5px;padding:10px;cursor:pointer}
+.B .rail{display:flex;gap:16px;padding:14px 14px 10px;overflow:hidden;font-size:12.5px;color:#6B7264}
+.B .rail span{white-space:nowrap}
+.B .rail span.on{color:#14170F;font-weight:600;border-bottom:2px solid #1E9350;padding-bottom:3px}
+.B .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:2px 14px}
+.B .tile .ph{width:100%;height:78px;border-radius:11px}
+.B .tile h4{font-weight:600;font-size:12.5px;margin:7px 0 1px;letter-spacing:-.01em}
+.B .tile .pr{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#5C6356}
+.B .badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.08em;
+  background:#E4F0E7;color:#2C6B44;border-radius:4px;padding:1px 5px;margin-top:3px}
+
+/* ══ C · THREE DOORS ══════════════════════════════════════ */
+.C{background:#14170F;color:#F2F4EE;font-family:'Public Sans',sans-serif}
+.C .top{padding:12px 14px 10px;display:flex;align-items:center;gap:8px}
+.C .roundel{width:27px;height:27px;border-radius:50%;background:#1E9350;color:#fff;font-family:'Saira Condensed',sans-serif;
+  font-weight:800;font-size:12.5px;display:grid;place-items:center;flex:none}
+.C .wm{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.02em}
+.C .open{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;color:#9AA292}
+.C .doors{display:grid;gap:1px;background:#2B3024;margin:6px 0 0;border-top:1px solid #2B3024;border-bottom:1px solid #2B3024}
+.C .door{background:#14170F;padding:13px 14px;display:flex;align-items:center;gap:11px;position:relative}
+.C .door .stripe{width:4px;align-self:stretch;flex:none}
+.C .door h4{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:20px;text-transform:uppercase;
+  letter-spacing:.03em;margin:0;line-height:1}
+.C .door p{margin:2px 0 0;font-size:10.5px;color:#9AA292}
+.C .door .n{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:#6E7566}
+.C .usual{margin:12px 14px;border:1px solid #2B3024;border-left:3px solid #1E9350;padding:10px 12px}
+.C .usual .lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#5BC886}
+.C .usual .ord{font-weight:600;font-size:13px;margin:4px 0 8px;color:#F2F4EE}
+.C .usual button{width:100%;background:#1E9350;color:#fff;border:0;font-family:'Saira Condensed',sans-serif;font-weight:700;
+  font-size:13.5px;letter-spacing:.1em;text-transform:uppercase;padding:9px;cursor:pointer}
+.C .strip{padding:0 14px}
+.C .strip .lbl{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#6E7566;margin:0 0 7px}
+.C .row{display:flex;gap:9px;align-items:center;padding:7px 0;border-top:1px solid #22261C}
+.C .row .ph{width:42px;height:42px;flex:none;border-radius:3px}
+.C .row h5{margin:0;font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:14.5px;text-transform:uppercase;letter-spacing:.02em}
+.C .row .pr{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:#5BC886}
+
+/* comparison table */
+.scroll{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-family:var(--fb);font-size:14.5px}
+th{background:var(--surface2);text-align:left;font-family:var(--fd);font-weight:700;font-size:12px;letter-spacing:.08em;
+   text-transform:uppercase;color:var(--muted);padding:11px 14px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--rule-soft);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:none}
+td.k{color:var(--ink);font-weight:600;white-space:nowrap}
+footer{border-top:1px solid var(--rule);padding-top:22px;margin-top:56px;color:var(--muted);font-size:15px}
+button:focus-visible,span:focus-visible{outline:2px solid var(--ak);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Asian Kitchen · Center Point · design directions</p>
+  <h1>Three doors for Asian&nbsp;Kitchen</h1>
+  <p class="standfirst">Same screen, same real menu, three different bets about what this
+  restaurant is. Pick one and I will build it; nothing here is committed.</p>
+</header>
+
+<section>
+  <h2>What the storefront settled</h2>
+  <p class="sub">Everything below is drawn from the photograph of the building, not invented.</p>
+  <dl class="facts">
+    <div class="fact"><dt>Their own words</dt><dd>Hibachi · Asian · Philly Steak<small>Printed on the sign, under the wordmark</small></dd></div>
+    <div class="fact"><dt>Wordmark</dt><dd>Heavy condensed caps<small>Athletic, not delicate. No brush lettering</small></dd></div>
+    <div class="fact"><dt>Badge</dt><dd>Green roundel, AK<small>“Asian Kitchen” above, “Asian Cuisine” below</small></dd></div>
+    <div class="fact"><dt>Building</dt><dd>Rust roof, black glazing<small>Cream stucco, green neon OPEN</small></dd></div>
+  </dl>
+
+  <div class="note">
+    <p><strong>Hibachi is on the sign and not in the online menu.</strong> Their listing shows
+    House Special, Entree, Pick a Meal, Philly Cheesesteaks, Wings, Sides, Drinks — no hibachi
+    anywhere. Either they stopped serving it, or a whole category is missing from the listing.
+    Worth asking him, because it changes what the menu is.</p>
+  </div>
+
+  <div class="note">
+    <p><strong>Two corrections to my earlier notes.</strong> I proposed a <em>wide</em>
+    grotesque; their sign is <em>condensed</em>, so all three mocks follow the sign. And the
+    green is brighter than the <code>#1F6B45</code> I guessed — closer to a kelly green.
+    <strong>Every green here is still estimated from a photograph</strong> and must be
+    replaced with the real value from his artwork before anything ships.</p>
+  </div>
+
+  <p class="sub">One more, minor: the door reads <strong>1552</strong> while the ordering page
+  says <strong>1652 Center Point Pkwy</strong>. Probably me misreading the sign at that
+  resolution — worth a glance next time you are there.</p>
+</section>
+
+<section>
+  <h2>The three directions</h2>
+  <p class="sub">Each mock is the same screen: header, “your usual”, category rail, menu.
+  Real prices from their live menu. Photography is blocked out rather than faked — the
+  provenance question is still open, and a mock that fakes it would be lying about the
+  hardest part.</p>
+
+  <div class="decks">
+
+    <!-- ══════════ A ══════════ -->
+    <div class="deck">
+      <div class="deck-head"><span class="letter">A</span><h3>Sign</h3></div>
+      <div class="phone"><div class="screen A">
+        <div class="top">
+          <span class="hours">OPEN · TILL 7:45</span>
+          <div class="mark"><div class="roundel">AK</div><div class="wm">Asian Kitchen</div></div>
+          <div class="tag">Hibachi · Asian · Philly Steak</div>
+        </div>
+        <div class="usual">
+          <div class="lbl">Your usual</div>
+          <div class="ord">3 Items · Sesame ×3 · Fried Rice</div>
+          <button type="button">Reorder · $12.89</button>
+        </div>
+        <div class="rail"><span class="on">Meals</span><span>Entrées</span><span>Wings</span><span>Philly</span></div>
+        <div class="card"><div class="ph"></div><div><h4>Pick Any Three</h4><p>3 entrées &amp; 1 side</p></div><div class="pr">$12.89</div></div>
+        <div class="card"><div class="ph b"></div><div><h4>Pick Any Two</h4><p>2 entrées &amp; 1 side</p></div><div class="pr">$11.19</div></div>
+        <div class="card"><div class="ph c"></div><div><h4>Combination Rice</h4><p>Chicken, shrimp, beef</p></div><div class="pr">$14.99</div></div>
+      </div></div>
+      <p class="ph-note">A · the storefront, translated</p>
+      <div class="deck-body">
+        <p>The sign becomes the interface. Kelly green band, white condensed caps, the
+        <em>Hibachi · Asian · Philly Steak</em> bar kept verbatim. Black hairline frames echo
+        the storefront glazing.</p>
+        <p>Loud, warm, unmistakably <em>this</em> building. Somebody who has driven past it
+        recognises the site instantly.</p>
+      </div>
+      <p class="risk"><b>Risk:</b> heavy caps and hard borders can read as shouty on a long
+      menu, and green fields fight orange food photography.</p>
+    </div>
+
+    <!-- ══════════ B ══════════ -->
+    <div class="deck">
+      <div class="deck-head"><span class="letter">B</span><h3>Counter</h3></div>
+      <div class="phone"><div class="screen B">
+        <div class="top"><div class="roundel">AK</div><div class="wm">Asian Kitchen</div>
+          <span class="open"><i></i>Till 7:45</span></div>
+        <div class="usual">
+          <div class="lbl">Your usual</div>
+          <div class="ord">3 Items · Sesame ×3 · Fried Rice</div>
+          <button type="button">Reorder · $12.89</button>
+        </div>
+        <div class="rail"><span class="on">Meals</span><span>Entrées</span><span>Wings</span><span>Philly</span><span>Sides</span></div>
+        <div class="grid">
+          <div class="tile"><div class="ph"></div><h4>Pick Any Three</h4><div class="pr">$12.89</div><span class="badge">#2 MOST LIKED</span></div>
+          <div class="tile"><div class="ph b"></div><h4>Pick Any Two</h4><div class="pr">$11.19</div><span class="badge">#1 MOST LIKED</span></div>
+          <div class="tile"><div class="ph c"></div><h4>Combination Rice</h4><div class="pr">$14.99</div></div>
+          <div class="tile"><div class="ph"></div><h4>10 pc Wings</h4><div class="pr">$11.49</div></div>
+        </div>
+      </div></div>
+      <p class="ph-note">B · quiet, photography-led</p>
+      <div class="deck-body">
+        <p>Chrome gets out of the way. Near-white ground, food does the colour, green appears
+        only on the reorder button and the selected tab.</p>
+        <p>Built for the ninety-second repeat order. It is also the direction that survives
+        mediocre photography best, because nothing else is competing.</p>
+      </div>
+      <p class="risk"><b>Risk:</b> the safest, and the least like them. Without the sign’s
+      voice it could be any restaurant with a green button.</p>
+    </div>
+
+    <!-- ══════════ C ══════════ -->
+    <div class="deck">
+      <div class="deck-head"><span class="letter">C</span><h3>Three Doors</h3></div>
+      <div class="phone"><div class="screen C">
+        <div class="top"><div class="roundel">AK</div><div class="wm">Asian Kitchen</div>
+          <span class="open">TILL 7:45</span></div>
+        <div class="doors">
+          <div class="door"><span class="stripe" style="background:#1E9350"></span>
+            <div><h4>Asian</h4><p>Plates, entrées, lo mein</p></div><span class="n">38</span></div>
+          <div class="door"><span class="stripe" style="background:#C9743A"></span>
+            <div><h4>Hibachi</h4><p>Off the flat top</p></div><span class="n">—</span></div>
+          <div class="door"><span class="stripe" style="background:#8A5344"></span>
+            <div><h4>Philly Steak</h4><p>Cheesesteaks &amp; wings</p></div><span class="n">14</span></div>
+        </div>
+        <div class="usual">
+          <div class="lbl">Your usual</div>
+          <div class="ord">3 Items · Sesame ×3 · Fried Rice</div>
+          <button type="button">Reorder · $12.89</button>
+        </div>
+        <div class="strip">
+          <p class="lbl">Most ordered</p>
+          <div class="row"><div class="ph"></div><h5>Pick Any Three</h5><span class="pr">$12.89</span></div>
+          <div class="row"><div class="ph b"></div><h5>Pick Any Two</h5><span class="pr">$11.19</span></div>
+          <div class="row"><div class="ph c"></div><h5>Family Feast</h5><span class="pr">$34.99</span></div>
+        </div>
+      </div></div>
+      <p class="ph-note">C · the hybrid is the structure</p>
+      <div class="deck-body">
+        <p>Takes the tagline literally and makes it navigation. Three doors, three stripe
+        colours pulled from the building — sign green, wok orange, roof rust.</p>
+        <p>Dark ground so the stripes and the food carry all the colour. The only direction
+        that treats the Philly steaks as a real half of the business rather than an oddity.</p>
+      </div>
+      <p class="risk"><b>Risk:</b> the hibachi door may be empty — see above. And a dark
+      restaurant menu is a real bet: it photographs well and reads worse in a sunlit car.</p>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>How they differ</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th></th><th>A · Sign</th><th>B · Counter</th><th>C · Three Doors</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Bet</td><td>Recognition</td><td>Speed</td><td>Honesty about the menu</td></tr>
+        <tr><td class="k">Ground</td><td>White, green header</td><td>Near-white throughout</td><td>Dark</td></tr>
+        <tr><td class="k">Leads with</td><td>The brand</td><td>The food</td><td>The three kitchens</td></tr>
+        <tr><td class="k">Needs good photos</td><td>Somewhat</td><td>Most</td><td>Least</td></tr>
+        <tr><td class="k">Philly &amp; wings</td><td>A tab</td><td>A tab</td><td>A front door</td></tr>
+        <tr><td class="k">Sunlit car test</td><td>Good</td><td>Best</td><td>Worst</td></tr>
+        <tr><td class="k">Risk</td><td>Shouty</td><td>Generic</td><td>Empty hibachi door</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="prose">
+  <h2>What I would pick</h2>
+  <p><strong>A, with B’s restraint below the header.</strong> The green band and the tagline
+  bar buy instant recognition at the top of the screen, and then the menu itself calms down
+  into tiles so the food and the prices do the work.</p>
+  <p>C is the most interesting idea and I would not build it yet. It hangs on hibachi being a
+  real part of the business, and right now the only evidence for that is a sign. If he
+  confirms hibachi is live and material, C becomes the strongest of the three — it is the
+  only one that describes the restaurant he actually runs.</p>
+  <p>B alone is the safe answer. It would work. It would also be the version he could buy from
+  anyone.</p>
+</section>
+
+<section class="prose">
+  <h2>Before any of this is real</h2>
+  <ul>
+    <li><strong>The green.</strong> Every value here is estimated from a photo. One file from him replaces all of it.</li>
+    <li><strong>The photographs.</strong> Blocked out on purpose. Who owns those photographs is still unanswered, and B depends on the answer more than A or C.</li>
+    <li><strong>Hibachi.</strong> On the sign, absent from the menu. Decides whether C exists.</li>
+    <li><strong>The badge.</strong> Rendered as plain “AK” type here. The real roundel is his artwork and should be used as-is rather than redrawn.</li>
+  </ul>
+</section>
+
+<footer>
+  <p>Menu, prices and hours read from their live ordering page, 1 September 2026. Building
+  details from the storefront photograph. Companion to <code>docs/ASIAN-KITCHEN-DESIGN.md</code>.</p>
+</footer>
+
+</div>
