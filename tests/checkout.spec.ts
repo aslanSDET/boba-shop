@@ -84,7 +84,7 @@ test.describe("Asian Kitchen checkout", () => {
     await expect(page.getByRole("button", { name: /Pay \$17\.18/ })).toBeVisible();
   });
 
-  test("takes a real sandbox payment and lands on the confirmation", async ({ page }) => {
+  test("takes a real sandbox payment and lands on the confirmation", async ({ page, request }) => {
     await addFirstItemAndGoToCheckout(page);
 
     await page.getByLabel("Name").fill("Playwright Test");
@@ -100,13 +100,65 @@ test.describe("Asian Kitchen checkout", () => {
     /* The URL is the proof: Square returned an order id and we routed to it. */
     await page.waitForURL(/\/order\/[A-Za-z0-9]+/, { timeout: 45_000 });
 
-    /* By role, not by text: Next renders a visually-hidden
-       `#__next-route-announcer__` carrying the same string for screen readers,
-       so a bare text match resolves to two elements and trips strict mode. */
-    await expect(page.getByRole("heading", { name: /^AK-/ })).toBeVisible();
+    /*
+     * The confirmation number must be SQUARE'S, not one we derived.
+     *
+     * It used to be `AK-` + the last four characters of the order id, which
+     * measured 162 distinct tickets across 229 real orders (67 collisions) and
+     * existed only in the browser — the shop could never look it up. Square's
+     * `receipt_number` is on the payment record and is the first four
+     * characters of the payment id, which is the end that actually varies.
+     *
+     * Asserted against Square's own books rather than a shape: a regex like
+     * /^[A-Za-z0-9]{4}$/ would pass just as happily on a number we made up.
+     *
+     * By role, not by text: Next renders a visually-hidden
+     * `#__next-route-announcer__` carrying the same string for screen readers,
+     * so a bare text match resolves to two elements and trips strict mode.
+     */
+    const heading = page.getByRole("heading", { level: 1 });
+    await expect(heading).toBeVisible();
+    const shown = (await heading.innerText()).trim();
+
+    const orderId = new URL(page.url()).pathname.split("/").pop()!;
+    const sq = {
+      Authorization: `Bearer ${process.env.SQUARE_SANDBOX_ACCESS_TOKEN}`,
+      "Square-Version": "2025-01-23",
+    };
+
+    /* GET by id, not orders/search: the search index is eventually consistent
+       by several seconds — measured — and this runs immediately after paying. */
+    const found = await request.get(
+      `https://connect.squareupsandbox.com/v2/orders/${orderId}`,
+      { headers: sq },
+    );
+    expect(found.ok(), await found.text()).toBeTruthy();
+    const mine = (await found.json()).order;
+    expect(mine, "the order we just paid should be on the merchant's books").toBeTruthy();
+
+    const tenderId = mine.tenders?.[0]?.id;
+    expect(tenderId, "a paid order carries a tender").toBeTruthy();
+    const payment = await request.get(
+      `https://connect.squareupsandbox.com/v2/payments/${tenderId}`,
+      { headers: sq },
+    );
+    const receiptNumber = (await payment.json()).payment?.receipt_number;
+
+    expect(receiptNumber, "Square issues a receipt_number on a COMPLETED payment").toBeTruthy();
+    expect(
+      shown,
+      `the confirmation shows "${shown}" but Square's receipt number is "${receiptNumber}"`,
+    ).toBe(receiptNumber);
+    /* And it is not the old derived shape. */
+    expect(shown.startsWith("AK-")).toBe(false);
     await expect(page.getByText(/Show this number at the counter/i)).toBeVisible();
     await expect(page.getByText(/Combination Fried Rice/i)).toBeVisible();
+
+    /* The map belongs HERE and only here — directions are what you want once
+       the order is placed and you are on your way to collect it. The checkout's
+       own test asserts the other half, that it is absent there. */
     await expect(page.getByRole("link", { name: /Open in Maps/i })).toBeVisible();
+    await expect(page.locator("iframe.ak-co-mapframe")).toBeVisible();
   });
 
   test("a declined card says so, and does not blame the network", async ({ page }) => {
@@ -131,6 +183,50 @@ test.describe("Asian Kitchen checkout", () => {
     await expect(alert).toContainText(/declin/i);
 
     await expect(page).toHaveURL(/\/checkout/);
+  });
+
+  /**
+   * The retry after a decline — the single most likely thing a real customer
+   * does on this page, and it was broken.
+   *
+   * The idempotency key was minted once per page mount while `card.tokenize()`
+   * mints a new single-use nonce on every press, so the second Pay sent the same
+   * key with a different `source_id` and Square answered
+   *
+   *   IDEMPOTENCY_KEY_REUSED
+   *   "Different request parameters used for the same idempotency_key"
+   *
+   * The customer was told their card was declined, corrected it, and got an
+   * internal-sounding error for their trouble — with no way forward except a
+   * reload they had no reason to guess at.
+   *
+   * Driven through the UI rather than the API on purpose: the bug lived in how
+   * the page reused a value across two presses, which is invisible to a test
+   * that constructs each request itself.
+   */
+  test("a declined card can be corrected and paid on the same page", async ({ page }) => {
+    await addFirstItemAndGoToCheckout(page);
+
+    await page.getByLabel("Name").fill("Retry Test");
+    await page.getByLabel("Mobile").fill("2055550143");
+
+    await fillCard(page, CARD.declined);
+    await page.getByRole("button", { name: /^Pay \$/ }).click();
+
+    const alert = page.locator("main").getByRole("alert");
+    await expect(alert).toBeVisible({ timeout: 45_000 });
+    await expect(alert).toContainText(/declin/i);
+
+    /* Now do exactly what a customer does: type a card that works, press Pay. */
+    await fillCard(page, CARD.ok);
+    await page.getByRole("button", { name: /^Pay \$/ }).click();
+
+    await page.waitForURL(/\/order\/[A-Za-z0-9]+/, { timeout: 45_000 });
+    await expect(page.getByText(/Show this number at the counter/i)).toBeVisible();
+
+    /* The specific regression: the second attempt must not be refused for
+       reusing the first attempt's key. */
+    await expect(page.locator("main")).not.toContainText(/idempotency/i);
   });
 
   test("an empty cart offers a way back rather than a broken page", async ({ page }) => {
@@ -361,16 +457,26 @@ test.describe("request hardening", () => {
 });
 
 /** The map is a real element with a real accessible name, not a decorative box. */
-test("the checkout shows the pickup location on a map", async ({ page }) => {
+/*
+ * The map moved to the confirmation, and this asserts BOTH halves of that.
+ *
+ * At checkout the customer has already chosen where they are going and is
+ * trying to pay; the map is a third-party iframe pushing the card form down a
+ * phone screen. Directions are what you want after the order is placed. Only
+ * asserting its absence would let it silently disappear from BOTH screens, so
+ * "takes a real sandbox payment and lands on the confirmation" above pins where
+ * it went — the two assertions have to move together.
+ */
+test("the checkout does NOT carry the map — the address is stated instead", async ({
+  page,
+}) => {
   await addFirstItemAndGoToCheckout(page);
 
-  const frame = page.locator("iframe.ak-co-mapframe");
-  await expect(frame).toBeVisible();
-  await expect(frame).toHaveAttribute("title", /Asian Kitchen.*Center Point/i);
-  /* Lazy on purpose: this is a phone-first page and the map is not the order. */
-  await expect(frame).toHaveAttribute("loading", "lazy");
+  await expect(page.locator("iframe.ak-co-mapframe")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Open in Maps/i })).toHaveCount(0);
 
-  await expect(page.getByRole("link", { name: /Open in Maps/i })).toBeVisible();
+  /* The pickup address is still on the page; it is the map that went. */
+  await expect(page.getByText(/Pickup at .*Center Point/i)).toBeVisible();
 });
 
 /**

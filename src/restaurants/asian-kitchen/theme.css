@@ -24,8 +24,31 @@
 }
 
 .ak {
-  --green: #1e9350; /* ESTIMATED from the storefront photo — see config.ts */
-  --green-deep: #0e5c31;
+  /*
+   * ESTIMATED from the storefront photo (see config.ts) and then DARKENED, by
+   * about 9% of value on the same hue, to carry white text.
+   *
+   * The header is white type on this green, and most of it is small: hours at
+   * 10px, the address at 13px, the rail's active pill at 12.5px. At the
+   * original #1e9350 that measured 3.93:1 — under WCAG AA's 4.5 for anything
+   * below 18.66px, and this is a takeout menu people read on a phone in a car
+   * park, which is the worst lighting any of it will ever get. #1b8548 measures
+   * 4.67:1 and is not a colour anyone would pick out of a line-up against the
+   * old one.
+   *
+   * `--green-deep` moved with it. Its most visible job is the tagline chip
+   * sitting ON the green (it is also the page-wide :focus-visible ring, and 13
+   * other things, most of them dark-on-white where the darkening only helps:
+   * 8.10:1 -> 9.57:1),
+   * and holding it still would have dropped that separation from 2.06:1 to
+   * 1.73:1 — fixing the text and quietly flattening the header instead. At
+   * #0c5029 the chip reads exactly as it did (2.05:1).
+   *
+   * BRAND_GREEN in config.ts is this same value and tints the phone's status
+   * bar. The two must not drift.
+   */
+  --green: #1b8548;
+  --green-deep: #0c5029;
   --ground: #fbfbf9;
   --card: #ffffff;
   --ink: #1a1d18;
@@ -80,34 +103,43 @@
   padding-top: max(12px, env(safe-area-inset-top));
 }
 /*
- * Identity left, whereabouts right, and they swap to stacked below ~560px.
- * The hours used to be absolutely positioned into the top-right corner, which
- * left nowhere to put the address without it colliding on a narrow screen.
+ * Identity left, whereabouts right — at EVERY width, including the narrowest
+ * phone.
+ *
+ * This was `flex-wrap: wrap` with `space-between`, which is two layouts wearing
+ * one rule: the pair sits on opposite sides while both fit on a line, and the
+ * moment they do not, `.ak-where` wraps to a second line at x=16 — directly
+ * under the shop's name, on the same side, which is not a layout anyone chose.
+ * Measured, the flip landed between 414px and 430px: an iPhone 15 Pro Max got
+ * the two-sided header and a plain iPhone 15 did not. A break that falls
+ * between two phones in the same generation is a break in the wrong place.
+ *
+ * A grid instead, because the constraint is "two columns" and grid can say so.
+ * The left track may shrink (`minmax(0, 1fr)`) and the wordmark wraps inside it
+ * when it must; the right track is sized to the address, which is the item that
+ * must stay legible and must not break mid-street-number. So the narrow-screen
+ * cost is paid by the name — which is still the largest type on the page and
+ * still first — rather than by the header's shape.
  */
 .ak-header-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px 14px;
 }
 .ak-where {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: flex-end;
+  text-align: right;
   gap: 3px;
   min-width: 0;
-}
-@media (min-width: 560px) {
-  .ak-where {
-    align-items: flex-end;
-    text-align: right;
-  }
 }
 .ak-mark {
   display: flex;
   align-items: center;
   gap: 11px;
+  min-width: 0;
 }
 /* Their real badge. It carries its own white ring, so it needs no plate. */
 .ak-mark-badge {
@@ -119,6 +151,9 @@
 .ak-wordmark {
   font-family: var(--fd);
   font-weight: 800;
+  /* min-width so the flex item may shrink; the two words then wrap rather than
+     shouldering the address off the row. */
+  min-width: 0;
   font-size: clamp(22px, 6vw, 26px);
   color: #fff;
   text-transform: uppercase;
@@ -156,16 +191,37 @@
   color: var(--green-deep);
   white-space: nowrap;
 }
-/* Shut should read as shut, not as a quieter shade of open. */
+/*
+ * Shut should read as shut, not as a quieter shade of open — and it now does
+ * so the same way open does, as a solid plate with dark type on it, in the
+ * warm hue rather than white.
+ *
+ * It was #ffd9c2 on rgba(255,255,255,0.16) over the green: 2.69:1 at 9px, the
+ * worst contrast in the header and the one state that matters most, since
+ * somebody arriving at 8pm needs to read it before anything else. A
+ * translucent plate could not be rescued by the text colour — even pure white
+ * on it reaches only 3.54:1 — so the plate had to become opaque. #7c2d12 on
+ * #ffd9c2 is 7.12:1, against the open pill's 9.57:1.
+ *
+ * The inset ring went with it; it existed to give a translucent chip an edge,
+ * and a solid one has its own.
+ */
 .ak-open[data-open="false"] {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffd9c2;
-  box-shadow: inset 0 0 0 1px rgba(255, 217, 194, 0.45);
+  background: #ffd9c2;
+  color: #7c2d12;
 }
 .ak-hours {
   font-family: var(--fm);
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.94);
+  /*
+   * Pure white, not the rgba(255,255,255,0.94) this was. Darkening --green was
+   * reasoned against #fff and reached 4.67:1, but 94% white composited over
+   * #1b8548 is 4.33:1 — still under AA, on the element the change named as its
+   * reason. The softening had no room left either: 0.97 measures 4.497 and
+   * 0.98 is 4.554, so anything that still passes is indistinguishable from
+   * white. .ak-tz inherits this and was failing with it.
+   */
+  color: #fff;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -213,7 +269,10 @@
 }
 .ak-address-city {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.78);
+  /* Was rgba(255,255,255,0.78) = 3.49:1 over the header green. The hierarchy
+     against .ak-address-street is carried by 11px/400 against 13px/600, which
+     survives; opacity is not available for it on a ground this saturated. */
+  color: #fff;
 }
 
 /* ── buttons ──────────────────────────────────────────────────────────── */
@@ -1071,16 +1130,33 @@
   border: 1.5px solid var(--green);
   padding: 7.5px 8.5px;
 }
+/*
+ * These sit inside `.ak-step`, which is a real enabled <button> — so WCAG's
+ * exemption for inactive components does not cover them, and at 8.5px they are
+ * the smallest type in the sheet.
+ *
+ * Was #9aa295, the last hardcoded grey on the page and the same failure mode as
+ * .ak-fineprint and .ak-soon-label before it: a colour that opted out of the
+ * token system and drifted. It measured 2.54:1 on --ground. --muted is 4.81:1
+ * and is what "quiet secondary text" already means here.
+ *
+ * Neither contrast pass caught it because both swept the page as LOADED, and
+ * this markup only exists once a plate sheet is open — which is the screen a
+ * customer spends the most time on.
+ */
 .ak-step-n {
   display: block;
   font-family: var(--fm);
   font-size: 8.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9aa295;
+  color: var(--muted);
 }
+/* The current step, on --wash rather than --ground. #4e7a5c measured 4.47:1
+   there — three hundredths short, which is invisible to the eye and still a
+   fail. #4a7457 is 4.85:1 and reads as the same green. */
 .ak-step[data-state="now"] .ak-step-n {
-  color: #4e7a5c;
+  color: #4a7457;
 }
 .ak-step-label {
   display: block;
@@ -1117,7 +1193,8 @@
   display: block;
   font-family: var(--fm);
   font-size: 9.5px;
-  color: #9aa295;
+  /* Same #9aa295 at 2.54:1, and this one names an ACTION. */
+  color: var(--muted);
   margin-top: 7px;
 }
 
@@ -1514,7 +1591,10 @@
 /* Green only once the client has actually looked at a clock. */
 .ak-fact-status[data-open="true"] .ak-dot {
   background: var(--green);
-  box-shadow: 0 0 0 4px rgba(30, 147, 80, 0.18);
+  /* Tracks --green. Written as rgba, which is why it survived the sweep that
+     moved every #1e9350: a hex grep cannot see it, and the build minifies it
+     to #1e93502e so only the shipped bundle shows the old colour. */
+  box-shadow: 0 0 0 4px rgba(27, 133, 72, 0.18);
 }
 .ak-fact-status[data-open="false"] .ak-dot {
   background: #b45309;
@@ -1538,7 +1618,8 @@
   font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #a07d33;
+  /* Darkened from #a07d33, which measured 3.68:1 at 9.5px. */
+  color: #7a5c1c;
 }
 .ak-soon-name {
   margin: 7px 0 0;
@@ -1577,7 +1658,10 @@
 .ak-fineprint {
   font-size: 11px;
   line-height: 1.65;
-  color: #8b9284;
+  /* Was a hardcoded #8b9284, which is the one grey on this page that never went
+     through --muted and measured 3.10:1 — the worst contrast on the menu, on
+     the paragraph that carries the "prices may be out of date" warning. */
+  color: var(--muted);
 }
 
 /* ── CHECKOUT & CONFIRMATION ───────────────────────────────────────────────

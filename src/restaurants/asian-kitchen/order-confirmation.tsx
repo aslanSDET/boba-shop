@@ -40,6 +40,8 @@ interface Stored {
   orderId: string;
   paymentId?: string;
   receiptUrl?: string;
+  /* Square's own confirmation number — see the note on `fallbackTicket` below. */
+  receiptNumber?: string;
   name?: string;
   priced?: {
     subtotalCents: number;
@@ -51,16 +53,50 @@ interface Stored {
 }
 
 /**
- * A counter-friendly ticket number.
+ * The number the customer reads out at the counter is **Square's own
+ * `receipt_number`**, taken straight off the payment. It is not derived here and
+ * not invented here, which matters for one reason above all: it exists on
+ * Square's payment record, so when somebody walks in saying "I'm XJB1" the shop
+ * can actually find them.
  *
- * Square's order id is a 26-character opaque string — correct for an API,
- * useless for someone calling out an order across a kitchen. The last four
- * characters, uppercased, are short enough to read aloud and stable because
- * they come from the id itself rather than from a counter we would have to
- * store. Collisions across a day are possible and harmless: the name on the
- * order disambiguates, exactly as it does on a paper ticket.
+ * ── WHAT THIS REPLACED, AND WHY ──────────────────────────────────────────────
+ *
+ * It used to be `AK-${orderId.slice(-4).toUpperCase()}`, with a comment arguing
+ * that collisions were "possible and harmless". That argument assumed four
+ * random characters — 1.7M combinations. Measured against 229 real sandbox
+ * order ids, the truth was:
+ *
+ *   last character   1 distinct value  — every id ends "F"
+ *   last 2           1 distinct value  — every id ends "4F"
+ *   last 3          10 distinct values
+ *   and uppercasing collapsed 60 distinct characters into 35
+ *
+ * So of four characters roughly one and a half varied: 229 orders produced 162
+ * tickets, with 67 collisions already present. At ~162 slots a shop doing 40
+ * orders a day has a 99% chance two customers hold the same number.
+ *
+ * Square avoids its own tail for exactly this reason — `receipt_number` is the
+ * FIRST four characters of the payment id (82/82 measured), because payment ids
+ * carry a constant tail too (91/100 end "ZY").
+ *
+ * And the old number lived only in this browser. It was never sent to Square,
+ * so nobody could look it up: a confirmation number the merchant cannot see is
+ * decoration.
+ *
+ * ── THE FALLBACK ─────────────────────────────────────────────────────────────
+ *
+ * `receipt_number` arrives through sessionStorage, which can be gone — a shared
+ * link, a cleared tab. Square also omits it on FAILED payments (0/18 measured),
+ * but a failed payment cancels its order and never routes here, so in practice
+ * only lost storage reaches this branch.
+ *
+ * The fallback derives from the order id in the URL, but from the part that
+ * actually varies rather than the constant tail: 229 distinct across the same
+ * sample, against 162 for the old slice. It keeps the "AK-" prefix precisely so
+ * it does NOT impersonate a Square receipt number — staff searching Square for
+ * it will find nothing, and the prefix is the signal that this one is ours.
  */
-const ticket = (orderId: string) => `AK-${orderId.slice(-4).toUpperCase()}`;
+const fallbackTicket = (orderId: string) => `AK-${orderId.slice(-7, -3).toUpperCase()}`;
 
 const subscribe = () => () => {};
 
@@ -96,7 +132,7 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
     <main className="ak-checkout">
       <p className="ak-co-pill">Paid · Pickup</p>
 
-      <h1 className="ak-co-ticket">{ticket(orderId)}</h1>
+      <h1 className="ak-co-ticket">{order?.receiptNumber ?? fallbackTicket(orderId)}</h1>
       <p className="ak-co-sub">
         {order?.name ? `Thanks, ${order.name}. ` : ""}Show this number at the counter.
       </p>

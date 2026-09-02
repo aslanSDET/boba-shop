@@ -33,7 +33,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RESTAURANT } from "./config";
 import { clearCart, toRequestLines, useStoredCart } from "./cart";
-import { PickupMap } from "./pickup-map";
 import { formatPhone, isCompletePhone, phoneDigitsRemaining } from "./lib-phone";
 
 const money = (cents: number) =>
@@ -98,7 +97,12 @@ export function Checkout() {
      A lazy useState rather than a ref written during render — writing a ref
      mid-render is exactly what React 19 flags, and this value is never
      rendered, so there is nothing for hydration to disagree about. */
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  /*
+   * An attempt whose outcome we never learned, held so it can be replayed
+   * BYTE FOR BYTE. Null means the next Pay press starts a fresh attempt.
+   * See the long note on `pay` for why this is not just a key.
+   */
+  const [pending, setPending] = useState<{ body: string } | null>(null);
 
   /** Preview only, and labelled as such until Square answers. */
   const previewCents = useMemo(
@@ -231,6 +235,27 @@ export function Checkout() {
   const showNameError = (touched.name || attempted) && !!nameError;
   const showContactError = (touched.contact || attempted) && !!contactError;
 
+  /* Everything that has to happen once Square says yes, in one place, because
+     the success path is reachable from both a first attempt and a replay. */
+  const finish = useCallback(
+    (data: { orderId: string }) => {
+      /* Hand the confirmation everything it needs BEFORE clearing the cart —
+         the order page has no other source for it, and a customer who has just
+         paid must never see an empty screen. */
+      try {
+        sessionStorage.setItem(
+          `ak.order.${data.orderId}`,
+          JSON.stringify({ ...data, name, phone, email, at: Date.now() }),
+        );
+      } catch {
+        /* The confirmation degrades to the order number alone. */
+      }
+      clearCart();
+      router.push(`/order/${data.orderId}`);
+    },
+    [name, phone, email, router],
+  );
+
   const pay = useCallback(async () => {
     if (!card || !cart || paying) return;
 
@@ -245,7 +270,9 @@ export function Checkout() {
           ? phoneRef.current
           : emailError
             ? emailRef.current
-            : phoneRef.current;
+            : contactError
+              ? phoneRef.current
+              : null;
       target?.focus();
       target?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
@@ -253,44 +280,85 @@ export function Checkout() {
 
     setPaying(true);
     setError(null);
+
+    /*
+     * ── ONE IDEMPOTENCY KEY PER ATTEMPT, NOT PER PAGE ─────────────────────────
+     *
+     * The key used to be minted once per mount and never rotated, while
+     * `card.tokenize()` mints a NEW single-use nonce on every press. So a second
+     * press of Pay sent the same key with a different `source_id`, and Square
+     * answered — correctly —
+     *
+     *   IDEMPOTENCY_KEY_REUSED
+     *   "Different request parameters used for the same idempotency_key"
+     *
+     * which a customer hit right after a declined card, at the exact moment they
+     * were trying to fix it. Reproduced against the sandbox: decline with
+     * cnon:card-nonce-declined, then pay with cnon:card-nonce-ok on the same
+     * key, and that is the response.
+     *
+     * The token was never the flaw. A single-use nonce is the whole point — one
+     * that could be replayed would be as good as holding the card number. The
+     * flaw was two lifetimes for two values that must travel together, so they
+     * are minted together now.
+     *
+     * Idempotency does not key off the cart or the card either: the same person
+     * ordering the same thing next week is a fresh page, a fresh key, a fresh
+     * order. It exists for exactly one thing — one order not being charged twice
+     * when a single request is retried.
+     *
+     * ── WHICH FAILURES ROTATE THE KEY, AND WHICH MUST NOT ─────────────────────
+     *
+     * If Square ANSWERED — a decline, a bad postcode — the attempt is over, no
+     * money moved, and the next press is a genuinely new payment: new token, new
+     * key. That is the common case and the one that was broken.
+     *
+     * If we never learned the outcome — the fetch threw, or our own server
+     * answered 5xx — the payment may already have succeeded. That is the case
+     * idempotency exists for, so the request is replayed UNCHANGED and Square
+     * either processes it once or hands back the original payment. Keeping the
+     * serialized body, not just the key, is what makes that real: a replay that
+     * differs by so much as the tip produces the very error above.
+     */
+    let body: string | null = pending?.body ?? null;
+
     try {
-      /*
-       * Tokenizing is a separate failure domain from paying, and conflating
-       * them produces a lie. An invalid card reported as "could not reach the
-       * shop" sends the customer to check their wifi instead of their card
-       * number — which is what this code did until someone testing it saw both
-       * messages at once.
-       */
-      let result: Awaited<ReturnType<typeof card.tokenize>>;
-      try {
-        result = await card.tokenize();
-      } catch (e) {
-        setError(
-          e instanceof Error && e.message
-            ? `Card entry failed: ${e.message}`
-            : "Card entry failed. Reload the page and try again.",
-        );
-        setPaying(false);
-        return;
-      }
+      if (body === null) {
+        /*
+         * Tokenizing is a separate failure domain from paying, and conflating
+         * them produces a lie. An invalid card reported as "could not reach the
+         * shop" sends the customer to check their wifi instead of their card
+         * number — which is what this code did until someone testing it saw both
+         * messages at once.
+         */
+        let result: Awaited<ReturnType<typeof card.tokenize>>;
+        try {
+          result = await card.tokenize();
+        } catch (e) {
+          setError(
+            e instanceof Error && e.message
+              ? `Card entry failed: ${e.message}`
+              : "Card entry failed. Reload the page and try again.",
+          );
+          setPaying(false);
+          return;
+        }
 
-      if (result.status !== "OK" || !result.token) {
-        /* Square returns an array; showing only the first hides "and the
-           postcode is wrong too", which is the second thing they need to fix. */
-        const messages = (result.errors ?? []).map((x) => x.message).filter(Boolean);
-        setError(messages.length > 0 ? messages.join(" ") : "Please check the card details.");
-        setPaying(false);
-        return;
-      }
+        if (result.status !== "OK" || !result.token) {
+          /* Square returns an array; showing only the first hides "and the
+             postcode is wrong too", which is the second thing they need to fix. */
+          const messages = (result.errors ?? []).map((x) => x.message).filter(Boolean);
+          setError(messages.length > 0 ? messages.join(" ") : "Please check the card details.");
+          setPaying(false);
+          return;
+        }
 
-      const res = await fetch("/api/square/pay", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+        body = JSON.stringify({
           lines: toRequestLines(cart),
           tipCents,
           sourceId: result.token,
-          idempotencyKey,
+          /* Minted here, beside the token it belongs to — not at mount. */
+          idempotencyKey: crypto.randomUUID(),
           /*
            * Passed through to Square, where they land on the payment record.
            *
@@ -301,36 +369,45 @@ export function Checkout() {
            * an order belongs to from their own dashboard.
            */
           customer: { name: name.trim(), phone: phone.trim(), email: email.trim() },
-        }),
+        });
+      }
+
+      const res = await fetch("/api/square/pay", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body,
       });
       const data = await res.json();
+
       if (!res.ok) {
-        setError(data.error ?? "The payment did not go through.");
+        if (res.status >= 500) {
+          /* Our own server failed to answer, which says nothing about whether
+             Square charged the card. Keep the attempt so Pay replays it. */
+          setPending({ body });
+          setError("We could not confirm that. Tap Pay again — you will not be charged twice.");
+        } else {
+          /* Square answered. The attempt is resolved and dead either way. */
+          setPending(null);
+          setError(data.error ?? "The payment did not go through.");
+        }
         setPaying(false);
         return;
       }
 
-      /* Hand the confirmation everything it needs BEFORE clearing the cart —
-         the order page has no other source for it, and a customer who has just
-         paid must never see an empty screen. */
-      try {
-        sessionStorage.setItem(
-          `ak.order.${data.orderId}`,
-          JSON.stringify({ ...data, name, phone, email, at: Date.now() }),
-        );
-      } catch {
-        /* The confirmation degrades to the order number alone. */
-      }
-      clearCart();
-      router.push(`/order/${data.orderId}`);
+      setPending(null);
+      finish(data);
     } catch {
-      /* Only reachable now if the fetch to our own server failed — which is
-         genuinely a connectivity problem, so the message is finally true. */
-      setError("Could not reach the shop. Your card has not been charged.");
+      /*
+       * The fetch threw, so the request may or may not have reached Square.
+       * "Your card has not been charged" was a claim this could not make, and is
+       * gone — the attempt is kept instead, so the retry is a true replay.
+       */
+      if (body !== null) setPending({ body });
+      setError("We could not confirm that. Tap Pay again — you will not be charged twice.");
       setPaying(false);
     }
-  }, [card, cart, tipCents, name, phone, email, paying, idempotencyKey, router,
-      detailsValid, nameError, phoneError, emailError]);
+  }, [card, cart, tipCents, name, phone, email, paying, pending, finish,
+      detailsValid, nameError, contactError, phoneError, emailError]);
 
   if (cart === null) {
     return <main className="ak-checkout" aria-busy="true" />;
@@ -364,7 +441,13 @@ export function Checkout() {
           backslash escape renders as the six characters you typed. */}
       <p className="ak-co-sub">Ready in 15–20&nbsp;minutes</p>
 
-      <PickupMap />
+      {/* No map here, deliberately — it lives on the confirmation instead.
+          At checkout the customer has already decided where they are going and
+          is trying to pay; an embedded map is a third-party iframe and a large
+          paint pushing the card form further down a phone screen. Directions
+          are what you want AFTER the order is placed, on the way to collect it,
+          which is where <PickupMap /> now appears alone. The address itself is
+          still stated above, in the pickup pill. */}
 
       <section className="ak-co-card" aria-labelledby="ak-co-items">
         <h2 id="ak-co-items" className="ak-co-h">

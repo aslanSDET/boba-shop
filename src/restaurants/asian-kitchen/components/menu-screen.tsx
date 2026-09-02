@@ -366,11 +366,11 @@ export function MenuScreen() {
           return (
             <section key={cat.id} aria-labelledby={`ak-${cat.id}`}>
               <h2 className="ak-section-head" id={`ak-${cat.id}`}>
-                {isPlates ? "Build a plate" : cat.name}
+                {isPlates ? "Pick a Meal" : cat.name}
               </h2>
               {isPlates ? (
                 <p className="ak-section-note">
-                  Every plate is entrées plus one side. Pick how many entrées you want.
+                  Every plate is an entrée plus one side. Pick how many entrées you want.
                 </p>
               ) : (
                 cat.note && <p className="ak-section-note">{cat.note}</p>
