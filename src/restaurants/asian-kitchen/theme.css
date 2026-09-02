@@ -36,7 +36,10 @@
    * 4.67:1 and is not a colour anyone would pick out of a line-up against the
    * old one.
    *
-   * `--green-deep` moved with it. It is the tagline chip sitting ON the green,
+   * `--green-deep` moved with it. Its most visible job is the tagline chip
+   * sitting ON the green (it is also the page-wide :focus-visible ring, and 13
+   * other things, most of them dark-on-white where the darkening only helps:
+   * 8.10:1 -> 9.57:1),
    * and holding it still would have dropped that separation from 2.06:1 to
    * 1.73:1 — fixing the text and quietly flattening the header instead. At
    * #0c5029 the chip reads exactly as it did (2.05:1).
@@ -188,16 +191,37 @@
   color: var(--green-deep);
   white-space: nowrap;
 }
-/* Shut should read as shut, not as a quieter shade of open. */
+/*
+ * Shut should read as shut, not as a quieter shade of open — and it now does
+ * so the same way open does, as a solid plate with dark type on it, in the
+ * warm hue rather than white.
+ *
+ * It was #ffd9c2 on rgba(255,255,255,0.16) over the green: 2.69:1 at 9px, the
+ * worst contrast in the header and the one state that matters most, since
+ * somebody arriving at 8pm needs to read it before anything else. A
+ * translucent plate could not be rescued by the text colour — even pure white
+ * on it reaches only 3.54:1 — so the plate had to become opaque. #7c2d12 on
+ * #ffd9c2 is 7.12:1, against the open pill's 9.57:1.
+ *
+ * The inset ring went with it; it existed to give a translucent chip an edge,
+ * and a solid one has its own.
+ */
 .ak-open[data-open="false"] {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffd9c2;
-  box-shadow: inset 0 0 0 1px rgba(255, 217, 194, 0.45);
+  background: #ffd9c2;
+  color: #7c2d12;
 }
 .ak-hours {
   font-family: var(--fm);
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.94);
+  /*
+   * Pure white, not the rgba(255,255,255,0.94) this was. Darkening --green was
+   * reasoned against #fff and reached 4.67:1, but 94% white composited over
+   * #1b8548 is 4.33:1 — still under AA, on the element the change named as its
+   * reason. The softening had no room left either: 0.97 measures 4.497 and
+   * 0.98 is 4.554, so anything that still passes is indistinguishable from
+   * white. .ak-tz inherits this and was failing with it.
+   */
+  color: #fff;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -245,7 +269,10 @@
 }
 .ak-address-city {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.78);
+  /* Was rgba(255,255,255,0.78) = 3.49:1 over the header green. The hierarchy
+     against .ak-address-street is carried by 11px/400 against 13px/600, which
+     survives; opacity is not available for it on a ground this saturated. */
+  color: #fff;
 }
 
 /* ── buttons ──────────────────────────────────────────────────────────── */
@@ -1546,7 +1573,10 @@
 /* Green only once the client has actually looked at a clock. */
 .ak-fact-status[data-open="true"] .ak-dot {
   background: var(--green);
-  box-shadow: 0 0 0 4px rgba(30, 147, 80, 0.18);
+  /* Tracks --green. Written as rgba, which is why it survived the sweep that
+     moved every #1e9350: a hex grep cannot see it, and the build minifies it
+     to #1e93502e so only the shipped bundle shows the old colour. */
+  box-shadow: 0 0 0 4px rgba(27, 133, 72, 0.18);
 }
 .ak-fact-status[data-open="false"] .ak-dot {
   background: #b45309;
