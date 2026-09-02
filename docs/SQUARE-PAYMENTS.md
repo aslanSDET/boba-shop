@@ -1,12 +1,15 @@
 # Asian Kitchen on Square — payments and delivery, in questions
 
-> **Status: RESEARCH. Nothing here is built, and nothing here is measured.**
+> **Status: RESEARCH, with the pricing path now MEASURED.**
 >
-> Every claim below is **read from documentation**, not observed against a live
-> merchant — the same standing the Square column in `PLATFORM.md` §8 has. The
-> Clover work earned the right to say "measured" by running eight probes against
-> a sandbox (`scripts/spike/findings.md`); this file has not done that yet, and
-> §10 is the shortest path to earning it.
+> Most claims below are **read from documentation** — the same standing the
+> Square column in `PLATFORM.md` §8 has. Three are not, and are marked
+> **measured** where they appear: authentication, `GET /v2/locations`, and
+> `POST /v2/orders/calculate` have been run against the sandbox merchant
+> `LA5YVEHPBFX7Y` ("Default Test Account") with a real cart, and they work.
+>
+> The money path — `CreateOrder`, `CreatePayment`, declines — has **not** been
+> run. Neither has anything in §8. §10 is still the list.
 >
 > Where a source contradicts another source, both are recorded rather than
 > resolved by preference.
@@ -98,6 +101,17 @@ This is the single biggest structural improvement over Clover, and
 fought — the 11 duplicates, the 9 swept on 2026-08-31, the whole of
 `pos/clover/idempotency.ts` — exists because Clover cannot price a cart without
 creating one.
+
+**Measured, 2026-09-02.** A Pick Any Three Items plate with three Sesame
+Chicken and a Fried Rice returned `$10.99`, with the four choices itemised as
+line-item modifiers rather than folded into the name — which is what makes a
+kitchen ticket legible on a menu where the modifiers *are* the product.
+
+One thing the same call exposed: the sandbox merchant has **zero `TAX` objects
+in its catalog**, so `taxCents` comes back `0`. That is an empty sandbox, not an
+arithmetic bug, and it must not be "fixed" by computing tax locally — invariant
+4 exists precisely to stop that. A demo either creates a `TAX` object in the
+sandbox or shows a $0.00 tax line honestly.
 
 On Square the shape becomes:
 
@@ -220,10 +234,18 @@ A Square sandbox spike, in the shape that worked for Clover
 5. Idempotency: `idempotency_key` is *required* on Square writes. Does a repeat
    return the first result, or an error?
 
-Credentials for 1–3 and 5 are already in `.env.local`
-(`SQUARE_SANDBOX_APPLICATION_ID`, `SQUARE_SANDBOX_ACCESS_TOKEN`) and nothing
-reads them yet. **Question 4 cannot be answered in a sandbox** — it needs the
-owner's real device, the same way Clover's print question did.
+Credentials for 1–3 and 5 are in `.env.local` and **do work** —
+`src/pos/square/` now reads them, and questions 1 and 2 are answered above.
+**Question 4 cannot be answered in a sandbox** — it needs the owner's real
+device, the same way Clover's print question did.
+
+> **A trap that cost time here.** `.env.local` contains a multi-line test-card
+> block that is not valid shell, so `set -a; . .env.local` aborts before
+> reaching the `SQUARE_` lines and every subsequent curl goes out with an empty
+> bearer token. That returns `401 UNAUTHORIZED` on every endpoint in both
+> environments and is indistinguishable from a revoked credential — it was
+> written up as one before the app, which parses the file properly, worked
+> first time. Parse `.env.local` in Python before blaming a token.
 
 ---
 
