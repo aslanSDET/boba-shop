@@ -207,7 +207,7 @@ export async function fetchWeek(): Promise<DayHours[]> {
   if (memo && Date.now() - memo.at < WEEK_TTL_MS) return memo.week;
 
   const response = await platform<{ elements?: CloverSet[] }>(
-    `/v3/merchants/${merchantId()}/opening_hours` +
+    `/v3/merchants/${await merchantId()}/opening_hours` +
       "?expand=sunday,monday,tuesday,wednesday,thursday,friday,saturday",
   );
 

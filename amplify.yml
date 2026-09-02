@@ -1,0 +1,47 @@
+# Amplify Hosting build spec — Snowdaes.
+#
+# ── WHAT GOES IN .env.production, AND WHAT MUST NOT ──────────────────────────
+#
+# Amplify's environment variables are a BUILD-TIME facility: a Next route
+# handler does not see them at request time. AWS's documented workaround is the
+# `env | grep ... >> .env.production` line below, which bakes values into the
+# deployment artifact — and their own warning on that page is that anyone with
+# access to the artifact can read them.
+#
+# So this file writes exactly two NON-SECRET values, and no credential ever.
+# The Clover tokens are read at request time from SSM Parameter Store by the SSR
+# compute role; see src/pos/clover/creds.ts.
+#
+#   RESTAURANT  — not a secret, and REQUIRED here rather than only in the
+#                 console. src/restaurants/active.ts reads it at module load.
+#                 That works during the build, but the Lambda re-evaluates the
+#                 module per request with no env var and falls back to
+#                 "snowdaes". Correct by accident on this deployment; wrong the
+#                 day Asian Kitchen ships, when its API routes would answer as
+#                 Snowdaes instead of 404ing.
+#   CLOVER_ENV  — not a secret. Also defaults to "sandbox" in code, but a
+#                 default that happens to be safe is not the same as a stated
+#                 one, and this is the variable that decides whether a write can
+#                 reach a working kitchen.
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci --cache .npm --prefer-offline
+    build:
+      commands:
+        - env | grep -e '^RESTAURANT=' -e '^CLOVER_ENV=' >> .env.production || true
+        - npm run build
+  artifacts:
+    # .next, not out — this app has four dynamic API routes, so it deploys to
+    # Amplify Hosting compute (WEB_COMPUTE), not as a static export. A wrong
+    # baseDirectory here is a blank page in production with no error.
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - .npm/**/*
+      - node_modules/**/*
+      - .next/cache/**/*

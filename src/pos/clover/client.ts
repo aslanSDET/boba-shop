@@ -11,6 +11,7 @@
  */
 
 import { ACTIVE_RESTAURANT } from "@/restaurants/active";
+import { credential } from "./creds";
 
 /**
  * Clover is Snowdaes' till, not the platform's.
@@ -54,17 +55,20 @@ export function cloverBase(host: CloverHost): string {
   return set[host];
 }
 
-export function merchantId(): string {
+/**
+ * Async because a deployed build reads this from SSM Parameter Store, which is a
+ * network call — Amplify's environment variables do not reach the SSR runtime
+ * (`creds.ts` explains why, and why the documented `.env.production` workaround
+ * was rejected). Locally it still resolves straight from `process.env` without
+ * touching AWS, so `.env.local` behaves exactly as it always has.
+ */
+export function merchantId(): Promise<string> {
   return required("CLOVER_MERCHANT_ID");
 }
 
-function required(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    // Never echo the value, only the name. This message reaches a log.
-    throw new Error(`Missing ${name}. Add it to .env.local (gitignored) — see scripts/spike/README.md.`);
-  }
-  return value;
+/** Never echoes the value, only the name — these messages reach a log. */
+function required(name: string): Promise<string> {
+  return credential(name);
 }
 
 export class CloverError extends Error {
@@ -142,12 +146,12 @@ async function request<T>(host: CloverHost, path: string, options: RequestOption
   };
 
   if (auth === "platform") {
-    headers.authorization = `Bearer ${required("CLOVER_API_TOKEN")}`;
+    headers.authorization = `Bearer ${await required("CLOVER_API_TOKEN")}`;
   } else {
     // The Ecommerce host authenticates with the Ecommerce private key AND wants
     // the merchant named in a header rather than in the path.
-    headers.authorization = `Bearer ${required("CLOVER_ECOMM_PRIVATE_KEY")}`;
-    headers["X-Clover-Merchant-Id"] = merchantId();
+    headers.authorization = `Bearer ${await required("CLOVER_ECOMM_PRIVATE_KEY")}`;
+    headers["X-Clover-Merchant-Id"] = await merchantId();
   }
   if (body !== undefined) headers["content-type"] = "application/json";
   if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;

@@ -187,8 +187,8 @@ export async function POST(request: Request) {
   // right shape, because a missing ticket is a nuisance and a failed sale is
   // not. Whether a real order prints closes only against the shop's own
   // merchant, with the owner watching (PLAN.md §8.7).
-  const printEvent = await optional("print_event", () =>
-    platform<{ id?: string }>(`/v3/merchants/${merchantId()}/print_event`, {
+  const printEvent = await optional("print_event", async () =>
+    platform<{ id?: string }>(`/v3/merchants/${await merchantId()}/print_event`, {
       method: "POST",
       body: { orderRef: { id: orderId } },
       timeoutMs: 5_000,
