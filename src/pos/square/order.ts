@@ -207,19 +207,46 @@ export async function calculateOrder(request: CheckoutRequest): Promise<PricedOr
  *
  * `idempotencyKey` is REQUIRED by Square on both writes, which is the opposite
  * of Clover where it was optional and unverifiable. One key per checkout
- * attempt, minted by the browser and kept in sessionStorage, covers a double
- * tap, a retry on a stalled connection, a reload after a lost reply, and
+ * attempt, minted by the browser and kept for the life of the page, covers a
+ * double tap, a retry on a stalled connection, a reload after a lost reply, and
  * React's Strict Mode double-invoke.
  *
  * The two calls take DIFFERENT keys derived from the same attempt: replaying
  * one must not be mistaken for the other.
+ *
+ * ── THE 45-CHARACTER CEILING, MEASURED ───────────────────────────────────────
+ *
+ * **CreatePayment caps `idempotency_key` at 45 characters. CreateOrder does
+ * not** — it allows 192. Square answers a longer one with
+ * `VALUE_TOO_LONG: "Field must not be greater than 45 length"`, which names no
+ * field, so it is worth writing down where it will be read.
+ *
+ * The obvious symmetric shape — `${key}-order` and `${key}-payment` — puts a
+ * 36-character UUID at 44 characters on the payment call. That passes, by ONE
+ * character, and would break the day anything prefixed the key. It was found
+ * exactly that way: a test run using `test-<uuid>` failed while the real path
+ * would have survived, which is the worst kind of near-miss.
+ *
+ * So the payment call takes the key UNCHANGED and only the order call is
+ * suffixed. Both stay distinct, and the payment side keeps 9 characters of
+ * headroom instead of one.
  */
+/** CreatePayment's hard limit. Checked here so the failure names itself. */
+const MAX_PAYMENT_IDEMPOTENCY_KEY = 45;
+
 export async function createOrderAndPay(args: {
   request: CheckoutRequest;
   sourceId: string;
   idempotencyKey: string;
   note?: string;
 }): Promise<{ orderId: string; paymentId: string; priced: PricedOrder; receiptUrl?: string }> {
+  if (args.idempotencyKey.length > MAX_PAYMENT_IDEMPOTENCY_KEY) {
+    throw new CheckoutRequestError(
+      `idempotencyKey is ${args.idempotencyKey.length} characters; Square's payment ` +
+        `limit is ${MAX_PAYMENT_IDEMPOTENCY_KEY}. A bare UUID is 36.`,
+    );
+  }
+
   const location = await locationId();
 
   const created = await square<{ order?: { id?: string } & Parameters<typeof readTotals>[0] }>(
@@ -232,18 +259,36 @@ export async function createOrderAndPay(args: {
         order: {
           location_id: location,
           line_items: buildLineItems(args.request.lines),
-          ...(args.note ? { note: args.note.slice(0, 500) } : {}),
           fulfillments: [
             {
               type: "PICKUP",
               state: "PROPOSED",
               pickup_details: {
-                // Square wants a recipient; the name is collected at checkout.
+                /*
+                 * The customer's name and number ride here, NOT in `order.note`.
+                 * Measured: an `order.note` sent alongside this came back `null`
+                 * from `GET /v2/orders/{id}`, while `recipient.display_name`
+                 * persisted. The recipient is also the field a pickup ticket
+                 * actually prints, so it is the right home regardless.
+                 */
                 recipient: { display_name: args.note?.slice(0, 100) || "Online order" },
                 schedule_type: "ASAP",
-                // Documented as required with ASAP. 20 minutes matches the
-                // "Ready in 15-20 mins" the page promises.
-                pickup_at: new Date(Date.now() + 20 * 60_000).toISOString(),
+                /*
+                 * NO `pickup_at`.
+                 *
+                 * It was set to `Date.now() + 20 minutes`, which is only
+                 * required for SCHEDULED and is actively harmful for ASAP: it
+                 * makes the request body different on every call, so a retry
+                 * carrying the same idempotency key is a DIFFERENT request.
+                 *
+                 * Measured. Replaying a completed checkout returned
+                 * `IDEMPOTENCY_KEY_REUSED: "Different request parameters used
+                 * for the same idempotency_key"` — the payment was correctly
+                 * refused, so no double charge, but a customer retrying after a
+                 * lost response got an error instead of their original order.
+                 * That is the exact failure idempotency exists to prevent, and
+                 * a clock in the request body defeats it silently.
+                 */
               },
             },
           ],
@@ -255,18 +300,42 @@ export async function createOrderAndPay(args: {
   const orderId = created.order?.id;
   if (!orderId) throw new CheckoutRequestError("Square created no order.");
 
-  const priced = readTotals(created.order!);
-  const amountToCharge = priced.totalCents + (args.request.tipCents ?? 0);
+  const order = created.order!;
+  const priced = readTotals(order);
+
+  /*
+   * ── WHY THE CHARGE IS total_money MINUS total_tip_money ────────────────────
+   *
+   * NOT `total_money`, which is the obvious choice and is wrong on a retry.
+   *
+   * Square folds the tip into the order once a payment lands, so the SAME order
+   * reports different totals before and after. Measured on one order:
+   *
+   *   before payment   total_money 1249   total_tip_money   0
+   *   after  payment   total_money 1499   total_tip_money 250
+   *
+   * Reading `total_money` therefore sends `amount_money: 1249` the first time
+   * and `1499` on a replay — a different request under the same idempotency
+   * key, which Square refuses with IDEMPOTENCY_KEY_REUSED. The customer
+   * retrying after a lost response gets an error instead of their order, which
+   * is precisely the failure the key exists to prevent.
+   *
+   * `total_money - total_tip_money` is 1249 in both readings. The tip rides in
+   * `tip_money` where it belongs, and the request is byte-identical on replay.
+   */
+  const chargeableCents = priced.totalCents - priced.tipCents;
+  const amountToCharge = chargeableCents + (args.request.tipCents ?? 0);
 
   const paid = await square<{ payment?: { id?: string; receipt_url?: string } }>("/v2/payments", {
     method: "POST",
     timeoutMs: 20_000,
     body: {
-      idempotency_key: `${args.idempotencyKey}-payment`,
+      // Unchanged, not suffixed: 45-character ceiling. See the note above.
+      idempotency_key: args.idempotencyKey,
       source_id: args.sourceId,
       order_id: orderId,
       location_id: location,
-      amount_money: money(priced.totalCents),
+      amount_money: money(chargeableCents),
       ...(args.request.tipCents ? { tip_money: money(args.request.tipCents) } : {}),
       autocomplete: true,
     },
@@ -278,7 +347,12 @@ export async function createOrderAndPay(args: {
   return {
     orderId,
     paymentId,
-    priced: { ...priced, tipCents: args.request.tipCents ?? 0, totalCents: amountToCharge },
+    priced: {
+      ...priced,
+      subtotalCents: chargeableCents - priced.taxCents,
+      tipCents: args.request.tipCents ?? 0,
+      totalCents: amountToCharge,
+    },
     receiptUrl: paid.payment?.receipt_url,
   };
 }

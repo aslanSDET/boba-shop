@@ -1579,3 +1579,155 @@
   line-height: 1.65;
   color: #8b9284;
 }
+
+/* ── CHECKOUT & CONFIRMATION ───────────────────────────────────────────────
+ *
+ * Deliberately quieter than the menu. The menu's job is to make you want
+ * something; these two screens' job is to get out of the way of a decision you
+ * have already made. Same tokens, less of everything — no photography, one
+ * accent, and the only loud element on the confirmation is the number the
+ * counter needs to read.
+ */
+.ak-checkout {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.ak-co-back {
+  align-self: flex-start;
+  font-family: var(--fm);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.5rem 0;
+}
+.ak-co-back:hover { color: var(--ink); }
+
+.ak-co-title {
+  font-family: var(--fd);
+  font-size: clamp(1.75rem, 7vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* The fulfillment is a STATEMENT, not a control — there is no delivery option
+   to switch to, and a disabled toggle would only raise the question. */
+.ak-co-pill {
+  align-self: flex-start;
+  background: var(--green);
+  color: var(--ground);
+  font-family: var(--fm);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  margin: 0;
+}
+
+.ak-co-sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+
+.ak-co-card {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.ak-co-h {
+  font-family: var(--fm);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+
+.ak-co-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.ak-co-line { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.ak-co-line-name { display: flex; flex-direction: column; gap: 0.15rem; font-weight: 600; }
+.ak-co-line-mods { font-weight: 400; font-size: 0.8rem; color: var(--muted); }
+.ak-co-line-price { font-family: var(--fm); font-variant-numeric: tabular-nums; }
+
+.ak-co-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.ak-co-field > span {
+  font-family: var(--fm);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ak-co-field input {
+  border: 1px solid var(--rule);
+  border-radius: 0.55rem;
+  /* 16px minimum: anything smaller and iOS zooms the page on focus. */
+  font-size: 1rem;
+  padding: 0.65rem 0.75rem;
+  font-family: inherit;
+  background: var(--card);
+  color: var(--ink);
+}
+.ak-co-field input:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+
+.ak-co-tips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.ak-co-tip {
+  flex: 1 1 0;
+  min-width: 4rem;
+  /* 44px: a thumb target, not a mouse target. */
+  min-height: 2.75rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.55rem;
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--fm);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.ak-co-tip[aria-pressed="true"] { background: var(--green); color: var(--ground); border-color: var(--green); }
+.ak-co-tip:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+.ak-co-totals { margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.ak-co-totals > div { display: flex; justify-content: space-between; }
+.ak-co-totals dt { color: var(--muted); }
+.ak-co-totals dd {
+  margin: 0;
+  font-family: var(--fm);
+  font-variant-numeric: tabular-nums;
+}
+.ak-co-grand { border-top: 1px solid var(--rule); padding-top: 0.5rem; font-weight: 700; }
+.ak-co-grand dt { color: var(--ink) !important; }
+
+.ak-co-note { font-size: 0.75rem; color: var(--muted); margin: 0; }
+.ak-co-error { color: #b3261e; font-size: 0.875rem; margin: 0; }
+
+/* Square renders its own iframe in here; it needs height before it loads or
+   the button jumps up the page as the form appears. */
+.ak-co-cardbox { min-height: 5.5rem; }
+
+.ak-co-pay { width: 100%; margin-top: 0.25rem; }
+.ak-co-pay:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* The one loud thing on the confirmation: the number read across a counter. */
+.ak-co-ticket {
+  font-family: var(--fd);
+  font-size: clamp(3rem, 18vw, 5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 0.25rem 0 0;
+  color: var(--green);
+}
+
+.ak-co-addr { margin: 0; font-size: 0.95rem; }
+.ak-co-receipt { font-size: 0.8rem; color: var(--muted); }

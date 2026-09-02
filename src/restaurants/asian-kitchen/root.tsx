@@ -52,10 +52,41 @@ export const asianKitchenViewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
+/**
+ * The wrapper every Asian Kitchen route needs: fonts, and the ground.
+ *
+ * Extracted when `/checkout` and `/order/[id]` arrived. Without it those routes
+ * render outside `.ak-page`, and since the palette and the font variables both
+ * live on this element they would come out unstyled in a system typeface — the
+ * exact failure the Snowdaes portals hit, for the exact same reason
+ * (`snowdaes/lib/use-theme-scope.ts`).
+ */
+export function AsianKitchenShell({ children }: { children: React.ReactNode }) {
+  return (
+    /*
+     * `ak` as well as `ak-page`, and they are not the same thing: `ak-page`
+     * paints the ground, `ak` is where theme.css declares every colour and
+     * spacing token. That declaration used to sit on a div inside MenuScreen,
+     * which was fine while the menu was the only screen — /checkout and
+     * /order/[id] rendered inside `ak-page` but outside `ak`, so their rules
+     * matched and every var() resolved to nothing: a transparent pill,
+     * borderless cards, invisible inputs.
+     *
+     * Exactly the Snowdaes portal bug in a different costume — a token scope
+     * sitting lower in the tree than the things that need it. MenuScreen keeps
+     * its own `ak` div; a nested redeclaration of identical values is harmless,
+     * and removing it risks the menu for no gain.
+     */
+    <div className={`ak ak-page ${display.variable} ${body.variable} ${mono.variable}`}>
+      {children}
+    </div>
+  );
+}
+
 export function AsianKitchenRoot() {
   return (
-    <div className={`ak-page ${display.variable} ${body.variable} ${mono.variable}`}>
+    <AsianKitchenShell>
       <MenuScreen />
-    </div>
+    </AsianKitchenShell>
   );
 }
