@@ -209,6 +209,64 @@ Skinned to the real shop: Snowdaes, Billerica MA, est. 2013, "Make every day a S
 
 **Brand assets** in `public/` were pulled from snowdaes.com on 2026-08-26 and are placeholders standing in for licensed originals: `brand/snowdaes-mark.png` (penguin, 512px) and five product photos in `menu/`. Replace with shop-supplied assets before anything ships publicly.
 
+### 5.2 Deployed (2026-09-01)
+
+Live at `https://main.d2j2i5n9o6zf7a.amplifyapp.com`, behind HTTP basic auth.
+AWS account `003655672994`, us-east-1. This replaces the ngrok tunnel that
+`next.config.ts` still names — the phone demo no longer depends on this laptop
+being awake.
+
+| Piece | What it is |
+|---|---|
+| App | `snowdaes` / `d2j2i5n9o6zf7a`, platform `WEB_COMPUTE` |
+| Branch | `main`, auto-build on push, PR previews **off** |
+| Credentials | 3 × SecureString under `/boba-shop/snowdaes/` |
+| Compute role | `SnowdaesSSRComputeRole` — that path plus `kms:Decrypt` via SSM, nothing else |
+| Budget | $50/mo, alerts at 80% (`CLOVER-AND-LAUNCH.md` §7, item 3) |
+
+**Next 16 runs on Amplify Hosting — measured, not read.** AWS documents compute
+support as "Next.js versions 12 through 15", and amplify-hosting issue #4074
+(open, Dec 2025) reports Next 16.1+ Turbopack writing symlinks into
+`.next/node_modules/` and killing the bundler with `EEXIST`. Checked before
+committing to the path: our 16.3.3 Turbopack build produces no
+`.next/node_modules/` at all, so that failure does not reproduce. A canary build
+against `main` then went BUILD → DEPLOY → VERIFY, all green, in about two
+minutes. `next build --webpack` is a one-flag retreat if a later Next release
+brings the problem back.
+
+**Three things this deployment settled that the local build could not:**
+
+1. **Environment variables are build-time only** — see the Phase 3 note in §6.
+   This is why `creds.ts` exists.
+2. **`RESTAURANT` must reach `.env.production`, not just the console.**
+   `active.ts` reads it at module load. That works during the build, but the
+   Lambda re-evaluates the module per request with no env var and silently falls
+   back to `"snowdaes"`. Correct by accident today, wrong the day Asian Kitchen
+   ships and its Clover routes answer as Snowdaes instead of 404ing.
+3. **`AdministratorAccess-Amplify` does not include `ssm:PutParameter`.**
+   Writing the credentials needed the admin identity while `boba-shop-deploy`
+   stayed scoped — which is the right split, since writing a credential is
+   provisioning rather than deployment.
+
+**The compute role is attached to the branch, not the app.** This is a public
+repo, and AWS specifically recommends against an app-level compute role in that
+case: with auto-branch creation or PR previews on, an app-level role is handed
+to arbitrary branches. PR previews are off for the same reason.
+
+**Basic auth is on, and comes off when two things are true:** production Clover
+credentials are in place, and the testimonials in `snowdaes/shop.ts` are real.
+Until then `POST /api/clover/checkout` creates real order objects on the
+merchant's account with no authentication of any kind, and three fabricated
+reviews sit under a real business name at a real address.
+
+**Still open.** The Git connection uses the legacy SSH clone method, so the
+Amplify console shows "update required" — auto-build demonstrably works anyway
+(the merge of #5 triggered its own build), but the connection wants migrating to
+the Amplify GitHub App. Both `docker-user` and `boba-shop-deploy` have no MFA
+(`CLOVER-AND-LAUNCH.md` §7, item 2), and `docker-user` additionally has full
+admin and a console password. Console access to `003655672994` was being reached
+as **root**, which §7 item 1 says to stop doing.
+
 ## 6. Roadmap
 
 ### Phase 2 — Clover sandbox spike (**do this first — it de-risks everything else**)
@@ -244,7 +302,7 @@ Harness is built and runnable: **[`scripts/spike/README.md`](./scripts/spike/REA
 - [ ] Add an Amplify Function for the **Clover** webhook (not Stripe — corrected 2026-08-28 against §8.7): authenticate per the two-system note in Phase 2b, re-read the object, update `Order.status` via the generated data client
 - [ ] Migrate `/api/checkout` — recomputes the cart server-side, then opens the **Clover** payment. Can stay a Next.js route handler; it needs Clover credentials, not Amplify Data
 - [ ] Order status lifecycle: `PENDING → PAID → PREPARING → READY → COMPLETED` (`CANCELLED` as an exception path)
-- [ ] Deploy frontend to S3 + CloudFront (or confirm Vercel is fine for v1 and defer this — see §9)
+- [x] **Deploy the frontend — DONE 2026-09-01.** Amplify Hosting, not hand-wired S3 + CloudFront: Amplify Hosting *is* CloudFront, so the CDN, TLS and edge caching arrive with the deploy (`CLOVER-AND-LAUNCH.md` §8). Vercel was not reconsidered. Details in §5.2
 
 **Amplify Data schema sketch** (`amplify/data/resource.ts`):
 
@@ -337,6 +395,21 @@ const schema = a.schema({
 ```
 
 This directly replaces the earlier hand-crafted single-table `PK`/`SK` design — Amplify provisions one table per model plus the secondary indexes declared above, and the generated client (`client.models.Order.observeQuery(...)`) is what the kitchen board subscribes to for real-time updates.
+
+#### Phase 3 note — credentials do NOT ride environment variables here
+
+Whatever else Phase 3 adds, it inherits one constraint that was measured rather
+than read: **Amplify Hosting's environment variables are build-time only.** A
+route handler does not see them at request time. AWS's documented workaround is
+to append them to `.env.production` during the build, which writes the value
+into the deployment artifact — and their own warning on that page is that anyone
+with access to the artifact can read them.
+
+So the Clover tokens do not travel that way, and neither should anything the
+Amplify Function for the webhook needs. Credentials live in SSM Parameter Store
+as SecureString, read at request time by an IAM role scoped to one path
+(`src/pos/clover/creds.ts`). Only `RESTAURANT` and `CLOVER_ENV` — neither of
+them a secret — go through `.env.production`.
 
 ### Phase 4 — ~~Kitchen / Staff View~~ — **dropped 2026-08-27**
 
