@@ -259,7 +259,7 @@ async function buildAndPrice(
   promo: Promo | null,
   idempotencyKey: string | null,
 ): Promise<PricedOrder> {
-  const mId = merchantId();
+  const mId = await merchantId();
   const catalog: CloverCatalog = await getCloverCatalog();
   const warnings: string[] = [];
 
@@ -444,7 +444,7 @@ async function readBack(
 
 /** Re-reads an order's authoritative total, for the pay route. */
 export async function readOrderTotal(orderId: string): Promise<{ total: number; paymentState?: string; state?: string }> {
-  const mId = merchantId();
+  const mId = await merchantId();
   const order = await platform<{ total: number; paymentState?: string; state?: string }>(
     `/v3/merchants/${mId}/orders/${orderId}`,
     { timeoutMs: 10_000 },

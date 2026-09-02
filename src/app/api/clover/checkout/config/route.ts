@@ -34,7 +34,7 @@ export async function GET() {
 
   let mId: string;
   try {
-    mId = merchantId();
+    mId = await merchantId();
   } catch {
     return Response.json(
       { error: "Clover is not configured on this deployment." },
