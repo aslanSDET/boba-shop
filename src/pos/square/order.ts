@@ -172,6 +172,7 @@ function readTotals(order: {
   line_items?: Array<{
     name?: string;
     quantity?: string;
+    gross_sales_money?: { amount?: number };
     total_money?: { amount?: number };
     modifiers?: Array<{ name?: string }>;
   }>;
@@ -187,7 +188,19 @@ function readTotals(order: {
     lines: (order.line_items ?? []).map((l) => ({
       name: l.name ?? "",
       quantity: l.quantity ?? "1",
-      totalCents: l.total_money?.amount ?? 0,
+      /*
+       * `gross_sales_money`, NOT `total_money`.
+       *
+       * A line's `total_money` includes its apportioned tax: measured, a $12.49
+       * plate came back as 1374 with a 10% order tax applied. Printed next to a
+       * subtotal of $12.49 and a separate tax row of $1.25, that reads as the
+       * tax being charged twice — the line and the summary disagreeing about
+       * the same plate on the same screen.
+       *
+       * `gross_sales_money` is the pre-tax, pre-discount line amount, which is
+       * what a receipt line means everywhere else in the world.
+       */
+      totalCents: l.gross_sales_money?.amount ?? l.total_money?.amount ?? 0,
       modifiers: (l.modifiers ?? []).map((m) => m.name ?? "").filter(Boolean),
     })),
   };

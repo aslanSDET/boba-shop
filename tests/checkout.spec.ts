@@ -260,12 +260,24 @@ test("a declined payment cancels the order it created", async ({ request }) => {
    * Polling asserts what is actually meant — that the count SETTLES back — and
    * still fails, after the timeout, if an order is genuinely stranded.
    */
+  /*
+   * Not-greater-than, not equality.
+   *
+   * The count can legitimately go DOWN mid-test: the cleanup retries after a
+   * 400ms delay, so a previous decline's sweep can land while this one polls,
+   * and Square's search index catches up on its own schedule. Asserting
+   * equality failed with "expected 1, received 0" — a cleaner sandbox reported
+   * as a regression.
+   *
+   * The actual requirement is only ever one direction: this decline must not
+   * ADD a stranded order.
+   */
   await expect
     .poll(strandedCount, {
       timeout: 20_000,
       message: "the decline must not leave an order OPEN with only a FAILED tender",
     })
-    .toBe(before);
+    .toBeLessThanOrEqual(before);
 });
 
 /**

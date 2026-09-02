@@ -28,7 +28,7 @@
  * creating an order, and every one of those had to be swept up afterwards.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RESTAURANT } from "./config";
@@ -75,6 +75,14 @@ export function Checkout() {
      name is invalid while they are still typing the first letter of it is the
      single most irritating thing a form can do. */
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  /* Set when Pay is pressed with something invalid. The button stays ENABLED
+     until then — a disabled button is a dead end that says nothing about why,
+     and the Web Interface Guidelines are explicit that submit stays live until
+     the request starts. Pressing it validates and moves focus to the problem. */
+  const [attempted, setAttempted] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
 
   const [card, setCard] = useState<SquareCard | null>(null);
   const [cardError, setCardError] = useState<string | null>(null);
@@ -201,8 +209,31 @@ export function Checkout() {
 
   const detailsValid = !nameError && !contactError && !phoneError && !emailError;
 
+  /* Shown once the field has been left OR once Pay has been pressed. Errors on
+     the first keystroke are the most irritating thing a form does. */
+  const showNameError = (touched.name || attempted) && !!nameError;
+  const showContactError = (touched.contact || attempted) && !!contactError;
+
   const pay = useCallback(async () => {
     if (!card || !cart || paying) return;
+
+    /* Validate on press, then send focus to the first field at fault — a
+       customer who has scrolled to the bottom should not have to hunt back up
+       the page to find out which box is the problem. */
+    if (!detailsValid) {
+      setAttempted(true);
+      const target = nameError
+        ? nameRef.current
+        : phoneError
+          ? phoneRef.current
+          : emailError
+            ? emailRef.current
+            : phoneRef.current;
+      target?.focus();
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
+
     setPaying(true);
     setError(null);
     try {
@@ -272,7 +303,8 @@ export function Checkout() {
       setError("Could not reach the shop. Your card has not been charged.");
       setPaying(false);
     }
-  }, [card, cart, tipCents, name, phone, email, paying, idempotencyKey, router]);
+  }, [card, cart, tipCents, name, phone, email, paying, idempotencyKey, router,
+      detailsValid, nameError, phoneError, emailError]);
 
   if (cart === null) {
     return <main className="ak-checkout" aria-busy="true" />;
@@ -302,7 +334,9 @@ export function Checkout() {
       <h1 className="ak-co-title">Checkout</h1>
 
       <p className="ak-co-pill">Pickup at {RESTAURANT.address}</p>
-      <p className="ak-co-sub">Ready in 15–20 minutes</p>
+      {/* &nbsp;, not a \u escape: this is JSX TEXT, not a string literal, so a
+          backslash escape renders as the six characters you typed. */}
+      <p className="ak-co-sub">Ready in 15–20&nbsp;minutes</p>
 
       <PickupMap />
 
@@ -339,37 +373,55 @@ export function Checkout() {
         </h2>
 
         <label className="ak-co-field">
-          <span>
-            Name <em className="ak-co-req">required</em>
+          <span className="ak-co-label">
+            Name
+            <em className="ak-co-flag">Required</em>
           </span>
           <input
+            ref={nameRef}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+            type="text"
             autoComplete="name"
+            placeholder="Who we call at the counter"
             /* aria-invalid and aria-describedby, not just red text: a screen
                reader gets nothing from a colour change. */
-            aria-invalid={touched.name && !!nameError}
-            aria-describedby={touched.name && nameError ? "ak-err-name" : undefined}
+            aria-invalid={showNameError}
+            aria-describedby={showNameError ? "ak-err-name" : undefined}
           />
-          {touched.name && nameError && (
+          {showNameError && (
             <span id="ak-err-name" className="ak-co-fielderr">
               {nameError}
             </span>
           )}
         </label>
 
-        <p className="ak-co-hint">One of these, so the shop can reach you:</p>
+        {/*
+          NOT "optional".
+          These two are conditionally required — one of the pair — so marking
+          either "Optional" would be false and marking both "Required" would be
+          false in the other direction. The honest framing is to say what each
+          one buys you, and to state the rule once, above them.
+        */}
+        <p className="ak-co-rule">Add at least one, so the shop can reach you.</p>
 
         <label className="ak-co-field">
-          <span>Mobile</span>
+          <span className="ak-co-label">
+            Mobile
+            <em className="ak-co-flag ak-co-flag-soft">Text when it&rsquo;s ready</em>
+          </span>
           <input
+            ref={phoneRef}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
+            type="tel"
             inputMode="tel"
             autoComplete="tel"
-            aria-invalid={touched.contact && !!(phoneError || contactError)}
+            spellCheck={false}
+            placeholder="(205) 555-0143"
+            aria-invalid={showContactError || !!(touched.contact && phoneError)}
             aria-describedby={touched.contact && phoneError ? "ak-err-phone" : undefined}
           />
           {touched.contact && phoneError && (
@@ -380,14 +432,21 @@ export function Checkout() {
         </label>
 
         <label className="ak-co-field">
-          <span>Email</span>
+          <span className="ak-co-label">
+            Email
+            <em className="ak-co-flag ak-co-flag-soft">Receipt</em>
+          </span>
           <input
+            ref={emailRef}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
+            type="email"
             inputMode="email"
             autoComplete="email"
-            aria-invalid={touched.contact && !!(emailError || contactError)}
+            spellCheck={false}
+            placeholder="you@example.com"
+            aria-invalid={showContactError || !!(touched.contact && emailError)}
             aria-describedby={touched.contact && emailError ? "ak-err-email" : undefined}
           />
           {touched.contact && emailError && (
@@ -397,9 +456,7 @@ export function Checkout() {
           )}
         </label>
 
-        {touched.contact && contactError && (
-          <span className="ak-co-fielderr">{contactError}</span>
-        )}
+        {showContactError && <span className="ak-co-fielderr">{contactError}</span>}
       </section>
 
       <section className="ak-co-card" aria-labelledby="ak-co-tip">
@@ -473,18 +530,18 @@ export function Checkout() {
         <button
           type="button"
           className="ak-btn ak-co-pay"
-          disabled={!card || paying || !showing || !detailsValid}
+          disabled={!card || paying || !showing}
           onClick={pay}
         >
           {paying ? "Taking payment…" : `Pay ${money(totalCents)}`}
         </button>
-        {/* A disabled button with no explanation is a dead end. If it cannot be
-            pressed, the page says which field is why. */}
-        {!detailsValid && (
-          <p className="ak-co-note">
-            {nameError ?? contactError ?? phoneError ?? emailError}
-          </p>
-        )}
+        {/* Announced, not just shown: someone using a screen reader gets nothing
+            from text that quietly appears under a button they just pressed. */}
+        <p className="ak-co-note" aria-live="polite">
+          {attempted && !detailsValid
+            ? (nameError ?? contactError ?? phoneError ?? emailError)
+            : ""}
+        </p>
       </section>
     </main>
   );

@@ -1582,219 +1582,343 @@
 
 /* ── CHECKOUT & CONFIRMATION ───────────────────────────────────────────────
  *
- * Deliberately quieter than the menu. The menu's job is to make you want
- * something; these two screens' job is to get out of the way of a decision you
- * have already made. Same tokens, less of everything — no photography, one
- * accent, and the only loud element on the confirmation is the number the
- * counter needs to read.
+ * Quieter than the menu, on purpose. The menu's job is to make you want
+ * something; these two screens' job is to get out of the way of a decision
+ * already made. Same tokens, less of everything.
+ *
+ * ── THE ONE DELIBERATE FLOURISH: THE TOTALS READ AS A RECEIPT ──────────────
+ *
+ * This is a takeout counter, and the artifact of a takeout transaction is a
+ * paper ticket. So the totals block is set like a register receipt — mono
+ * throughout, tabular figures, dotted leaders running from each label to its
+ * amount, the grand total ruled off above. It uses the JetBrains Mono already
+ * in the system rather than importing a look, and it is the only place on
+ * either screen that draws attention to itself.
+ *
+ * Everything else is restraint: one accent, no shadows, no animation. Chanel's
+ * rule — the receipt is the accessory that stays, so the others come off.
+ *
+ * ── MOBILE FIRST, LITERALLY ────────────────────────────────────────────────
+ *
+ * Nearly all of this traffic is a phone on cellular outside the shop
+ * (CLOVER-AND-LAUNCH.md §8). Every size below is the phone size; the only
+ * media query widens the gutter once there is room. Spacing uses the same
+ * `--gutter` the menu uses, so the two screens line up when you navigate
+ * between them — they did not before, and the jump was visible.
  */
+
 .ak-checkout {
-  max-width: 34rem;
+  /* --measure is 760px and right for a menu grid; a single column of form
+     fields at that width makes a 34rem line, which is uncomfortable to scan
+     and puts the label miles from its input. */
+  max-width: 30rem;
   margin: 0 auto;
-  padding: 1.25rem 1rem 4rem;
+  /*
+   * NOT `var(--gutter)`.
+   *
+   * `--gutter` is `max(16px, calc((100% - 760px) / 2))` — the PAGE's outer
+   * margin, which centres a full-width container against `--measure`. This box
+   * already centres itself with max-width plus auto margins, so using the
+   * gutter here applies the centring twice: on a 1280px viewport the percentage
+   * resolves against the containing block, giving 260px of padding on a 480px
+   * box and collapsing the content to zero width.
+   *
+   * Invisible at phone widths, where the calc goes negative and `max()` picks
+   * 16px, so it looked right in a 500px window and every UI test failed at
+   * Playwright's 1280px default. A fixed inset is what was meant all along; the
+   * `max()` here is only for a notch in landscape.
+   */
+  padding-inline: max(1rem, env(safe-area-inset-left))
+                  max(1rem, env(safe-area-inset-right));
+  padding-block: 1rem 3rem;
+  /* Notch and home indicator. The menu screen already does this; the checkout
+     did not, so the last card sat under the indicator on an iPhone. */
+  padding-bottom: calc(3rem + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: 0.75rem;
 }
 
 .ak-co-back {
   align-self: flex-start;
   font-family: var(--fm);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
   text-decoration: none;
-  padding: 0.5rem 0;
+  /* 44px of thumb, without 44px of visible chrome. */
+  padding: 0.75rem 0.25rem;
+  margin-inline-start: -0.25rem;
+  touch-action: manipulation;
 }
 .ak-co-back:hover { color: var(--ink); }
+.ak-co-back:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 0.25rem; }
 
 .ak-co-title {
   font-family: var(--fd);
-  font-size: clamp(1.75rem, 7vw, 2.25rem);
+  font-size: clamp(1.9rem, 9vw, 2.5rem);
   font-weight: 800;
   letter-spacing: -0.01em;
+  line-height: 1;
   text-transform: uppercase;
-  margin: 0;
+  text-wrap: balance;
+  margin: 0.25rem 0 0.5rem;
 }
 
 /* The fulfillment is a STATEMENT, not a control — there is no delivery option
    to switch to, and a disabled toggle would only raise the question. */
 .ak-co-pill {
   align-self: flex-start;
+  max-width: 100%;
   background: var(--green);
-  color: var(--ground);
+  color: #fff;
   font-family: var(--fm);
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.4rem 0.7rem;
-  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.75rem;
   margin: 0;
+  overflow-wrap: break-word;
 }
 
-.ak-co-sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+.ak-co-sub { color: var(--muted); font-size: 0.875rem; margin: 0; }
 
 .ak-co-card {
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: 0.9rem;
-  padding: 1rem;
+  border-radius: 0.85rem;
+  padding: 0.9rem 0.95rem;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.65rem;
 }
 
 .ak-co-h {
   font-family: var(--fm);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
   margin: 0;
 }
 
-.ak-co-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
-.ak-co-line { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
-.ak-co-line-name { display: flex; flex-direction: column; gap: 0.15rem; font-weight: 600; }
-.ak-co-line-mods { font-weight: 400; font-size: 0.8rem; color: var(--muted); }
-.ak-co-line-price { font-family: var(--fm); font-variant-numeric: tabular-nums; }
+/* ── order lines ───────────────────────────────────────────────────────── */
+
+.ak-co-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.ak-co-line { display: flex; justify-content: space-between; gap: 0.75rem; align-items: baseline; }
+/* min-width:0 so a long plate name truncates instead of shoving the price off
+   the right edge of a 360px phone. */
+.ak-co-line-name { display: flex; flex-direction: column; gap: 0.1rem; font-weight: 600; min-width: 0; overflow-wrap: break-word; }
+.ak-co-line-mods { font-weight: 400; font-size: 0.78rem; color: var(--muted); overflow-wrap: break-word; }
+.ak-co-line-price { font-family: var(--fm); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ── fields ────────────────────────────────────────────────────────────── */
 
 .ak-co-field { display: flex; flex-direction: column; gap: 0.3rem; }
-.ak-co-field > span {
+
+.ak-co-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
   font-family: var(--fm);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-2);
 }
+
+/* "Required" and "Receipt" are the same shape but not the same weight: one is
+   a rule, the other is what the field is for. */
+.ak-co-flag {
+  font-style: normal;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: var(--green-deep);
+  white-space: nowrap;
+}
+.ak-co-flag-soft { color: var(--muted); text-transform: none; letter-spacing: 0.02em; font-size: 0.66rem; }
+
+.ak-co-rule {
+  margin: 0.35rem 0 -0.1rem;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+
 .ak-co-field input {
   border: 1px solid var(--rule);
-  border-radius: 0.55rem;
-  /* 16px minimum: anything smaller and iOS zooms the page on focus. */
+  border-radius: 0.5rem;
+  /* 16px minimum, non-negotiable: anything smaller and iOS zooms the page on
+     focus and never zooms back. */
   font-size: 1rem;
-  padding: 0.65rem 0.75rem;
-  font-family: inherit;
+  line-height: 1.3;
+  padding: 0.7rem 0.75rem;
+  font-family: var(--fb);
   background: var(--card);
   color: var(--ink);
+  width: 100%;
+  touch-action: manipulation;
 }
+.ak-co-field input::placeholder { color: var(--muted); opacity: 0.75; }
 .ak-co-field input:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+.ak-co-field input[aria-invalid="true"] { border-color: #b3261e; box-shadow: 0 0 0 1px #b3261e; }
 
-.ak-co-tips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.ak-co-fielderr { color: #b3261e; font-size: 0.8rem; margin-top: 0.1rem; }
+
+/* ── tip ───────────────────────────────────────────────────────────────── */
+
+.ak-co-tips { display: flex; gap: 0.4rem; }
 .ak-co-tip {
   flex: 1 1 0;
-  min-width: 4rem;
-  /* 44px: a thumb target, not a mouse target. */
-  min-height: 2.75rem;
+  min-width: 0;
+  /* 44px: a thumb, not a mouse. */
+  min-height: 2.9rem;
   border: 1px solid var(--rule);
-  border-radius: 0.55rem;
+  border-radius: 0.5rem;
   background: var(--card);
   color: var(--ink);
   font-family: var(--fm);
+  font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
-.ak-co-tip[aria-pressed="true"] { background: var(--green); color: var(--ground); border-color: var(--green); }
+.ak-co-tip[aria-pressed="true"] { background: var(--green); color: #fff; border-color: var(--green); }
 .ak-co-tip:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 
-.ak-co-totals { margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }
-.ak-co-totals > div { display: flex; justify-content: space-between; }
-.ak-co-totals dt { color: var(--muted); }
-.ak-co-totals dd {
+/* ── the receipt ───────────────────────────────────────────────────────── */
+
+.ak-co-totals {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
   font-family: var(--fm);
   font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
 }
-.ak-co-grand { border-top: 1px solid var(--rule); padding-top: 0.5rem; font-weight: 700; }
-.ak-co-grand dt { color: var(--ink) !important; }
 
-.ak-co-note { font-size: 0.75rem; color: var(--muted); margin: 0; }
-.ak-co-error { color: #b3261e; font-size: 0.875rem; margin: 0; }
+.ak-co-totals > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
 
-/* Square renders its own iframe in here; it needs height before it loads or
-   the button jumps up the page as the form appears. */
+/*
+ * The dotted leader, and the reason it contains a zero-width space.
+ *
+ * An EMPTY pseudo-element has no baseline, so in a baseline-aligned flex row it
+ * is placed by its margin box instead — which put every leader a full row above
+ * the label it belonged to, so "Subtotal" was joined to the line over it. The
+ * zero-width space gives the box a baseline to align on, and the border-bottom
+ * then falls exactly where an underline would.
+ *
+ * `order` puts it between the label and the amount; a pseudo-element is
+ * otherwise the first child regardless of where it reads in the stylesheet.
+ */
+.ak-co-totals > div > dt { order: 0; color: var(--muted); }
+.ak-co-totals > div::before {
+  content: "\200B";
+  order: 1;
+  flex: 1 1 auto;
+  min-width: 1rem;
+  border-bottom: 1px dotted var(--rule);
+}
+.ak-co-totals > div > dd { order: 2; margin: 0; white-space: nowrap; }
+
+.ak-co-grand {
+  border-top: 1px solid var(--ink);
+  padding-top: 0.5rem;
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.ak-co-grand > dt { color: var(--ink) !important; }
+/* No leader on the total: the rule above it already separates it, and two
+   horizontal lines in one row is one too many. */
+.ak-co-grand::before { border-bottom-color: transparent; }
+
+.ak-co-note { font-size: 0.72rem; color: var(--muted); margin: 0; min-height: 1rem; }
+.ak-co-error { color: #b3261e; font-size: 0.85rem; margin: 0; }
+
+/* Square renders its own iframe here; it needs height before it loads or the
+   Pay button jumps up the page as the form appears. */
 .ak-co-cardbox { min-height: 5.5rem; }
 
-.ak-co-pay { width: 100%; margin-top: 0.25rem; }
-.ak-co-pay:disabled { opacity: 0.5; cursor: not-allowed; }
+.ak-co-pay { width: 100%; margin-top: 0.15rem; touch-action: manipulation; }
+.ak-co-pay:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* The one loud thing on the confirmation: the number read across a counter. */
-.ak-co-ticket {
-  font-family: var(--fd);
-  font-size: clamp(3rem, 18vw, 5rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  margin: 0.25rem 0 0;
-  color: var(--green);
-}
-
-.ak-co-addr { margin: 0; font-size: 0.95rem; }
-.ak-co-receipt { font-size: 0.8rem; color: var(--muted); }
-
-/* ── PICKUP MAP + FIELD VALIDATION ─────────────────────────────────────────── */
+/* ── map ───────────────────────────────────────────────────────────────── */
 
 .ak-co-map {
   background: var(--card);
   border: 1px solid var(--rule);
-  border-radius: 0.9rem;
-  padding: 1rem;
+  border-radius: 0.85rem;
+  padding: 0.9rem 0.95rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.55rem;
 }
-
-/* A fixed aspect rather than a fixed height: the map has to be useful on a
-   360px phone and not absurd on a desktop, and `aspect-ratio` does that
-   without a media query. Border-radius needs the overflow clip because an
-   iframe paints over a rounded parent otherwise. */
 .ak-co-mapframe {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  min-height: 9rem;
+  /* 3:2 on a phone — tall enough to place the shop on its street, short enough
+     not to push the form below the fold. */
+  aspect-ratio: 3 / 2;
   border: 0;
-  border-radius: 0.6rem;
+  border-radius: 0.55rem;
   overflow: hidden;
   display: block;
   background: var(--wash);
 }
-
+@media (min-width: 30rem) {
+  .ak-co-mapframe { aspect-ratio: 2 / 1; }
+}
 .ak-co-maplink {
   align-self: flex-start;
   font-family: var(--fm);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--green-deep);
   text-decoration: none;
+  padding: 0.5rem 0.25rem;
+  margin-inline-start: -0.25rem;
+  touch-action: manipulation;
 }
 .ak-co-maplink:hover { text-decoration: underline; }
+.ak-co-maplink:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 0.25rem; }
 
-/* "required" reads as a label, not as an error — errors are red and appear
-   under the field, this is grey and sits beside the name. */
-.ak-co-req {
-  font-style: normal;
-  font-size: 0.65rem;
+.ak-co-addr { margin: 0; font-size: 0.9rem; overflow-wrap: break-word; }
+
+/* ── confirmation ──────────────────────────────────────────────────────── */
+
+/* The one loud thing on either screen: the number read across a counter. It is
+   set in the display face at the largest size on the site, because at arm's
+   length in a queue that is the only thing that has to be legible. */
+.ak-co-ticket {
+  font-family: var(--fd);
+  font-size: clamp(3.25rem, 22vw, 5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  margin: 0.4rem 0 0.1rem;
+  color: var(--green-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.ak-co-receipt {
+  font-family: var(--fm);
+  font-size: 0.7rem;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted);
-  margin-left: 0.4rem;
+  padding: 0.5rem 0.25rem;
+  margin-inline-start: -0.25rem;
+  align-self: flex-start;
+  touch-action: manipulation;
 }
-
-.ak-co-hint {
-  margin: 0.2rem 0 -0.2rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.ak-co-fielderr {
-  color: #b3261e;
-  font-size: 0.8rem;
-  margin-top: 0.15rem;
-}
-
-/* The ring is the accessible signal; the colour alone is not, and this menu is
-   read by people standing outside a shop in daylight. */
-.ak-co-field input[aria-invalid="true"] {
-  border-color: #b3261e;
-  box-shadow: 0 0 0 1px #b3261e;
-}
+.ak-co-receipt:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 0.25rem; }
