@@ -33,7 +33,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RESTAURANT } from "./config";
 import { clearCart, toRequestLines, useStoredCart } from "./cart";
-import { PickupMap } from "./pickup-map";
 import { formatPhone, isCompletePhone, phoneDigitsRemaining } from "./lib-phone";
 
 const money = (cents: number) =>
@@ -364,7 +363,13 @@ export function Checkout() {
           backslash escape renders as the six characters you typed. */}
       <p className="ak-co-sub">Ready in 15–20&nbsp;minutes</p>
 
-      <PickupMap />
+      {/* No map here, deliberately — it lives on the confirmation instead.
+          At checkout the customer has already decided where they are going and
+          is trying to pay; an embedded map is a third-party iframe and a large
+          paint pushing the card form further down a phone screen. Directions
+          are what you want AFTER the order is placed, on the way to collect it,
+          which is where <PickupMap /> now appears alone. The address itself is
+          still stated above, in the pickup pill. */}
 
       <section className="ak-co-card" aria-labelledby="ak-co-items">
         <h2 id="ak-co-items" className="ak-co-h">

@@ -106,7 +106,12 @@ test.describe("Asian Kitchen checkout", () => {
     await expect(page.getByRole("heading", { name: /^AK-/ })).toBeVisible();
     await expect(page.getByText(/Show this number at the counter/i)).toBeVisible();
     await expect(page.getByText(/Combination Fried Rice/i)).toBeVisible();
+
+    /* The map belongs HERE and only here — directions are what you want once
+       the order is placed and you are on your way to collect it. The checkout's
+       own test asserts the other half, that it is absent there. */
     await expect(page.getByRole("link", { name: /Open in Maps/i })).toBeVisible();
+    await expect(page.locator("iframe.ak-co-mapframe")).toBeVisible();
   });
 
   test("a declined card says so, and does not blame the network", async ({ page }) => {
@@ -361,16 +366,26 @@ test.describe("request hardening", () => {
 });
 
 /** The map is a real element with a real accessible name, not a decorative box. */
-test("the checkout shows the pickup location on a map", async ({ page }) => {
+/*
+ * The map moved to the confirmation, and this asserts BOTH halves of that.
+ *
+ * At checkout the customer has already chosen where they are going and is
+ * trying to pay; the map is a third-party iframe pushing the card form down a
+ * phone screen. Directions are what you want after the order is placed. Only
+ * asserting its absence would let it silently disappear from BOTH screens, so
+ * "takes a real sandbox payment and lands on the confirmation" above pins where
+ * it went — the two assertions have to move together.
+ */
+test("the checkout does NOT carry the map — the address is stated instead", async ({
+  page,
+}) => {
   await addFirstItemAndGoToCheckout(page);
 
-  const frame = page.locator("iframe.ak-co-mapframe");
-  await expect(frame).toBeVisible();
-  await expect(frame).toHaveAttribute("title", /Asian Kitchen.*Center Point/i);
-  /* Lazy on purpose: this is a phone-first page and the map is not the order. */
-  await expect(frame).toHaveAttribute("loading", "lazy");
+  await expect(page.locator("iframe.ak-co-mapframe")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Open in Maps/i })).toHaveCount(0);
 
-  await expect(page.getByRole("link", { name: /Open in Maps/i })).toBeVisible();
+  /* The pickup address is still on the page; it is the map that went. */
+  await expect(page.getByText(/Pickup at .*Center Point/i)).toBeVisible();
 });
 
 /**

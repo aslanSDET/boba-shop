@@ -1130,16 +1130,33 @@
   border: 1.5px solid var(--green);
   padding: 7.5px 8.5px;
 }
+/*
+ * These sit inside `.ak-step`, which is a real enabled <button> — so WCAG's
+ * exemption for inactive components does not cover them, and at 8.5px they are
+ * the smallest type in the sheet.
+ *
+ * Was #9aa295, the last hardcoded grey on the page and the same failure mode as
+ * .ak-fineprint and .ak-soon-label before it: a colour that opted out of the
+ * token system and drifted. It measured 2.54:1 on --ground. --muted is 4.81:1
+ * and is what "quiet secondary text" already means here.
+ *
+ * Neither contrast pass caught it because both swept the page as LOADED, and
+ * this markup only exists once a plate sheet is open — which is the screen a
+ * customer spends the most time on.
+ */
 .ak-step-n {
   display: block;
   font-family: var(--fm);
   font-size: 8.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9aa295;
+  color: var(--muted);
 }
+/* The current step, on --wash rather than --ground. #4e7a5c measured 4.47:1
+   there — three hundredths short, which is invisible to the eye and still a
+   fail. #4a7457 is 4.85:1 and reads as the same green. */
 .ak-step[data-state="now"] .ak-step-n {
-  color: #4e7a5c;
+  color: #4a7457;
 }
 .ak-step-label {
   display: block;
@@ -1176,7 +1193,8 @@
   display: block;
   font-family: var(--fm);
   font-size: 9.5px;
-  color: #9aa295;
+  /* Same #9aa295 at 2.54:1, and this one names an ACTION. */
+  color: var(--muted);
   margin-top: 7px;
 }
 

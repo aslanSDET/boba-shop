@@ -144,3 +144,57 @@ test("the status-bar tint matches the header green", async ({ page }) => {
   );
   expect(meta?.toLowerCase()).toBe(green.toLowerCase());
 });
+
+/**
+ * The plate sheet, which both contrast passes missed for the same reason.
+ *
+ * Each swept the page AS LOADED. This markup does not exist until a plate is
+ * opened, so neither ever measured it — and it is the screen a customer spends
+ * the most time on, because it is where the order is actually built.
+ *
+ * `.ak-step-n` and `.ak-step-skip` sit inside `.ak-step`, which is an enabled
+ * `<button>`. WCAG's exemption for inactive components does not reach them, and
+ * "skip" names an action. They were #9aa295 at 2.54:1 — the last hardcoded grey
+ * on the page, and the third instance of the same failure mode after
+ * .ak-fineprint and .ak-soon-label.
+ *
+ * Measured against the previous stylesheet: 2.54, 2.54 and 4.47 — three of the
+ * four below fail, and the fourth passes by three hundredths.
+ */
+test.describe("inside an open plate sheet", () => {
+  test.beforeEach(async ({ page }) => {
+    await page
+      .locator("main button")
+      .filter({ hasText: /Pick Any/i })
+      .first()
+      .click();
+    await expect(page.locator(".ak-step").first()).toBeVisible();
+  });
+
+  for (const [selector, note] of [
+    ['.ak-step[data-state="todo"] .ak-step-n', "a step not yet reached"],
+    ['.ak-step[data-state="now"] .ak-step-n', "the current step, on --wash"],
+    [".ak-step-skip", "an action, not a label"],
+    [".ak-step-label", "the step's name"],
+  ] as const) {
+    test(`${selector} clears AA — ${note}`, async ({ page }) => {
+      const r = await page.evaluate(measureContrast, selector);
+      expect(r.error, `${selector} should exist`).toBeUndefined();
+      expect(
+        r.ratio,
+        `${selector} at ${r.size}px measures ${r.ratio}:1, needs ${AA_SMALL}`,
+      ).toBeGreaterThanOrEqual(AA_SMALL);
+    });
+  }
+
+  /* The primary button is genuinely `disabled` until a choice is made, and
+     SC 1.4.3 exempts inactive components — so its 1.65:1 is NOT a failure.
+     Asserted so that nobody "fixes" it later, and so the exemption stops
+     applying loudly if the button is ever left enabled while it looks spent. */
+  test("the disabled CTA is actually disabled, which is why its contrast is exempt", async ({
+    page,
+  }) => {
+    const cta = page.locator(".ak-sheet .ak-btn, .ak-btn").last();
+    await expect(cta).toBeDisabled();
+  });
+});
