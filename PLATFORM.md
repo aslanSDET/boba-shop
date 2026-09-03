@@ -1,6 +1,10 @@
 # Many Restaurants, One Repo — Platform Plan
 
-**Status:** Asian Kitchen's front end is built at `/asian-kitchen`; no POS is wired. Snowdaes unchanged (2026-09-01).
+**Status (2026-09-03):** Both restaurants are live on Amplify Hosting, each its
+own app, each behind HTTP basic auth. Snowdaes: full checkout against Clover's
+sandbox — menu, cart, discount codes, pickup time, tip, order creation, card
+entry, confirmation. Asian Kitchen: full checkout against Square's sandbox,
+pickup only. Neither has swapped in real merchant credentials yet.
 
 `PLAN.md` is now **Snowdaes' plan**. This file is the umbrella: how one repo, one
 developer and a small budget serve several unrelated mom-and-pop restaurants on
@@ -119,6 +123,52 @@ without calling us.
 **Therefore:** prefer restaurants on shape A while there is one developer.
 Shape B is not forbidden, but it should be a priced decision rather than a
 surprise discovered in week two.
+
+---
+
+## 4b. At 40 restaurants, not 2 — what actually changes
+
+Asked directly (2026-09-03): if this grows to 40 unrelated businesses, does
+"restaurants share nothing" still hold, or does it become 40 copies of the
+same bugs? Both, in different places. Nothing below overrides §1–§4; this is
+what they imply once N stops being small enough to eyeball.
+
+**What never gets shared, at any N.** Invariant 1 (`AGENTS.md`) and §2's
+credential-blast-radius argument do not weaken with scale — if anything they
+get more important, because at N=40 a shared credential or a shared deploy
+means one mistake takes down forty kitchens' ordering pages instead of one.
+So: separate code folder per restaurant, separate Amplify app per restaurant,
+separate credentials per restaurant, no restaurant importing another's code,
+forever. A "multi-tenant" version of this that saves infrastructure cost by
+serving 40 restaurants from one deployment is not a scaling strategy here —
+it is the thing §2 already rejected, at a worse ratio.
+
+**What becomes worth sharing, and the trigger for each:**
+
+| Layer | Share it once… | Not before, because |
+|---|---|---|
+| A POS integration's own code (`pos/clover/`, `pos/square/`) | …a **third** restaurant needs that SAME POS. Restaurant #7 on Clover reuses `pos/clover/` wholesale — new menu data, new credentials, zero new integration code. | Two Clover restaurants is still "duplicate first" territory per §3; the interface only earns its keep once there is real variance across three to average over |
+| A `PosAdapter` interface spanning POS *families* (Clover vs. Square vs. Toast) | …two POS families are **both working end to end** and a third restaurant needs one of them — §3's trigger, restated for scale rather than replaced | An interface designed from one working example is that example wearing a hat (§3). At 40 restaurants there will likely be 3–4 POS families in practice, which is exactly when this stops being premature |
+| Onboarding tooling — a script that scaffolds `restaurants/<new>/`, a fresh Amplify app, a Parameter Store namespace, a basic-auth password | …**adding a restaurant is a repeated manual checklist**, roughly restaurant #4–5 onward. Below that, writing the generator costs more than the two or three times you'd run it | It is restaurant-shaped tooling, not restaurant CODE — it never touches invariant 1 because nothing it produces is imported by anything else |
+| Ops/fleet tooling — one script that lists every Amplify app in the account, its last build status, whether basic auth is on, which POS it's wired to | **Worth building early**, arguably before restaurant #3. It is not restaurant-specific at all — it is a view over infrastructure, not a dependency any restaurant's code takes on | — |
+| A visual **design system** (tokens, type scale, spacing rules — not a look) | …after §9's per-restaurant visual identity work has been done for three or four restaurants and a genuine pattern in HOW decisions get made (not what they look like) has shown up | A shared component library that outputs one look is how 40 restaurants end up visually identical, which defeats the entire premise: each shop keeps its customers because it looks like *itself*, not like a franchise |
+| Build & CI tooling (a shared ESLint config, a shared Playwright helper *pattern*, the `tests/sweep-sandbox.ts` idea) | **As soon as the pattern repeats**, same as ops tooling — this is process, not product | — |
+
+**The two failure modes to watch for, in opposite directions.** Building the
+`PosAdapter` today, from one Clover integration, produces an interface shaped
+like Clover wearing a hat — that trap is already documented in §3. The mirror
+mistake is waiting until restaurant #39 to notice that adding a restaurant is
+now a two-day manual slog: onboarding tooling is worth building the first time
+the checklist gets run identically twice, which could be restaurant #3, not
+restaurant #40.
+
+**What 40 separate deployments costs, and what to do about it.** Forty
+Amplify apps means forty basic-auth passwords, forty sets of credentials in
+Parameter Store, forty places a build can silently fail the way
+`amplify-deploy-gotchas` records. That is an operations problem, not a code
+problem, and it gets a fleet-ops script (the "ops/fleet tooling" row above)
+long before it gets a code-sharing answer — knowing the state of 40 apps at a
+glance is worth building whether or not any of their *code* is ever shared.
 
 ---
 
