@@ -218,6 +218,16 @@ export interface PricedOrder {
 const CREATE_DEDUPE_MS = 600_000;
 
 /**
+ * How old an order may be and still count as "abandoned by re-pricing".
+ *
+ * Generous against the thing it describes — a re-price happens seconds after
+ * the order it replaces — and deliberately shorter than `CREATE_DEDUPE_MS`, so
+ * an order still reachable through the idempotency window cannot age out of
+ * being deletable while it is still the live one.
+ */
+const ABANDON_MAX_AGE_MS = 300_000;
+
+/**
  * Price the cart, creating at most one Clover order per checkout attempt.
  *
  * ── WHY THE KEY COMES FROM THE BROWSER AND NOT FROM THE CART ─────────────────
@@ -440,6 +450,96 @@ async function readBack(
     promo: promo ? { code: promo.code, label: promo.label, percentOff: promo.percentOff } : null,
     lines,
   };
+}
+
+/**
+ * Write the customer's pickup time and kitchen note onto the order.
+ *
+ * MEASURED (findings.md, step 09): `note` is writable after creation, so this
+ * does not have to happen at pricing time — which matters, because the note is
+ * not known until the customer has typed it, well after the order exists.
+ *
+ * It is also the ONLY channel these two facts have. Clover has no
+ * scheduled-order field, so the pickup time reaches the kitchen as text on the
+ * ticket and nothing more.
+ *
+ * Called through `optional()` — a note that fails to attach is a nuisance; a
+ * sale that fails because of one is a bug (design rule 5).
+ */
+export async function writeOrderNote(orderId: string, note: string): Promise<void> {
+  if (!note.trim()) return;
+  const mId = await merchantId();
+  await platform(`/v3/merchants/${mId}/orders/${orderId}`, {
+    method: "POST",
+    // Clover caps the note; over-long input is truncated by the caller rather
+    // than rejected here, because losing the tail of a note must not cost a sale.
+    body: { note: note.slice(0, 500) },
+    timeoutMs: 8_000,
+  });
+}
+
+/**
+ * Delete an order we created and no longer need.
+ *
+ * ── WHY THIS EXISTS ──────────────────────────────────────────────────────────
+ *
+ * Pricing on Clover means CREATING an order. So every time the customer changes
+ * something that Clover has to recalculate — today that is exactly one thing, a
+ * discount code — the checkout prices again and the previous order becomes
+ * litter on the merchant's account. Three attempts at a promo code would leave
+ * three abandoned orders behind, and somebody would have to go and tidy them up
+ * by hand (AGENTS.md: "Delete what you created").
+ *
+ * ── IT REFUSES TO DELETE A PAID ORDER ────────────────────────────────────────
+ *
+ * Non-negotiable, and checked here rather than trusted from the caller: an
+ * order with a payment on it is a record of money that moved. The id arrives
+ * from the browser, so "the browser said it was safe to delete" is not a
+ * standard this can hold to.
+ *
+ * Returns quietly either way — this is housekeeping, and housekeeping must
+ * never be able to fail a checkout.
+ */
+export async function deleteUnpaidOrder(orderId: string): Promise<void> {
+  const mId = await merchantId();
+
+  const existing = await platform<{
+    paymentState?: string;
+    createdTime?: number;
+    payments?: { elements?: unknown[] };
+  }>(`/v3/merchants/${mId}/orders/${orderId}?expand=payments`, { timeoutMs: 8_000 });
+
+  const hasPayment = (existing.payments?.elements ?? []).length > 0;
+  if (existing.paymentState === "PAID" || hasPayment) {
+    console.warn(`[checkout] refusing to delete order ${orderId}: it has a payment on it`);
+    return;
+  }
+
+  /*
+   * ── AGE, BECAUSE "HAS NO PAYMENT" IS WEAKER THAN IT LOOKS ──────────────────
+   *
+   * MEASURED, and it was a surprise: after a FULL refund, Clover detaches the
+   * payment from the order. `expand=payments` comes back empty and
+   * `paymentState` no longer reads PAID — so a real order that a customer paid
+   * for and was refunded is indistinguishable, by the check above, from an
+   * order that was never paid at all.
+   *
+   * The id arrives from the browser. Nothing else about this request proves it
+   * belongs to the session sending it, so the check above alone would let a
+   * wrong or hostile `replaces` delete a refunded order — a real record of
+   * money that moved both ways.
+   *
+   * An order abandoned by re-pricing is always SECONDS old: it was created by
+   * the previous keystroke on the same checkout screen. Anything older is not
+   * the thing this function exists to clean up, whatever else it is.
+   */
+  const age = Date.now() - (existing.createdTime ?? 0);
+  if (!existing.createdTime || age > ABANDON_MAX_AGE_MS) {
+    console.warn(`[checkout] refusing to delete order ${orderId}: too old to be an abandoned price (${Math.round(age / 1000)}s)`);
+    return;
+  }
+
+  await platform(`/v3/merchants/${mId}/orders/${orderId}`, { method: "DELETE", timeoutMs: 8_000 });
 }
 
 /** Re-reads an order's authoritative total, for the pay route. */

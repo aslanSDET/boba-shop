@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { AA_SMALL, measureContrast } from "./contrast-helper";
 
 /**
  * The header's small type has to clear WCAG AA against the green behind it.
@@ -16,66 +17,13 @@ import { expect, test } from "@playwright/test";
  * Nothing caught it because contrast was a one-off manual pass and the suite
  * asserted geometry only. A colour is not a layout; it does not announce itself
  * when it regresses. So the numbers get asserted here, composited the way a
- * browser actually paints them rather than against an assumed background.
+ * browser actually paints them rather than against an assumed background — see
+ * `contrast-helper.ts` for the algorithm, shared with the Snowdaes suite.
  *
  * The closed state is included deliberately. It is only on screen in the
  * evening, so a sweep of the live page never sees it, and it was the worst
  * contrast in the header at 2.69:1.
  */
-
-/** WCAG 2.2 SC 1.4.3: 4.5:1 for body text, 3:1 only once type is >=18.66px. */
-const AA_SMALL = 4.5;
-
-/**
- * Composite an element's colour over its real ancestor background stack.
- *
- * Passed to `page.evaluate` as a function, not a string: a string is evaluated
- * as an expression and the argument is never handed to it, so a string version
- * of this silently returns undefined for every selector.
- */
-function measureContrast(selector: string) {
-  const el = document.querySelector(selector);
-  if (!el) return { ratio: 0, size: 0, error: "not found: " + selector };
-
-  const parse = (s: string): number[] | null => {
-    const m = s.match(/[\d.]+/g);
-    if (!m) return null;
-    return [+m[0], +m[1], +m[2], m.length > 3 ? +m[3] : 1];
-  };
-  const over = (fg: number[], bg: number[]) =>
-    [0, 1, 2].map((i) => fg[i] * fg[3] + bg[i] * (1 - fg[3]));
-
-  /* Walk up until the accumulated background is opaque, then paint back down. */
-  let bg = [255, 255, 255];
-  const stack: number[][] = [];
-  for (let n: Element | null = el; n; n = n.parentElement) {
-    const c = parse(getComputedStyle(n).backgroundColor);
-    if (c && c[3] > 0) stack.push(c);
-    if (c && c[3] === 1) break;
-  }
-  for (const layer of stack.reverse()) bg = over(layer, bg);
-
-  const fg = parse(getComputedStyle(el).color);
-  if (!fg) return { ratio: 0, size: 0, error: "no colour on " + selector };
-  const text = over(fg, bg);
-
-  const lum = (c: number[]) => {
-    const f = c.map((v) => {
-      const s = v / 255;
-      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
-  };
-  const a = lum(text);
-  const b = lum(bg);
-  const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-
-  return {
-    ratio: Math.round(ratio * 100) / 100,
-    size: parseFloat(getComputedStyle(el).fontSize),
-    error: undefined as string | undefined,
-  };
-}
 
 /* 390px is an iPhone 15 — the width the original contrast pass reported on. */
 test.beforeEach(async ({ page }) => {

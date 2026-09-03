@@ -259,6 +259,85 @@ Until then `POST /api/clover/checkout` creates real order objects on the
 merchant's account with no authentication of any kind, and three fabricated
 reviews sit under a real business name at a real address.
 
+### Checkout is a page, not a drawer (2026-09-02)
+
+`/checkout` and `/order/[id]` replace the panel that used to take over the cart
+sheet. The move was forced by content: the order now carries a **pickup time**,
+a **tip**, a **note for the kitchen** and the **discount code**, and a ~380px
+column cannot hold those plus four card iframes without the Pay button falling
+off the bottom of a phone.
+
+The discount code moved off the drawer for a different reason. Its effect there
+was shown through the cart's own preview arithmetic, while the figure actually
+charged comes from Clover a screen later. One screen owns the money now; the
+drawer shows a subtotal and says where the rest is worked out.
+
+**What Clover would and would not hold** (measured — `findings.md`, step 09):
+
+| | |
+|---|---|
+| Tip | `tip_amount` on `/pay`, charged **beside** `amount`, never inside it |
+| Kitchen note | the order `note`, writable after creation |
+| Pickup time | **no field exists** — it rides in the note as text |
+
+The pickup time therefore schedules nothing: it is a line a human reads off the
+ticket. That is why the horizon is **two open days** rather than a week — every
+extra day is a promise the mechanism cannot keep.
+
+**The picker is two decisions, not sixty.** One tap for the common answer, and
+a native `<select>` (grouped by day with `<optgroup>`) for a specific time — on
+a phone that is the OS wheel picker, keyboard-navigable and screen-reader
+correct for free. Sixty quarter-hour pills would bury the tip, the note and the
+card under a scroll of times almost nobody changes.
+
+**"As soon as possible" is only offered while somebody is there.** When the shop
+is shut it is replaced by the first slot after they open — "When they open ·
+Tomorrow at 11am" — because ASAP with nobody in the building is a promise the
+shop cannot keep. The search skips closed days entirely, so a Saturday evening
+order offers Monday rather than a locked door on Sunday. Unknown hours still
+fall back to ASAP: a shop whose hours we cannot read is not a closed shop.
+
+The lead time is **30 minutes**, not the 15–20 the menu quotes as a wait — a
+quoted wait starts when the counter picks the ticket up, and this starts when
+the customer presses Pay.
+
+**The cart is persisted to sessionStorage** now, because a page can be reloaded
+and a drawer could not. Hydration is manual (`CartHydrator`) so the server and
+first client render agree.
+
+**There is a Snowdaes E2E suite now** — `npm run test:e2e:snowdaes`. It has its
+own Playwright config, its own port and its own build directory
+(`NEXT_DIST_DIR=.next-snowdaes`), because `RESTAURANT` is read once at module
+load and `/` is prerendered: a build IS a restaurant, so two suites sharing one
+`.next` means either one silently invalidates the other. Unset, the directory is
+exactly `.next` and nothing about a deploy changes.
+
+Three things in it could not be checked any other way: the cart surviving a
+reload (new, and only possible because the cart is persisted), a discount code
+re-pricing through Clover with the TAX moving too, and the card iframes. The
+pickup rules are tested against a stubbed `/api/clover/hours` — against the live
+merchant a test could only assert whatever happens to be true this afternoon,
+and "shut, so offer tomorrow morning" is untestable on a Tuesday lunchtime.
+
+Two things about it are worth knowing before the suite is trusted:
+
+- **The card fields need `--disable-web-security`.** Clover's widget needs
+  cross-origin access that a fresh automation profile denies, and the failure is
+  silent — the component never renders, with no console or network error.
+  Measured: bundled Chromium and real Chrome both fail, headed and headless.
+- **A sandbox decline is a SKIP, not a failure.** Clover's test merchant enforces
+  per-card and per-IP velocity limits, and a day of development exhausts them —
+  after which every card declines and the suite can no longer tell a broken
+  checkout from a sandbox that has stopped accepting anything.
+
+The suite deletes the orders it creates (`tests/sweep-sandbox.ts`), guarded on
+both payment state and a time window.
+
+**Re-pricing creates orders, so abandoned ones are deleted.** Applying a code
+re-prices, and pricing on Clover means creating an order. The route passes
+`replaces` and the server deletes the previous one — guarded on both payment
+state and age, because a fully refunded order reads as unpaid (`findings.md`).
+
 **Still open.** The Git connection uses the legacy SSH clone method, so the
 Amplify console shows "update required" — auto-build demonstrably works anyway
 (the merge of #5 triggered its own build), but the connection wants migrating to

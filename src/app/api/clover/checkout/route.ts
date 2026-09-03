@@ -47,10 +47,12 @@ import { notThisDeployment } from "@/pos/clover/client";
  * the returned id and a `clv_` card token to /api/checkout/pay.
  */
 import { CloverError, formatCents } from "@/pos/clover/client";
+import { optional } from "@/pos/clover/client";
 import {
   CatalogMismatchError,
   CheckoutRequestError,
   createPricedOrder,
+  deleteUnpaidOrder,
 } from "@/pos/clover/order";
 
 export async function POST(request: Request) {
@@ -66,6 +68,21 @@ export async function POST(request: Request) {
 
   try {
     const order = await createPricedOrder(body);
+
+    /*
+     * The customer re-priced — they applied or removed a discount code — so the
+     * order this one replaces is now litter on the merchant's account.
+     *
+     * AFTER the new order exists, never before: if creation fails we still want
+     * the old order, because it is the one the customer is looking at. And
+     * through `optional()`, because tidying up must never fail a checkout —
+     * `deleteUnpaidOrder` refuses to touch anything with a payment on it.
+     */
+    const replaces = (body as { replaces?: unknown } | null)?.replaces;
+    if (typeof replaces === "string" && /^[A-Z0-9]{8,32}$/.test(replaces) && replaces !== order.cloverOrderId) {
+      await optional("abandon_order", () => deleteUnpaidOrder(replaces));
+    }
+
     return Response.json(
       {
         ...order,

@@ -51,13 +51,19 @@ import { notThisDeployment } from "@/pos/clover/client";
  */
 import { createHash } from "node:crypto";
 import { CloverError, ecomm, formatCents, merchantId, optional, platform } from "@/pos/clover/client";
-import { readOrderTotal } from "@/pos/clover/order";
+import { readOrderTotal, writeOrderNote } from "@/pos/clover/order";
 
 interface PayRequest {
   cloverOrderId?: string;
   source?: string;
   email?: string;
   idempotencyKey?: string;
+  /** Integer cents, chosen by the customer. Charged BESIDE the order total. */
+  tipCents?: number;
+  /** What the customer typed for the kitchen. Goes on the order note. */
+  note?: string;
+  /** The chosen pickup time, already phrased: "Tomorrow at 11:00am". */
+  pickup?: string;
 }
 
 /** The `/pay` response. `object: "order"`, but `charge` is the payment id. */
@@ -66,6 +72,7 @@ interface CloverPayResponse {
   charge?: string;
   amount?: number;
   amount_paid?: number;
+  tip_amount?: number;
   tax_amount?: number;
   status?: string;
   auth_code?: string;
@@ -122,6 +129,52 @@ export async function POST(request: Request) {
     return Response.json({ error: "That order has nothing to charge." }, { status: 409 });
   }
 
+  // ── 1b. The tip. Bounded here because the server is the only real boundary. ─
+  //
+  // MEASURED (findings.md, step 09): `/pay` charges `amount` PLUS `tip_amount`,
+  // and refuses outright if `amount` alone exceeds the order total. So the tip
+  // must travel beside the total, never folded into it — and it must never ALSO
+  // appear as a line item on the order, which charges it twice.
+  const rawTip = body.tipCents;
+  let tipCents = 0;
+  if (rawTip !== undefined && rawTip !== null) {
+    if (!Number.isInteger(rawTip) || rawTip < 0) {
+      return Response.json({ error: "`tipCents` must be a whole number of cents." }, { status: 400 });
+    }
+    // A ceiling, not a policy: generous tipping is fine, a 100x fat-finger or a
+    // bug multiplying by the wrong thing is not. $20 keeps small orders able to
+    // tip freely; beyond that the order's own total is the yardstick.
+    const ceiling = Math.max(order.total, 2_000);
+    if (rawTip > ceiling) {
+      return Response.json(
+        { error: "That tip is larger than we can accept online. Please tip at the counter." },
+        { status: 400 },
+      );
+    }
+    tipCents = rawTip;
+  }
+
+  // ── 1c. The note. Secondary, so it must never fail the sale (design rule 5).
+  //
+  // The pickup time is written FIRST and in capitals because it is the only
+  // part of the note that changes what the kitchen does. Clover has no
+  // scheduled-order field at all (findings.md), so this line of text is the
+  // entire mechanism — it schedules nothing and nobody is reminded.
+  const kitchenNote = typeof body.note === "string" ? body.note.trim().slice(0, 400) : "";
+
+  /*
+   * The pickup phrase is resolved in the browser, because that is where the
+   * shop's hours are. It is therefore untrusted text on its way to a printer:
+   * newlines are stripped so it cannot forge extra lines on the ticket, and it
+   * is length-bounded like everything else that reaches Clover.
+   */
+  const pickupPhrase =
+    typeof body.pickup === "string" && body.pickup.trim()
+      ? body.pickup.replace(/\s+/g, " ").trim().slice(0, 60)
+      : "as soon as possible";
+  const note = [`PICKUP: ${pickupPhrase}`, kitchenNote].filter(Boolean).join(" — ");
+  await optional("order_note", () => writeOrderNote(orderId, note));
+
   // A `clv_` token is single-use, so a double-submit fails on the card anyway —
   // but keying on the order plus the token means an accidental retry replays
   // one attempt instead of racing a second, while a genuine retry with a fresh
@@ -136,7 +189,10 @@ export async function POST(request: Request) {
       method: "POST",
       body: {
         source,
+        // CLOVER'S number, re-read at pay time. Never one we worked out.
         amount: order.total,
+        // Beside the total, not inside it. See the note above.
+        ...(tipCents > 0 ? { tip_amount: tipCents } : {}),
         currency: "usd",
         ...(body.email ? { email: body.email } : {}),
       },
@@ -195,7 +251,12 @@ export async function POST(request: Request) {
     }),
   );
 
-  const amount = charge.amount_paid ?? charge.amount ?? order.total;
+  // What the customer was actually charged. `amount_paid` is the ORDER's share
+  // and excludes the tip — measured — so the tip has to be added back to state
+  // the figure that will appear on their statement.
+  const orderAmount = charge.amount_paid ?? charge.amount ?? order.total;
+  const tipCharged = charge.tip_amount ?? tipCents;
+  const amount = orderAmount + tipCharged;
 
   return Response.json(
     {
@@ -203,7 +264,11 @@ export async function POST(request: Request) {
       cloverOrderId: orderId,
       // `charge` is the payment id; `id` on this response is the ORDER id.
       chargeId: charge.charge ?? null,
+      /** The full amount charged to the card, tip included. */
       amount,
+      orderAmount,
+      tip: tipCharged,
+      note: note || null,
       tax: charge.tax_amount ?? null,
       formattedAmount: formatCents(amount),
       card: charge.source ? { brand: charge.source.brand ?? null, last4: charge.source.last4 ?? null } : null,

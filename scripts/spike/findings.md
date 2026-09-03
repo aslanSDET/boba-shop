@@ -199,6 +199,101 @@ from birth, and the `taxAmount: $0.00` reporting gap closes for free.
 attaches to the order and leaves it PAID with the line items intact. That needs a `clv_`
 token from a card, so it is a human step, not a script one.
 
+### CONFIRMED: a tip is charged BESIDE `amount`, never inside it (2026-09-02)
+
+Step 09. Needed before the checkout could offer a tip at all.
+
+`POST /v1/orders/{orderId}/pay` charges **`amount` + `tip_amount`**:
+
+| sent | result |
+|---|---|
+| `amount: 1953`, `tip_amount: 300` | 200 — **card captured $22.53** |
+| `amount: total + 300` (no `tip_amount`) | 409 `order_over_paid` |
+
+So `amount` is capped at the order's own total, and the tip travels alongside
+it. This is the opposite of the natural guess, and both wrong turns are costly:
+
+- **Adding the tip into `amount` is refused outright.** Not a silent failure —
+  `order_over_paid` — so this one announces itself.
+- **A tip as an untaxed LINE ITEM also collects the money** (measured: order
+  $8.29 → $11.29, tax unchanged at $0.54, so the line is genuinely untaxed).
+  But it is then part of `order.total`, so sending `tip_amount` as well charges
+  it **twice**. Measured: that combination returned 200, looked entirely
+  healthy, and **captured $14.29 on an $11.29 order**.
+
+The line-item route works if `tip_amount` is omitted, but it puts the tip in
+the shop's reporting as a menu item rather than as a tip. `tip_amount` keeps
+`order.total` as food-plus-tax, leaves the tip in Clover's own tip field, and
+keeps "the amount charged is the order's own total" true — so it is what the
+checkout uses.
+
+#### Every direct field lies about what was captured
+
+This took four readings to settle, and the first three were all ambiguous:
+
+| source | says |
+|---|---|
+| `/pay` response | `amount 1953, tip_amount 300, amount_paid 1953` |
+| v3 payment | `amount $19.53, tipAmount $3.00` |
+| v1 charge | `amount 1953, tip_amount 300` |
+
+None of them state the captured total, and "1953 was taken and the tip is
+decorative" fits all three exactly as well as the truth does. A **partial**
+refund cannot settle it either — on a tipped order Clover refuses with *"Partial
+refund for order with multiple line items/tip/convenience fee is not supported
+by this api"*, which reads like an amount error and is not one.
+
+A **full** refund settles it, because it refunds precisely what was captured
+and reports the figure:
+
+```
+POST /v1/refunds { "charge": "XHD9AF1W61WGJ" }   ->   { "amount": 2253 }
+```
+
+$22.53 on a $19.53 order. **If money is supposed to move, refund it and read the
+number — a 200 and a plausible field are not evidence.**
+
+### A full refund DETACHES the payment from the order (2026-09-02)
+
+Found while sweeping test orders, and it matters well beyond housekeeping.
+
+After `POST /v1/refunds { charge }` refunds an order in full, re-reading the
+order gives:
+
+```
+GET /v3/.../orders/{id}?expand=payments   ->   payments.elements: []
+                                               paymentState: not PAID
+```
+
+So an order that was genuinely paid and then refunded is **indistinguishable
+from one that was never paid**, by the only two fields that would tell you.
+
+Anything that guards a destructive action on "does this order have a payment?"
+is therefore weaker than it reads. `deleteUnpaidOrder` — which the checkout
+calls to clean up the order abandoned when a discount code forces a re-price —
+takes the order's AGE as a second guard for exactly this reason: an order
+abandoned by re-pricing is seconds old, and a refunded real order is not.
+
+
+### Orders carry a note; they carry no pickup time (2026-09-02)
+
+Also step 09, for the pickup-time and kitchen-notes fields:
+
+- `note` on the `orderCart` **survives creation** and reads back intact.
+- A **line item** `note` survives too — per-item instructions are available if
+  they are ever wanted.
+- `note` is **writable after creation** via `POST /v3/merchants/{mId}/orders/{id}`,
+  so it does not have to be known at pricing time.
+- There is **no scheduled-order field**. A read-back order carries
+  `clientCreatedTime`, `createdTime`, `modifiedTime` and nothing else
+  time-shaped.
+
+So a chosen pickup time cannot be structured data. It rides in the note as a
+line of text a human reads off the ticket: it schedules nothing and delays
+nothing. That is why the picker offers a two-hour horizon rather than a whole
+day — a longer one would imply a scheduling system that does not exist.
+
+
 ## The two that decide the architecture
 
 ### Does an API-created order print on the merchant's own printer? (steps 03–04)
