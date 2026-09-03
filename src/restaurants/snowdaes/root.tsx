@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Fraunces, Geist_Mono } from "next/font/google";
 import { SnowdaesHome } from "./home";
+import { CartHydrator } from "./components/cart-hydrator";
 import "./theme.css";
 
 /**
@@ -25,12 +26,33 @@ export const snowdaesMetadata: Metadata = {
     "Shaved snow, egg puffs, and milk tea from Snowdaes in Billerica, MA. Order ahead for pickup.",
 };
 
-export function SnowdaesRoot() {
+/**
+ * The ground every Snowdaes route stands on.
+ *
+ * Extracted when checkout stopped being a panel inside the cart drawer and
+ * became `/checkout` and `/order/[id]` of its own. Those routes need the same
+ * fonts, the same scoped palette and the same cart hydration as the menu, and
+ * the alternative — each route re-declaring them — is how two pages drift into
+ * looking like two different shops.
+ *
+ * Mirrors `AsianKitchenShell`. The two are deliberately not shared: no import
+ * may cross between restaurants (AGENTS.md invariant 1).
+ */
+export function SnowdaesShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={`${fraunces.variable} ${dmSans.variable} ${geistMono.variable} snowdaes font-sans flex min-h-dvh flex-col bg-background text-foreground antialiased`}
     >
-      <SnowdaesHome />
+      <CartHydrator />
+      {children}
     </div>
+  );
+}
+
+export function SnowdaesRoot() {
+  return (
+    <SnowdaesShell>
+      <SnowdaesHome />
+    </SnowdaesShell>
   );
 }

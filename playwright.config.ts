@@ -43,6 +43,9 @@ try {
  */
 export default defineConfig({
   testDir: "./tests",
+  /* Snowdaes has its own config, its own build directory and its own port —
+     a build is a restaurant, so these cannot share a server. */
+  testIgnore: /snowdaes.*\.spec\.ts/,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,

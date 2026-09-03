@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Minus, Plus, Tag, X } from "lucide-react";
+import Link from "next/link";
+import { Minus, Plus, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -13,9 +13,27 @@ import { ItemVisual } from "@/restaurants/snowdaes/components/item-visual";
 import { describeModifiers } from "@/restaurants/snowdaes/menu";
 import { formatPrice } from "@/restaurants/snowdaes/lib/format";
 import { useCart } from "@/restaurants/snowdaes/lib/use-cart";
-import { CheckoutPanel } from "@/restaurants/snowdaes/components/checkout-panel";
-import { cn } from "@/restaurants/snowdaes/lib/utils";
 
+
+/**
+ * The cart drawer: what you have chosen, and the way on to paying for it.
+ *
+ * ── IT NO LONGER TRIES TO BE A CHECKOUT ──────────────────────────────────────
+ *
+ * This used to swap its own contents for a checkout panel, and carry a discount
+ * code form and a full tax-and-total breakdown besides. All three have moved to
+ * `/checkout`, and the reason is the same for each: this drawer could not tell
+ * the truth about any of them.
+ *
+ * The totals here are the cart's own preview arithmetic. Clover is the
+ * calculator (AGENTS.md invariant 4), and it does not run until the order is
+ * priced on the next screen — so a tax line here is a guess, and a discount
+ * applied here showed its effect through that same guess. Quoting a total twice,
+ * from two different sources, is how the two quietly drift apart.
+ *
+ * So this shows a SUBTOTAL, says plainly where the rest is worked out, and gets
+ * out of the way. One screen owns the money now.
+ */
 interface CartSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -26,25 +44,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
   const updateQuantity = useCart((s) => s.updateQuantity);
   const removeItem = useCart((s) => s.removeItem);
   const subtotal = useCart((s) => s.subtotal());
-  const tax = useCart((s) => s.tax());
-  const total = useCart((s) => s.total());
   const count = useCart((s) => s.totalItemCount());
-  const promo = useCart((s) => s.promo);
-  const discount = useCart((s) => s.discount());
-  const applyPromo = useCart((s) => s.applyPromo);
-  const removePromo = useCart((s) => s.removePromo);
-
-  const [code, setCode] = useState("");
-  const [rejected, setRejected] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
-
-  function submitCode(e: React.FormEvent) {
-    e.preventDefault();
-    if (!code.trim()) return;
-    const ok = applyPromo(code);
-    setRejected(!ok);
-    if (ok) setCode("");
-  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -60,14 +60,7 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
           </SheetDescription>
         </SheetHeader>
 
-        {checkingOut ? (
-          <CheckoutPanel
-            onClose={() => {
-              setCheckingOut(false);
-              onOpenChange(false);
-            }}
-          />
-        ) : items.length === 0 ? (
+        {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
             <p className="text-base text-muted-foreground">
               Pick a drink from the menu and it will show up here.
@@ -142,97 +135,23 @@ export function CartSheet({ open, onOpenChange }: CartSheetProps) {
             </ul>
 
             <div className="border-t border-border px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-              {promo ? (
-                <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-primary bg-primary/5 px-4 py-3">
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    <Tag className="size-4 shrink-0 text-primary" />
-                    <span className="min-w-0">
-                      <span className="block font-mono text-[13px] tracking-wide uppercase">
-                        {promo.code}
-                      </span>
-                      <span className="block truncate text-[13px] text-muted-foreground">
-                        {promo.label}
-                      </span>
-                    </span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={removePromo}
-                    className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
-                    aria-label={`Remove code ${promo.code}`}
-                  >
-                    <X className="size-4" />
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={submitCode} className="mb-4 flex gap-2">
-                  <input
-                    value={code}
-                    onChange={(e) => {
-                      setCode(e.target.value);
-                      setRejected(false);
-                    }}
-                    placeholder="Discount code"
-                    autoCapitalize="characters"
-                    autoComplete="off"
-                    aria-label="Discount code"
-                    aria-invalid={rejected}
-                    aria-describedby={rejected ? "promo-error" : undefined}
-                    className={cn(
-                      "min-w-0 flex-1 rounded-full border bg-card px-4 py-3 text-base outline-none",
-                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
-                      rejected ? "border-destructive" : "border-border",
-                    )}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!code.trim()}
-                    className="shrink-0 rounded-full border border-border px-5 text-[15px] font-medium transition-colors hover:border-primary disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
-                  >
-                    Apply
-                  </button>
-                </form>
-              )}
-              {rejected && (
-                <p id="promo-error" role="alert" className="mb-4 -mt-2 text-[13px] text-destructive">
-                  That code isn’t recognised.
-                </p>
-              )}
-
-              <dl className="flex flex-col gap-2 font-mono text-[15px] tabular-nums">
-                <div className="flex justify-between text-muted-foreground">
-                  <dt>Subtotal</dt>
-                  <dd>{formatPrice(subtotal)}</dd>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-primary">
-                    <dt>{promo?.code}</dt>
-                    <dd>−{formatPrice(discount)}</dd>
-                  </div>
-                )}
-                <div className="flex justify-between text-muted-foreground">
-                  <dt>Tax</dt>
-                  <dd>{formatPrice(tax)}</dd>
-                </div>
-                <div className="mt-2 flex justify-between border-t border-border pt-3 text-[17px] font-semibold text-foreground">
-                  <dt>Total</dt>
-                  <dd>{formatPrice(total)}</dd>
-                </div>
+              <dl className="flex justify-between font-mono text-[17px] font-semibold tabular-nums">
+                <dt>Subtotal</dt>
+                <dd>{formatPrice(subtotal)}</dd>
               </dl>
 
-              <button
-                type="button"
-                onClick={() => setCheckingOut(true)}
-                aria-describedby="checkout-status"
-                className="mt-5 w-full rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground transition-transform active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
+              <Link
+                href="/checkout"
+                onClick={() => onOpenChange(false)}
+                className="mt-4 flex w-full items-center justify-center rounded-full bg-primary px-6 py-4 text-[15px] font-semibold text-primary-foreground transition-transform active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
               >
-                Checkout
-              </button>
-              <p
-                id="checkout-status"
-                className="mt-2.5 text-center font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase"
-              >
-                Tax confirmed by Clover at checkout
+                Go to checkout
+              </Link>
+
+              {/* Says where the rest of the money is decided, rather than
+                  guessing at it here. Discount codes moved to the same screen. */}
+              <p className="mt-2.5 text-center font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                Tax, tip and codes at checkout
               </p>
             </div>
           </>
