@@ -4,8 +4,7 @@ import type {
   ModifierGroup,
   SelectedModifiers,
 } from "@/restaurants/snowdaes/types";
-import { CATEGORIES as BILLERICA_CATEGORIES, ITEMS as BILLERICA_ITEMS } from "./menu.billerica.generated";
-import { CATEGORIES as LOWELL_CATEGORIES, ITEMS as LOWELL_ITEMS } from "./menu.lowell.generated";
+import { CATEGORIES, ITEMS } from "./menu.billerica.generated";
 
 /**
  * The real menu, generated from each shop's own Clover catalog by
@@ -20,16 +19,26 @@ import { CATEGORIES as LOWELL_CATEGORIES, ITEMS as LOWELL_ITEMS } from "./menu.l
  */
 export type LocationId = "billerica" | "lowell";
 
-export const LOCATIONS: Record<LocationId, { name: string; categories: MenuCategory[]; items: MenuItem[] }> = {
-  billerica: { name: "North Billerica", categories: BILLERICA_CATEGORIES, items: BILLERICA_ITEMS },
-  lowell: { name: "Lowell", categories: LOWELL_CATEGORIES, items: LOWELL_ITEMS },
-};
-
 /**
- * Shown until a location chooser exists. Billerica is the newer store and the
- * one whose ordering URL the project started from.
+ * Which store this build serves. Billerica is the newer one and the shop whose
+ * ordering URL the project started from (docs/PROMOS.md §1: Billerica only, no
+ * store switcher in this phase).
+ *
+ * ── WHY THIS IS AN IMPORT AND NOT A LOOKUP IN A MAP OF BOTH ──────────────────
+ *
+ * It used to be `LOCATIONS[DEFAULT_LOCATION]` over a `Record` holding both
+ * stores. A `Record` is a live object with both branches reachable, so no
+ * bundler can prove Lowell is dead — and it was not dropped. MEASURED: the
+ * browser downloaded a 389KB app chunk containing Lowell-only items
+ * (`Mangonada`, `Chockate Dirt`) on a site that only serves Billerica. Every
+ * customer paid for a second store's catalog on the way to the first one's.
+ *
+ * A bare import of one module is the whole fix: the other file is never in the
+ * graph. When the location switcher ships, this becomes a build-time constant
+ * the way `RESTAURANT` already is (AGENTS.md invariant 5) — one deployment per
+ * store — NOT a runtime map, which would put us straight back here.
  */
-export const DEFAULT_LOCATION: LocationId = "billerica";
+export const ACTIVE_LOCATION: LocationId = "billerica";
 
 /**
  * "Toppings", "Drizzles" and "MISC ITEMS" are real Clover categories, but they
@@ -42,11 +51,11 @@ export const DEFAULT_LOCATION: LocationId = "billerica";
  */
 const ADDON_CATEGORIES = new Set(["Toppings", "Drizzles", "MISC ITEMS"]);
 
-export const MENU_CATEGORIES: MenuCategory[] = LOCATIONS[DEFAULT_LOCATION].categories.filter(
+export const MENU_CATEGORIES: MenuCategory[] = CATEGORIES.filter(
   (c) => !ADDON_CATEGORIES.has(c.name),
 );
 
-export const MENU_ITEMS: MenuItem[] = LOCATIONS[DEFAULT_LOCATION].items.filter((item) =>
+export const MENU_ITEMS: MenuItem[] = ITEMS.filter((item) =>
   MENU_CATEGORIES.some((c) => c.id === item.categoryId),
 );
 
@@ -60,6 +69,24 @@ export const MENU_ITEMS: MenuItem[] = LOCATIONS[DEFAULT_LOCATION].items.filter((
 export function categoryIdByName(name: string): string | undefined {
   const wanted = name.trim().toLowerCase();
   return MENU_CATEGORIES.find((c) => c.name.trim().toLowerCase() === wanted)?.id;
+}
+
+/**
+ * One item, by name, for promo cards that open an item rather than a category.
+ *
+ * By NAME for the same reason as `categoryIdByName` above: item ids are
+ * Clover's and are rewritten by `scripts/import-menu.mjs`, so an id pasted into
+ * a promo card goes stale on the next import with nothing to show for it.
+ *
+ * A name can go stale too — the owner renames a drink in Clover and the promo
+ * stops resolving — so callers are expected to fall back to the item's
+ * category rather than treat `undefined` as "do nothing". A promo card that
+ * silently does nothing when tapped is worse than one that lands a category
+ * away from where it meant to.
+ */
+export function itemByName(name: string): MenuItem | undefined {
+  const wanted = name.trim().toLowerCase();
+  return MENU_ITEMS.find((i) => i.name.trim().toLowerCase() === wanted);
 }
 
 /**
