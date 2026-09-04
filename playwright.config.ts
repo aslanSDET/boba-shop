@@ -42,10 +42,17 @@ try {
  * render — which is why AGENTS.md says to verify in a browser.
  */
 export default defineConfig({
-  testDir: "./tests",
-  /* Snowdaes has its own config, its own build directory and its own port —
-     a build is a restaurant, so these cannot share a server. */
-  testIgnore: /snowdaes.*\.spec\.ts/,
+  /*
+   * One directory per restaurant, and the directory IS the selector.
+   *
+   * This used to be `testDir: "./tests"` plus `testIgnore: /snowdaes.*\.spec\.ts/`,
+   * which made the filename load-bearing: a Snowdaes spec named
+   * `promo-rail.spec.ts` would have been picked up here and run against Asian
+   * Kitchen's server on port 3210, failing for a reason with nothing to do with
+   * the test. Shared helpers live in `tests/support/` and are imported, never
+   * collected — Playwright only globs `*.spec.ts`.
+   */
+  testDir: "./tests/asian-kitchen",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,
@@ -69,16 +76,23 @@ export default defineConfig({
      * and a suite that silently tests whatever happens to be listening is worse
      * than one that fails to start.
      *
-     * `next start` and NOT `next build && next start`, so it serves whatever
-     * `.next` is already on disk. That keeps a run fast, and it means a CSS or
-     * component change you have not built yet is invisible to the suite —
-     * measured: the header tests passed against a stale bundle while the fixed
-     * stylesheet sat unbuilt beside it. Run `RESTAURANT=asian-kitchen npm run
-     * build` after touching anything the browser loads.
+     * It BUILDS first, like the Snowdaes config does.
+     *
+     * It used to run `next start` alone and serve whatever `.next` held, which
+     * kept a run fast at the price of a suite that could not see a change you
+     * had not built. The comment here already warned about it — "the header
+     * tests passed against a stale bundle while the fixed stylesheet sat
+     * unbuilt beside it" — and it happened a second time anyway: 49 green runs
+     * against a stale build, and a real 320px header failure that only appeared
+     * once someone rebuilt by hand. A footgun documented is still a footgun,
+     * and a suite that reports green on code it did not load is worse than a
+     * slow one.
      */
-    command: "RESTAURANT=asian-kitchen npx next start -p 3210",
+    command:
+      "RESTAURANT=asian-kitchen npx next build && " +
+      "RESTAURANT=asian-kitchen npx next start -p 3210",
     url: "http://localhost:3210",
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 240_000,
   },
 });

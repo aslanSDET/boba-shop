@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { AA_SMALL, measureContrast } from "./contrast-helper";
+import { AA_SMALL, measureContrast } from "../support/contrast";
 
 /**
  * The header's small type has to clear WCAG AA against the green behind it.

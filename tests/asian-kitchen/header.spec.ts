@@ -45,8 +45,26 @@ test.describe("the header keeps the name and the address on opposite sides", () 
         identity.x + identity.width - 1,
       );
 
-      // And on the same line, not merely indented on a second one.
-      expect(Math.abs(where.y - identity.y), `same row at ${width}px`).toBeLessThan(60);
+      /*
+       * And on the same row, not merely indented on a second one — asserted as
+       * "their vertical extents overlap", which is what sharing a row means.
+       *
+       * This used to compare the two TOPS within 60px, and that quietly encoded
+       * an assumption about how many lines the shop's name takes. At 320px the
+       * name wraps to three lines, so the left column is 129px tall while the
+       * right one is 60px and `align-items: end` sits it at the bottom — tops
+       * 70px apart, in a header that is plainly still two columns. The CSS says
+       * outright that the narrow-screen cost is paid by the name, so the test
+       * was measuring the wrong thing rather than catching a regression.
+       *
+       * Overlap still fails the layout this file exists to guard: when
+       * `.ak-where` wrapped onto its own line under the name, the two boxes did
+       * not overlap at all.
+       */
+      const overlap =
+        Math.min(identity.y + identity.height, where.y + where.height) -
+        Math.max(identity.y, where.y);
+      expect(overlap, `same row at ${width}px`).toBeGreaterThan(0);
 
       // The address is the item the right edge is FOR — a right column whose
       // contents rag left reads as a third column, which is what it did

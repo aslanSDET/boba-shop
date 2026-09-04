@@ -7,8 +7,8 @@ import {
   stubHours,
   totalRow,
   WIDTHS,
-} from "./snowdaes-helpers";
-import { AA_SMALL, contrastOfElement } from "./contrast-helper";
+} from "../support/snowdaes";
+import { AA_SMALL, contrastOfElement } from "../support/contrast";
 
 /**
  * Snowdaes: the journeys either side of paying.

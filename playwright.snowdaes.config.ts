@@ -38,13 +38,15 @@ try {
  * repeat it.
  */
 export default defineConfig({
-  testDir: "./tests",
+  /* The directory is the selector — see the note in `playwright.config.ts`.
+     Nothing outside `tests/snowdaes/` runs here, and adding a spec no longer
+     means remembering to prefix its filename. */
+  testDir: "./tests/snowdaes",
   /* Pricing on Clover CREATES an order, so a run leaves real objects behind.
-     See tests/sweep-sandbox.ts — it deletes only what this run created, and
-     never anything carrying a payment. */
-  globalSetup: "./tests/sweep-sandbox-setup.ts",
-  globalTeardown: "./tests/sweep-sandbox.ts",
-  testMatch: /snowdaes.*\.spec\.ts/,
+     See tests/support/sweep-sandbox.ts — it deletes only what this run created,
+     and never anything carrying a payment. */
+  globalSetup: "./tests/support/sweep-sandbox-setup.ts",
+  globalTeardown: "./tests/support/sweep-sandbox.ts",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,
