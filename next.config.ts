@@ -1,6 +1,24 @@
 import type { NextConfig } from "next";
 
+/**
+ * Which restaurant's root `@/restaurants/active-root` resolves to.
+ *
+ * Read here, at config time, so the choice is made by MODULE RESOLUTION rather
+ * than by a runtime ternary — see the long note in
+ * `src/restaurants/active-root.ts`. The default file already points at
+ * Snowdaes, so only the other restaurant needs an alias; an unset or unknown
+ * value falls through to the default exactly as `active.ts` does.
+ */
+const restaurantRootAlias: Record<string, string> =
+  (process.env.RESTAURANT ?? "").trim().toLowerCase() === "asian-kitchen"
+    ? { "@/restaurants/active-root": "./src/restaurants/asian-kitchen/active-root.tsx" }
+    : {};
+
 const nextConfig: NextConfig = {
+  turbopack: {
+    resolveAlias: restaurantRootAlias,
+  },
+
   /**
    * ── ONE BUILD DIRECTORY PER RESTAURANT, WHEN ASKED FOR ─────────────────────
    *

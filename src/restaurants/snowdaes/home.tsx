@@ -1,100 +1,46 @@
-"use client";
-
-import { useMemo, useRef, useState } from "react";
-import { Plus, ShoppingBag } from "lucide-react";
-import { categoryIdByName, MENU_CATEGORIES, MENU_ITEMS, startingPrice } from "@/restaurants/snowdaes/menu";
 import { SHOP } from "@/restaurants/snowdaes/shop";
 import { Testimonials } from "@/restaurants/snowdaes/components/testimonials";
 import { SiteFooter } from "@/restaurants/snowdaes/components/site-footer";
 import { OpenBadge } from "@/restaurants/snowdaes/components/open-badge";
-import { PromoStrip } from "@/restaurants/snowdaes/components/promo-strip";
 import { Wordmark } from "@/restaurants/snowdaes/components/wordmark";
 import { HeroArt } from "@/restaurants/snowdaes/components/hero-art";
-import { formatPrice } from "@/restaurants/snowdaes/lib/format";
-import { ItemVisual } from "@/restaurants/snowdaes/components/item-visual";
-import { ModifierDrawer } from "@/restaurants/snowdaes/components/modifier-drawer";
-import { CartSheet } from "@/restaurants/snowdaes/components/cart-sheet";
-import { CartBarButton } from "@/restaurants/snowdaes/components/cart-bar-button";
-import { useCart } from "@/restaurants/snowdaes/lib/use-cart";
-import { cn } from "@/restaurants/snowdaes/lib/utils";
-import type { MenuItem } from "@/restaurants/snowdaes/types";
+import { MenuSection } from "@/restaurants/snowdaes/components/menu-section";
+import { CartButton } from "@/restaurants/snowdaes/components/cart-button";
+import { CartDock } from "@/restaurants/snowdaes/components/cart-dock";
 
 /**
- * Eight shaved-snow items are `basePrice: 0` — Clover keeps their price in a
- * required "Snow Size" group — so a tile printing `basePrice` says "$0.00" and
- * the whole card reads as broken. `startingPrice` folds in the cheapest way to
- * satisfy the required groups; "from" only appears when that floor is genuinely
- * above the base, which is those eight items and nothing else.
+ * The Snowdaes home page. A SERVER component — note the absent `"use client"`.
+ *
+ * ── WHY THAT ONE MISSING LINE IS THE WHOLE POINT ─────────────────────────────
+ *
+ * This file used to open with `"use client"`, which in the App Router does not
+ * mean "this component is interactive" — it means every component it imports
+ * becomes part of the browser bundle too. So the hero's four product shots, the
+ * wordmark, the testimonials and the entire footer were shipped as JavaScript,
+ * parsed, and hydrated before anything on the page would respond to a tap.
+ *
+ * MEASURED on the build before this change, at 390px against a 6x-throttled
+ * CPU (a mid-range phone): the first promo card painted at 810ms and did not
+ * respond to a click until 1654ms. For 844ms it looked completely ready and
+ * silently swallowed every tap. At 4x it was 593ms. That is the whole of the
+ * "first load, things were not clickable" report.
+ *
+ * What is interactive here is genuinely small, and it is now the only thing
+ * that ships: `MenuSection` (rail, grid, drawer, promo cards), `CartButton`,
+ * `CartDock`, and `OpenBadge`. Everything else on this page is HTML.
+ *
+ * ── AND WHY THE TWO HERO BUTTONS ARE LINKS NOW ───────────────────────────────
+ *
+ * "See the menu" and "Find a shop" were `<button onClick={scrollIntoView}>`,
+ * which needs a hydrated React tree to do anything at all. As anchors they work
+ * from the first paint, before a single byte of JavaScript has run — and they
+ * gain middle-click and open-in-new-tab, which the buttons never had.
  */
-function ItemPrice({ item }: { item: MenuItem }) {
-  const { amount, from } = startingPrice(item);
-  return (
-    <>
-      {from && (
-        <span className="mr-1.5 font-sans text-[13px] font-normal text-muted-foreground">
-          from
-        </span>
-      )}
-      {formatPrice(amount)}
-    </>
-  );
-}
-
 export function SnowdaesHome() {
-  const [activeCategory, setActiveCategory] = useState(MENU_CATEGORIES[0].id);
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
-
-  const itemCount = useCart((s) => s.totalItemCount());
-  const railRef = useRef<HTMLElement>(null);
-  const railScrollerRef = useRef<HTMLDivElement>(null);
-
-  const itemsForCategory = useMemo(
-    () => MENU_ITEMS.filter((item) => item.categoryId === activeCategory),
-    [activeCategory],
-  );
-
-  function selectCategory(id: string) {
-    setActiveCategory(id);
-    // Otherwise a shorter category can leave you scrolled past its last item.
-    railRef.current?.scrollIntoView({ block: "start" });
-    // Eleven categories do not fit a 375px rail, so the one that just became
-    // active is usually off-screen when the jump came from a promo card. Set
-    // `scrollLeft` directly rather than calling `scrollIntoView` on the pill:
-    // that would also scroll the page vertically and fight the line above.
-    const scroller = railScrollerRef.current;
-    const pill = scroller?.querySelector<HTMLElement>(`[data-category="${CSS.escape(id)}"]`);
-    if (scroller && pill) {
-      scroller.scrollTo({
-        left: pill.offsetLeft - (scroller.clientWidth - pill.offsetWidth) / 2,
-        behavior: "smooth",
-      });
-    }
-  }
-
-  function handlePromo(target: string) {
-    if (target === "locations") {
-      document.getElementById("locations")?.scrollIntoView({ block: "center" });
-      return;
-    }
-    // Promo cards name a category, because category ids are Clover's and change
-    // on a re-import. Before this resolved by name they still held ids from the
-    // hand-written menu ("shaved-snow"), so two of the three cards selected a
-    // category that no longer exists and emptied the grid.
-    const id = categoryIdByName(target);
-    if (id) selectCategory(id);
-  }
-
-  function openDrawerFor(item: MenuItem) {
-    setSelectedItem(item);
-    setDrawerOpen(true);
-  }
-
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Ahead of the menu sit two CTAs, two status pills, three promo cards and
-          six category buttons — too much to tab through to reach an order. */}
+      {/* Ahead of the menu sit two CTAs, two status pills, five promo cards and
+          eleven category buttons — too much to tab through to reach an order. */}
       <a
         href="#menu"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-primary focus:px-5 focus:py-3 focus:text-[15px] focus:font-semibold focus:text-primary-foreground focus:outline-2 focus:outline-offset-2 focus:outline-brand-ink"
@@ -108,19 +54,7 @@ export function SnowdaesHome() {
           <p className="font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
             Pickup · {SHOP.pickupLocation}
           </p>
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            aria-label={`Open order, ${itemCount} items`}
-            className="relative grid size-11 shrink-0 place-items-center rounded-full border border-border bg-card transition-colors hover:border-primary"
-          >
-            <ShoppingBag className="size-[18px]" />
-            {itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 grid min-w-5 place-items-center rounded-full bg-primary px-1 font-mono text-[11px] leading-5 font-semibold text-primary-foreground tabular-nums">
-                {itemCount}
-              </span>
-            )}
-          </button>
+          <CartButton />
         </div>
       </div>
 
@@ -130,22 +64,16 @@ export function SnowdaesHome() {
             reading as empty next to the references. Larger, lower-set pair at the
             bottom, smaller pair up top, so the eye still lands on the wordmark.
 
-            Egg puffs is the one full-frame photo here (no alpha, `cover` in
-            menu.ts), so it gets the circular crop the promo strip and the menu
-            tiles already use rather than floating as a hard rectangle. No
-            rotation — a circle has nothing to rotate. */}
-        {/* Larger than the other three on purpose: it is a cropped circle rather
-            than a free-floating cut-out, so it needs more area to read as a
-            product. Sourced from the AVIF (456x550) instead of the 400x480 PNG
-            because at 250px on a 2x screen the PNG has no resolution to spare. */}
-        {/* The only DISC in the composition — egg puffs are a full-frame
+            The only DISC in the composition — egg puffs are a full-frame
             photograph and the other three are cut-outs that float and bleed.
             A solid circle carries far more visual weight than a transparent
             cut-out of the same width, so matching the cut-outs' 220/260px made
             it the loudest thing in a hero whose subject is the wordmark. It is
             now clearly the smallest, and it bleeds off the top-left corner so
             it belongs to the same family instead of sitting on the page like
-            an avatar. */}
+            an avatar. Sourced from the AVIF (456x550) rather than the 400x480
+            PNG because at 250px on a 2x screen the PNG has no resolution to
+            spare. */}
         <HeroArt
           src="/eggpuffs.avif"
           width={456}
@@ -204,27 +132,21 @@ export function SnowdaesHome() {
             {SHOP.blurb}
           </p>
 
+          {/* Anchors, not buttons — see the note at the top of this file. Both
+              work before any JavaScript has loaded. */}
           <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={() =>
-                railRef.current?.scrollIntoView({ block: "start" })
-              }
+            <a
+              href="#menu-top"
               className="rounded-full bg-primary px-7 py-4 text-base font-semibold text-primary-foreground transition-transform duration-150 active:scale-[0.985] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
             >
               See the menu
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                document
-                  .getElementById("locations")
-                  ?.scrollIntoView({ block: "center" })
-              }
+            </a>
+            <a
+              href="#locations"
               className="rounded-full border border-border bg-card px-7 py-4 text-base font-semibold transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
             >
               Find a shop
-            </button>
+            </a>
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
@@ -240,133 +162,11 @@ export function SnowdaesHome() {
         </header>
       </section>
 
-      <PromoStrip onSelect={handlePromo} />
-
-      <div className="flex-1">
-        <nav
-          ref={railRef}
-          aria-label="Menu categories"
-          className="sticky top-0 z-30 border-y border-border bg-background/88 backdrop-blur-md"
-        >
-          {/* `justify-center` on the scroller itself is a trap once the rail
-              overflows — it pushes the first pills into the unreachable
-              start-overflow, and eleven categories overflow even at max-w-6xl.
-              An auto-margined `w-max` track centres when it fits and stays
-              fully scrollable when it doesn't. Padding lives on the track so
-              both ends survive the scroll. */}
-          <div
-            ref={railScrollerRef}
-            className="no-scrollbar overflow-x-auto overscroll-x-contain py-3.5"
-          >
-            <div className="mx-auto flex w-max gap-2.5 px-5 sm:px-8">
-              {MENU_CATEGORIES.map((category) => {
-                const active = category.id === activeCategory;
-                return (
-                  <button
-                    key={category.id}
-                    type="button"
-                    data-category={category.id}
-                    aria-pressed={active}
-                    onClick={() => selectCategory(category.id)}
-                    className={cn(
-                      "shrink-0 rounded-full px-5 py-3 text-base font-medium whitespace-nowrap transition-colors",
-                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink",
-                      active
-                        ? "bg-primary text-primary-foreground"
-                        : "border border-border bg-card text-muted-foreground hover:border-primary hover:text-foreground",
-                    )}
-                  >
-                    {category.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
-
-        <main
-          id="menu"
-          className="mx-auto w-full max-w-6xl px-5 pt-8 pb-16 sm:px-8 sm:pt-10 sm:pb-20"
-        >
-          {itemsForCategory.length === 0 ? (
-            <p className="py-20 text-center text-base text-muted-foreground">
-              Nothing on the menu here yet. Try another category.
-            </p>
-          ) : (
-            /* Card scroll margins keep a focused card clear of the sticky rail
-               above and the fixed cart bar below (WCAG 2.4.11) */
-            <ul className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
-              {itemsForCategory.map((item) => (
-                <li key={item.id} className="scroll-mt-24 scroll-mb-28">
-                  <button
-                    type="button"
-                    onClick={() => openDrawerFor(item)}
-                    className="group flex h-full w-full flex-col items-center rounded-3xl border border-border bg-card p-4 text-center transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-[0_10px_28px_rgba(26,21,18,0.09)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink sm:p-5"
-                  >
-                    {/* Badge and + ride the circle so every card keeps the same text rhythm */}
-                    <span className="relative mx-auto w-full max-w-[180px]">
-                      <ItemVisual
-                        item={item}
-                        className="aspect-square w-full rounded-full"
-                        px={360}
-                        sizes="180px"
-                      />
-                      {item.isPopular && (
-                        <span className="absolute top-0 left-0 rounded-full bg-primary px-2.5 py-1 font-mono text-[9px] tracking-[0.16em] text-primary-foreground uppercase">
-                          Popular
-                        </span>
-                      )}
-                      <span
-                        aria-hidden
-                        className="absolute right-0 bottom-0 grid size-9 place-items-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground sm:size-10"
-                      >
-                        <Plus className="size-[18px]" />
-                      </span>
-                    </span>
-
-                    <span className="mt-4 block font-display text-xl leading-snug font-semibold text-balance sm:text-[22px]">
-                      {item.name}
-                    </span>
-                    {/* 42 of 93 items have `description: ""` in Clover. An
-                        always-rendered subtitle leaves those cards carrying a
-                        dangling empty line, so the element only exists when
-                        there is copy for it. */}
-                    {item.description && (
-                      <span className="mt-1.5 line-clamp-2 text-[15px] leading-relaxed text-muted-foreground">
-                        {item.description}
-                      </span>
-                    )}
-                    <span className="mt-auto pt-3 font-mono text-base font-medium tabular-nums">
-                      <ItemPrice item={item} />
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </main>
-      </div>
+      <MenuSection />
 
       <Testimonials />
-      <div className={cn(itemCount > 0 && "pb-24")}>
-        <SiteFooter />
-      </div>
-
-      {itemCount > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/92 px-5 pt-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] backdrop-blur-md">
-          <div className="mx-auto max-w-2xl">
-            <CartBarButton onClick={() => setCartOpen(true)} />
-          </div>
-        </div>
-      )}
-
-      <ModifierDrawer
-        key={selectedItem?.id ?? "none"}
-        item={selectedItem}
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-      />
-      <CartSheet open={cartOpen} onOpenChange={setCartOpen} />
+      <SiteFooter />
+      <CartDock />
     </div>
   );
 }

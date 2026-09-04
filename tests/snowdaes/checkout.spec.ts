@@ -6,7 +6,7 @@ import {
   priceToSettle,
   stubHours,
   totalRow,
-} from "./snowdaes-helpers";
+} from "../support/snowdaes";
 
 /**
  * Snowdaes: menu → cart → `/checkout` → paid, through the real Clover card

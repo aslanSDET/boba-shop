@@ -197,6 +197,18 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
 
   const start = startingPrice(item);
   /**
+   * The one required group that holds this item's whole price, when there is
+   * no base price to add to — see the note beside `carriesPrice` below.
+   * `undefined` for every ordinary item, which is the common case.
+   */
+  const pricedRequiredGroup = (() => {
+    if (item.basePrice !== 0) return undefined;
+    const paid = item.modifierGroups.filter(
+      (g) => g.min > 0 && Math.min(...g.options.map((o) => o.priceDelta)) > 0,
+    );
+    return paid.length === 1 ? paid[0] : undefined;
+  })();
+  /**
    * Radix warns when a dialog advertises a description that is not on the
    * page, and 42 items have no description to render. Passing the attribute
    * as an explicit `undefined` is the documented way to say "there is no
@@ -240,6 +252,25 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
     <div className="flex flex-col gap-4 overflow-y-auto overscroll-contain px-5 pb-5">
       {shaped.map((sg: ShapedGroup) => {
         const group = sg.group;
+        /**
+         * ── "+$9.25" IS A LIE ON THE EIGHT SNOW ITEMS ────────────────────────
+         *
+         * Thai Dye is `basePrice: 0`; its whole price lives in the required
+         * Snow Size group (Kiddie 9.25, Small 10.50, Large 11.95). The heading
+         * shows "from $9.25" via `startingPrice`, so a chip reading "+$9.25"
+         * two inches below it reads as $18.50 — and in the SAME drawer,
+         * "Extra +$0.50" and "Chamoy +$1.50" genuinely are additions. One "+"
+         * meaning two different things on one screen.
+         *
+         * When the item has no base price, the required group IS the price, so
+         * its options print absolute. Measured across the catalog: exactly 8
+         * items are `basePrice: 0`, each with exactly one paid required group,
+         * and NO item has both a base price and a paid required group — so the
+         * two cases never overlap. `carriesPrice` still checks for a single
+         * such group rather than assuming, because a re-import could change
+         * that and a silently wrong price is the worst bug this file can ship.
+         */
+        const carriesPrice = pricedRequiredGroup?.id === group.id;
         const chosen = selection[group.id] ?? [];
         const atMax =
           group.kind === "multi" &&
@@ -360,7 +391,8 @@ export function ModifierDrawer({ item, open, onOpenChange }: ModifierDrawerProps
                         {option.shortName ?? option.name}
                         {option.priceDelta > 0 && (
                           <span className="ml-2 font-mono text-[12px] tabular-nums opacity-70">
-                            +{formatPrice(option.priceDelta)}
+                            {carriesPrice ? "" : "+"}
+                            {formatPrice(option.priceDelta)}
                           </span>
                         )}
                       </OptionPill>

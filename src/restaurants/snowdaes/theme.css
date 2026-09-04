@@ -45,6 +45,20 @@
   --chart-3: #8b6fc0;
   --chart-4: #e0654f;
   --chart-5: #3f8fa3;
+  /* Promo card washes. Each card fades its own hue out of the bottom-right
+     corner, so they need to be distinguishable from each other while staying
+     inside the warm palette — the chart ramp is tuned for series colour on a
+     plot and repeats too soon across five cards.
+
+     Here rather than in the component because the palette is the theme's, not
+     a component's (AGENTS.md invariant 3): both restaurants load `globals.css`,
+     and anything with personality lives in a restaurant's own `theme.css`.
+     Tint 1 is deliberately `--primary`. */
+  --promo-tint-1: #f5901e;
+  --promo-tint-2: #c8a12a;
+  --promo-tint-3: #3f6ea3;
+  --promo-tint-4: #e07b32;
+  --promo-tint-5: #5fb6dd;
   --radius: 1rem;
   --sidebar: #ffffff;
   --sidebar-foreground: #1a1512;
