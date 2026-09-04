@@ -31,6 +31,25 @@ import { cn } from "@/restaurants/snowdaes/lib/utils";
  */
 
 // Plain ids on purpose: Clover mounts by selector, and useId() yields colons.
+/**
+ * Is this month/year in the past?
+ *
+ * Both arrive from Clover as strings ("12", "2021"), and a two-digit year
+ * appears in their docs too, so it is widened rather than assumed. Anything
+ * unparseable returns `false` — an unreadable expiry is not evidence a card is
+ * expired, and refusing a good card is worse than leaning on the acquirer for
+ * a bad one.
+ */
+function isExpired(month?: string | number, year?: string | number): boolean {
+  const m = Number(month);
+  let y = Number(year);
+  if (!Number.isInteger(m) || m < 1 || m > 12 || !Number.isInteger(y)) return false;
+  if (y < 100) y += 2000;
+  const now = new Date();
+  /* A card is good through the LAST day of its month, so compare month starts. */
+  return new Date(y, m - 1, 1) < new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
 const FIELDS = [
   { key: "CARD_NUMBER", id: "clover-card-number", label: "Card number" },
   { key: "CARD_DATE", id: "clover-card-date", label: "Expiry" },
@@ -137,6 +156,50 @@ export function CardFields({
         onErrorRef.current(e instanceof Error ? e.message : "Card fields could not load.");
       }
     })();
+
+    return () => {
+      /*
+       * ── CLOVER'S BADGE OUTLIVES THIS PAGE UNLESS IT IS TAKEN DOWN ──────────
+       *
+       * The SDK appends its own "Secure Payments Powered by Clover" footer to
+       * `document.body` — NOT into the container we hand `mount()`. So React
+       * unmounting these fields does not remove it, and on the client-side
+       * navigation from `/checkout` to `/order/[id]` it survives and renders at
+       * the very TOP of the confirmation page: a padlock, a clover leaf and a
+       * bold "Privacy Policy" stacked above "Order placed", on a receipt for a
+       * payment that has already happened.
+       *
+       * Reproduced and confirmed as an artifact rather than a design choice —
+       * loading the same `/order/…` URL directly shows no badge at all, because
+       * nothing mounted the SDK on that load.
+       *
+       * Removed by class because that is the only handle the SDK gives; a
+       * missing node is not an error, so the optional chain is the whole guard.
+       *
+       * ── WHY IT IS DEFERRED, AND CONDITIONAL ────────────────────────────────
+       *
+       * Because an unmount does not always mean "the card form is gone".
+       *
+       * `reactStrictMode` is on (Next's default), so in development React
+       * mounts this component, unmounts it, and mounts it again. The setup
+       * above survives that by design — `mountedRef` makes it run once — but a
+       * cleanup that fires on every unmount is NOT symmetric with a setup that
+       * fires once. Stripping the badge on the StrictMode unmount left it gone
+       * for good: the remount hit the guard and returned before it could put
+       * anything back, so checkout lost its badge in dev while production kept
+       * it. A cleanup must not be able to undo something its own setup will not
+       * redo.
+       *
+       * So the decision is deferred a tick and asks the DOM instead of
+       * assuming: if a card container is still on the page, this was a remount
+       * and the badge stays. If they are gone, we really did leave checkout.
+       */
+      setTimeout(() => {
+        if (!document.querySelector("[id^='clover-card']")) {
+          document.querySelector(".clover-footer")?.remove();
+        }
+      }, 0);
+    };
   }, []);
 
   const tokenize = useCallback(async (): Promise<{ token?: string; error?: string }> => {
@@ -166,6 +229,35 @@ export function CardFields({
       };
     }
     if (!result?.token) return { error: "Clover did not return a card token." };
+
+    /*
+     * ── THE CARD'S OWN EXPIRY, CHECKED AGAINST TODAY ────────────────────────
+     *
+     * MEASURED against the sandbox on 2026-09-03: typing 12/21 tokenised
+     * cleanly and the charge went through. Clover's own tokeniser returned
+     * `{"exp_month":"12","exp_year":"2021"}` with HTTP 200, `/pay` answered
+     * `"paid": true`, and reading the order back from `/v3` showed
+     * `paymentState: PAID`, `result: SUCCESS` — on a card five years expired.
+     *
+     * The widget does not refuse it and neither does the sandbox processor, so
+     * nothing between the customer and the till was going to. That is a test
+     * environment being permissive — a real acquirer declines an expired card
+     * at authorisation — but "the processor will probably catch it" is not a
+     * validation strategy, and a decline at that point reaches the customer as
+     * an unexplained failure after they have already pressed Pay.
+     *
+     * The expiry lives inside Clover's cross-origin iframe and cannot be read
+     * from this page. But it comes BACK on the token, and we were throwing it
+     * away. The check costs one comparison and no extra round trip.
+     *
+     * A usability guard, not a security control: the money decision belongs to
+     * the acquirer, and a token minted elsewhere never passes through here.
+     */
+    if (isExpired(result.card?.exp_month, result.card?.exp_year)) {
+      setFieldErrors((prev) => ({ ...prev, "clover-card-date": "That card has expired." }));
+      return { error: undefined };
+    }
+
     return { token: result.token };
   }, [fieldErrors]);
 
