@@ -53,9 +53,25 @@ npm run test:e2e            # Asian Kitchen — playwright.config.ts, port 3210
 npm run test:e2e:snowdaes   # Snowdaes — playwright.snowdaes.config.ts, port 3211
 ```
 
-Both drive real card iframes against their POS's real sandbox and create real
-sandbox objects — cleaned up automatically by each run (`tests/sweep-sandbox.ts`
-for Snowdaes), never anything with a payment on it.
+**One folder per domain, and the folder is the selector:**
+
+```
+tests/
+  asian-kitchen/   checkout · contrast · header      → playwright.config.ts
+  snowdaes/        checkout · journeys · promo-rail  → playwright.snowdaes.config.ts
+  support/         helpers and the sandbox sweep — imported, never collected
+```
+
+Put a new spec in the folder for the restaurant it drives and it runs in the
+right suite against the right server. This replaced a `testMatch: /snowdaes.*/`
+filename rule, under which a Snowdaes spec named without the prefix would have
+been collected by the Asian Kitchen suite and failed against the wrong shop.
+Playwright only globs `*.spec.ts`, so `support/` is never picked up as tests.
+
+Both suites drive real card iframes against their POS's real sandbox and create
+real sandbox objects — cleaned up automatically by each run
+(`tests/support/sweep-sandbox.ts` for Snowdaes), never anything with a payment
+on it.
 
 ---
 
