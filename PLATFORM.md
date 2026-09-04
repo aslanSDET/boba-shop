@@ -172,6 +172,51 @@ glance is worth building whether or not any of their *code* is ever shared.
 
 ---
 
+## 4c. Restaurants must not share a bundle either (2026-09-03)
+
+Invariant 1 says restaurants share no code. It was true of the imports and false
+of the thing customers actually download.
+
+Measured in a browser against the Snowdaes production build, at 390px: **831KB
+of JavaScript, of which a single 389KB chunk held Asian Kitchen's components,
+Lowell's menu and Snowdaes' catalog together.** Forty per cent of the payload was
+a restaurant this deployment does not serve and cannot navigate to. A second
+store's catalog rode along the same way.
+
+Both had the same cause and it was not carelessness — it was the belief that a
+runtime condition prunes a build. All three routes did
+
+```ts
+ACTIVE_RESTAURANT === "snowdaes" ? <SnowdaesRoot /> : <AsianKitchenRoot />
+```
+
+and `page.tsx` carried a comment promising the unused half "disappears once each
+restaurant deploys on its own." It never did. Both restaurants had been deployed
+separately for weeks and both deployments still shipped both. An import is not a
+runtime decision; the condition picks, the bundler still packs.
+
+**The rule this settles: the restaurant is chosen by module resolution, not by a
+branch.** `@/restaurants/active-root` is aliased in `next.config.ts` from
+`RESTAURANT`, so the other restaurant is never in the graph. Each restaurant
+presents one `active-root.tsx` naming the four things the routes render.
+
+This matters far more at forty than at two, which is why it is here and not in a
+commit message. The cost is not a fixed 389KB — it is *every other restaurant in
+the repo*. At two shops a customer downloads one shop they will never see; at
+forty they would download thirty-nine, and the site would get slower with every
+restaurant added, on a codebase whose entire premise is adding restaurants.
+
+Two things the fix does NOT buy, both measured, both worth knowing before
+someone reaches for the same lever again:
+
+- **Payload is not latency.** Cutting 831KB to 252KB moved the dead-tap window
+  from 844ms to 786ms — about 7%. What is left is React hydrating the menu
+  island, not bytes on the wire.
+- **Lazy is not free.** Deferring the modifier drawer cut another 33KB off first
+  paint and made opening an item 214ms *slower*, because the chunk only starts
+  downloading after the tap. It was reverted. The cart sheet stayed lazy on the
+  same measurement read the other way.
+
 ## 5. Shape (as built, 2026-09-01)
 
 ```

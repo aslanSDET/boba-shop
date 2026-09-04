@@ -1,11 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { ACTIVE_RESTAURANT } from "@/restaurants/active";
-import { SnowdaesRoot, snowdaesMetadata } from "@/restaurants/snowdaes/root";
-import {
-  AsianKitchenRoot,
-  asianKitchenMetadata,
-  asianKitchenViewport,
-} from "@/restaurants/asian-kitchen/root";
+import { ActiveRoot, activeMetadata, activeViewport } from "@/restaurants/active-root";
 
 /**
  * `/` — the only page. It serves whichever restaurant this deployment is for.
@@ -18,19 +12,23 @@ import {
  *   RESTAURANT=snowdaes      npm run dev
  *   RESTAURANT=asian-kitchen npm run dev
  *
- * Both roots are imported so the switch is statically checkable, which does mean
- * both restaurants' fonts are in the bundle during development. Harmless, and it
- * disappears once each restaurant deploys on its own (PLATFORM.md §2).
+ * There is no switch left in this file. It used to import both roots and pick
+ * with a ternary, and the comment here claimed the unused one "disappears once
+ * each restaurant deploys on its own" — it did not. Measured in a browser on
+ * the Snowdaes build: 297KB of the 739KB downloaded was Asian Kitchen. An
+ * import is not a runtime decision, so both were always in the bundle.
+ *
+ * `@/restaurants/active-root` is resolved to one restaurant by the bundler
+ * (`next.config.ts`), so the other is never in the graph. That file has the
+ * long version.
  */
-export const metadata: Metadata =
-  ACTIVE_RESTAURANT === "snowdaes" ? snowdaesMetadata : asianKitchenMetadata;
+export const metadata: Metadata = activeMetadata;
 
-/* Same switch as the metadata: the browser bar is part of a restaurant's
-   colour, so it belongs to the restaurant, not to this shim. Snowdaes has not
-   declared one yet and keeps Next's default. */
-export const viewport: Viewport | undefined =
-  ACTIVE_RESTAURANT === "snowdaes" ? undefined : asianKitchenViewport;
+/* The browser bar is part of a restaurant's colour, so it belongs to the
+   restaurant, not to this shim. Snowdaes has not declared one and keeps Next's
+   default, which is what `undefined` means here. */
+export const viewport: Viewport | undefined = activeViewport;
 
 export default function Page() {
-  return ACTIVE_RESTAURANT === "snowdaes" ? <SnowdaesRoot /> : <AsianKitchenRoot />;
+  return <ActiveRoot />;
 }

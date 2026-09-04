@@ -1,9 +1,4 @@
-import { notFound } from "next/navigation";
-import { ACTIVE_RESTAURANT } from "@/restaurants/active";
-import { Checkout } from "@/restaurants/asian-kitchen/checkout";
-import { AsianKitchenShell } from "@/restaurants/asian-kitchen/root";
-import { SnowdaesCheckout } from "@/restaurants/snowdaes/checkout";
-import { SnowdaesShell } from "@/restaurants/snowdaes/root";
+import { ActiveCheckout, ActiveShell } from "@/restaurants/active-root";
 
 /**
  * `/checkout` — whichever restaurant this deployment is for.
@@ -14,23 +9,15 @@ import { SnowdaesShell } from "@/restaurants/snowdaes/root";
  * PLATFORM.md §3 is explicit that the interface is not extracted until both
  * work end to end.
  *
- * `notFound()` for anything else rather than an empty page, because a checkout
- * that renders nothing looks broken.
+ * There is no `ACTIVE_RESTAURANT` branch and no `notFound()` fallback left:
+ * `@/restaurants/active-root` resolves to exactly one restaurant at build time,
+ * so there is no "anything else" case to guard. See that file — the branch used
+ * to put both restaurants in every customer's bundle.
  */
 export default function Page() {
-  if (ACTIVE_RESTAURANT === "snowdaes") {
-    return (
-      <SnowdaesShell>
-        <SnowdaesCheckout />
-      </SnowdaesShell>
-    );
-  }
-  if (ACTIVE_RESTAURANT === "asian-kitchen") {
-    return (
-      <AsianKitchenShell>
-        <Checkout />
-      </AsianKitchenShell>
-    );
-  }
-  notFound();
+  return (
+    <ActiveShell>
+      <ActiveCheckout />
+    </ActiveShell>
+  );
 }
